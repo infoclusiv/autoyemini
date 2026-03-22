@@ -1,0 +1,460 @@
+{
+   "controlPauseBtn": {
+      "description": "Pause button",
+      "message": "Pause"
+   },
+   "controlResumeBtn": {
+      "description": "Resume button",
+      "message": "Resume"
+   },
+   "controlRetryBtn": {
+      "description": "Retry failed questions button",
+      "message": "Retry Failed Questions"
+   },
+   "controlStartBtn": {
+      "description": "Start button",
+      "message": "Start"
+   },
+   "controlStopBtn": {
+      "description": "Stop button",
+      "message": "Stop"
+   },
+   "controlTitle": {
+      "description": "Control section title",
+      "message": "Execution Control"
+   },
+   "controlUseTempChat": {
+      "description": "Use temporary chat option",
+      "message": "Use Temporary Chat"
+   },
+   "controlUseTempChatHint": {
+      "description": "Temporary chat hint text",
+      "message": "Temporary chat won't save history"
+   },
+   "controlUseWebSearch": {
+      "description": "Web search option",
+      "message": "Use Web Search"
+   },
+   "controlUseWebSearchHint": {
+      "description": "Web search hint text",
+      "message": "Automatically enable web search when enabled"
+   },
+   "extDescription": {
+      "description": "Extension description",
+      "message": "Batch automate ChatGPT Q&A with JSON export. Web search, citations, automated tasks for SEO/GEO content creation"
+   },
+   "extName": {
+      "description": "Extension name",
+      "message": "ChatGPT Bulk Auto Q&A Generator"
+   },
+   "headerGreeting": {
+      "description": "User greeting",
+      "message": "Hello"
+   },
+   "headerGuestMode": {
+      "description": "Guest mode message",
+      "message": "You are browsing in guest mode. Login to use all features."
+   },
+   "headerLoggedInAs": {
+      "description": "Logged in user label",
+      "message": "Logged in as"
+   },
+   "headerLogin": {
+      "description": "Login button",
+      "message": "Login"
+   },
+   "headerLogout": {
+      "description": "Logout button",
+      "message": "Logout"
+   },
+   "headerOpenChatGPT": {
+      "description": "Open ChatGPT button",
+      "message": "Open ChatGPT"
+   },
+   "headerRegister": {
+      "description": "Register button",
+      "message": "Register"
+   },
+   "headerTitle": {
+      "description": "Header title",
+      "message": "ChatGPT Batch Question Assistant"
+   },
+   "inputAddBtn": {
+      "description": "Add to task button",
+      "message": "Add to Task"
+   },
+   "inputClearBtn": {
+      "description": "Clear input button",
+      "message": "Clear Input"
+   },
+   "inputPlaceholder": {
+      "description": "Textarea placeholder",
+      "message": "Enter one question per line, batch input supported..."
+   },
+   "inputTitle": {
+      "description": "Input section title",
+      "message": "Question Input"
+   },
+   "logTitle": {
+      "description": "Log section title",
+      "message": "Execution Log"
+   },
+   "loginBrowseWithoutLogin": {
+      "description": "Browse without login button",
+      "message": "Browse without login"
+   },
+   "loginEmail": {
+      "description": "Email label",
+      "message": "Email"
+   },
+   "loginFailed": {
+      "description": "Login failed message",
+      "message": "Login failed"
+   },
+   "loginGoToRegister": {
+      "description": "Go to register button",
+      "message": "Sign up"
+   },
+   "loginInvalidEmail": {
+      "description": "Invalid email message",
+      "message": "Invalid email"
+   },
+   "loginLoggingIn": {
+      "description": "Logging in status",
+      "message": "Logging in..."
+   },
+   "loginLoginBtn": {
+      "description": "Login button",
+      "message": "Login"
+   },
+   "loginNoAccount": {
+      "description": "No account prompt",
+      "message": "Don't have an account?"
+   },
+   "loginPassword": {
+      "description": "Password label",
+      "message": "Password"
+   },
+   "loginPasswordTooShort": {
+      "description": "Password too short message",
+      "message": "Password must be at least 6 characters"
+   },
+   "loginPleaseLoginFirst": {
+      "description": "Login required message",
+      "message": "Please login to use this feature"
+   },
+   "loginRegisterBtn": {
+      "description": "Register button",
+      "message": "Register"
+   },
+   "loginRegisterFailed": {
+      "description": "Register failed message",
+      "message": "Registration failed"
+   },
+   "loginRegisterSuccess": {
+      "description": "Register success message",
+      "message": "Registration successful, please login"
+   },
+   "loginRegistering": {
+      "description": "Registering status",
+      "message": "Registering..."
+   },
+   "loginSubtitle": {
+      "description": "Login subtitle",
+      "message": "Please login to continue"
+   },
+   "loginSuccess": {
+      "description": "Login success message",
+      "message": "Login successful"
+   },
+   "loginTitle": {
+      "description": "Login title",
+      "message": "Account Login"
+   },
+   "msgAllCleared": {
+      "description": "All cleared message",
+      "message": "All questions cleared"
+   },
+   "msgAllCompleted": {
+      "description": "All completed message",
+      "message": "All questions completed!"
+   },
+   "msgCannotOpenChatGPT": {
+      "description": "Cannot open ChatGPT error",
+      "message": "Cannot open ChatGPT"
+   },
+   "msgChatGPTOpenFailed": {
+      "description": "ChatGPT open failed message",
+      "message": "Failed to open ChatGPT"
+   },
+   "msgChatGPTOpened": {
+      "description": "ChatGPT opened message",
+      "message": "ChatGPT opened in new tab"
+   },
+   "msgCompleted": {
+      "description": "Completed message",
+      "message": "Completed"
+   },
+   "msgConfirmClearAll": {
+      "description": "Confirm clear all dialog",
+      "message": "Are you sure you want to clear all questions?"
+   },
+   "msgError": {
+      "description": "Error label",
+      "message": "Error"
+   },
+   "msgExecutionPaused": {
+      "description": "Execution paused message",
+      "message": "Paused"
+   },
+   "msgExecutionResumed": {
+      "description": "Execution resumed message",
+      "message": "Resumed"
+   },
+   "msgExecutionStopped": {
+      "description": "Execution stopped message",
+      "message": "Stopped"
+   },
+   "msgFailed": {
+      "description": "Failed message",
+      "message": "Failed"
+   },
+   "msgFoundPending": {
+      "description": "Found pending questions message",
+      "message": "Found $COUNT$ pending questions",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "5"
+         }
+      }
+   },
+   "msgLoadFailed": {
+      "description": "Load failed message",
+      "message": "Failed to load questions"
+   },
+   "msgLoadedQuestions": {
+      "description": "Loaded questions message",
+      "message": "Loaded $COUNT$ questions",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "10"
+         }
+      }
+   },
+   "msgNoFailedQuestions": {
+      "description": "No failed questions message",
+      "message": "No failed questions to retry"
+   },
+   "msgNoQuestions": {
+      "description": "No questions warning",
+      "message": "No questions to process"
+   },
+   "msgNoResults": {
+      "description": "No results to export warning",
+      "message": "No data to export"
+   },
+   "msgOpeningChatGPT": {
+      "description": "Opening ChatGPT message",
+      "message": "Opening ChatGPT..."
+   },
+   "msgPleaseEnterQuestion": {
+      "description": "Please enter question warning",
+      "message": "Please enter a question"
+   },
+   "msgPleaseStopFirst": {
+      "description": "Please stop first warning",
+      "message": "Please stop processing first"
+   },
+   "msgProcessingFailed": {
+      "description": "Processing failed message",
+      "message": "Processing failed"
+   },
+   "msgQuestionsAdded": {
+      "description": "Questions added success message",
+      "message": "questions added"
+   },
+   "msgReady": {
+      "description": "Ready message",
+      "message": "ChatGPT Batch Question Assistant ready"
+   },
+   "msgResetFailed": {
+      "description": "Reset failed questions message",
+      "message": "Reset $COUNT$ failed questions, click \"Start\" to retry",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "3"
+         }
+      }
+   },
+   "msgResultsExported": {
+      "description": "Results exported success message",
+      "message": "Results exported"
+   },
+   "msgStartingBatch": {
+      "description": "Starting batch message",
+      "message": "Starting batch processing..."
+   },
+   "msgStartingFirst": {
+      "description": "Starting first question message",
+      "message": "Starting first question"
+   },
+   "msgSubmittedWaiting": {
+      "description": "Submitted waiting message",
+      "message": "Question submitted, waiting for answer..."
+   },
+   "msgTempChatDisabled": {
+      "description": "Temporary chat disabled message",
+      "message": "Temporary chat disabled"
+   },
+   "msgTempChatEnabled": {
+      "description": "Temporary chat enabled message",
+      "message": "Temporary chat enabled"
+   },
+   "msgWaitingNext": {
+      "description": "Waiting next message",
+      "message": "Waiting 3 seconds before processing next question..."
+   },
+   "msgWaitingPage": {
+      "description": "Waiting for page message",
+      "message": "Waiting for ChatGPT page to load (will refresh automatically if needed)..."
+   },
+   "msgWebSearchDisabled": {
+      "description": "Web search disabled message",
+      "message": "Web search disabled"
+   },
+   "msgWebSearchEnabled": {
+      "description": "Web search enabled message",
+      "message": "Web search enabled"
+   },
+   "progressCompleted": {
+      "description": "Progress status: completed",
+      "message": "All Completed"
+   },
+   "progressPaused": {
+      "description": "Progress status: paused",
+      "message": "Paused"
+   },
+   "progressProcessing": {
+      "description": "Progress status: processing",
+      "message": "Processing {current}/{total}"
+   },
+   "progressReady": {
+      "description": "Progress status: ready",
+      "message": "Ready"
+   },
+   "progressRunning": {
+      "description": "Progress status: running",
+      "message": "Running..."
+   },
+   "questionsAddToStart": {
+      "description": "Empty state hint",
+      "message": "Add questions in the input box above to get started"
+   },
+   "questionsAnswer": {
+      "description": "Answer label",
+      "message": "Answer"
+   },
+   "questionsClearBtn": {
+      "description": "Clear all button",
+      "message": "Clear All"
+   },
+   "questionsErrorInfo": {
+      "description": "Error info label",
+      "message": "Error Information"
+   },
+   "questionsExportBtn": {
+      "description": "Export button",
+      "message": "Export Results (JSON)"
+   },
+   "questionsNoAnswer": {
+      "description": "No answer placeholder",
+      "message": "No answer"
+   },
+   "questionsNoQuestions": {
+      "description": "Empty state message",
+      "message": "No questions yet"
+   },
+   "questionsQuestion": {
+      "description": "Question label",
+      "message": "Question"
+   },
+   "questionsSources": {
+      "description": "Sources label",
+      "message": "Sources"
+   },
+   "questionsTitle": {
+      "description": "Questions section title",
+      "message": "Question List"
+   },
+   "questionsUnknownError": {
+      "description": "Unknown error message",
+      "message": "Unknown error"
+   },
+   "registerBackToLogin": {
+      "description": "Back to login button",
+      "message": "Back to login"
+   },
+   "registerGoToLogin": {
+      "description": "Go to login button",
+      "message": "Sign in"
+   },
+   "registerHasAccount": {
+      "description": "Has account prompt",
+      "message": "Already have an account?"
+   },
+   "registerPasswordConfirm": {
+      "description": "Confirm password label",
+      "message": "Confirm Password"
+   },
+   "registerPasswordMismatch": {
+      "description": "Password mismatch message",
+      "message": "Passwords do not match"
+   },
+   "registerSubtitle": {
+      "description": "Register subtitle",
+      "message": "Sign up to get started"
+   },
+   "registerTitle": {
+      "description": "Register title",
+      "message": "Create Account"
+   },
+   "statsCompleted": {
+      "description": "Completed count label",
+      "message": "Completed"
+   },
+   "statsFailed": {
+      "description": "Failed count label",
+      "message": "Failed"
+   },
+   "statsSuccess": {
+      "description": "Success count label",
+      "message": "Success"
+   },
+   "statsTotal": {
+      "description": "Total count label",
+      "message": "Total"
+   },
+   "statusCompleted": {
+      "description": "Completed status",
+      "message": "Completed"
+   },
+   "statusFailed": {
+      "description": "Failed status",
+      "message": "Failed"
+   },
+   "statusPending": {
+      "description": "Pending status",
+      "message": "Pending"
+   },
+   "statusProcessing": {
+      "description": "Processing status",
+      "message": "Processing"
+   },
+   "title": {
+      "description": "Page title",
+      "message": "ChatGPT Batch Question Assistant"
+   }
+}

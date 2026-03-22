@@ -1,0 +1,460 @@
+{
+   "controlPauseBtn": {
+      "description": "Pause button",
+      "message": "Пауза"
+   },
+   "controlResumeBtn": {
+      "description": "Resume button",
+      "message": "Продолжить"
+   },
+   "controlRetryBtn": {
+      "description": "Retry failed questions button",
+      "message": "Повторить неудачные вопросы"
+   },
+   "controlStartBtn": {
+      "description": "Start button",
+      "message": "Начать"
+   },
+   "controlStopBtn": {
+      "description": "Stop button",
+      "message": "Остановить"
+   },
+   "controlTitle": {
+      "description": "Control section title",
+      "message": "Управление выполнением"
+   },
+   "controlUseTempChat": {
+      "description": "Use temporary chat option",
+      "message": "Использовать временный чат"
+   },
+   "controlUseTempChatHint": {
+      "description": "Temporary chat hint text",
+      "message": "Временный чат не сохраняет историю"
+   },
+   "controlUseWebSearch": {
+      "description": "Web search option",
+      "message": "Использовать веб-поиск"
+   },
+   "controlUseWebSearchHint": {
+      "description": "Web search hint text",
+      "message": "Автоматически активирует веб-поиск"
+   },
+   "extDescription": {
+      "description": "Extension description",
+      "message": "Вопросы ChatGPT с JSON-экспортом. Поиск, цитаты, автоматизация для SEO/GEO"
+   },
+   "extName": {
+      "description": "Extension name",
+      "message": "Генератор массовых Q&A для ChatGPT"
+   },
+   "headerGreeting": {
+      "description": "User greeting",
+      "message": "Здравствуйте"
+   },
+   "headerGuestMode": {
+      "description": "Guest mode message",
+      "message": "Вы находитесь в гостевом режиме. Войдите, чтобы использовать все функции."
+   },
+   "headerLoggedInAs": {
+      "description": "Logged in user label",
+      "message": "Вошли как"
+   },
+   "headerLogin": {
+      "description": "Login button",
+      "message": "Войти"
+   },
+   "headerLogout": {
+      "description": "Logout button",
+      "message": "Выйти"
+   },
+   "headerOpenChatGPT": {
+      "description": "Open ChatGPT button",
+      "message": "Открыть ChatGPT"
+   },
+   "headerRegister": {
+      "description": "Register button",
+      "message": "Зарегистрироваться"
+   },
+   "headerTitle": {
+      "description": "Header title",
+      "message": "Помощник массовых вопросов ChatGPT"
+   },
+   "inputAddBtn": {
+      "description": "Add to task button",
+      "message": "Добавить к задаче"
+   },
+   "inputClearBtn": {
+      "description": "Clear input button",
+      "message": "Очистить ввод"
+   },
+   "inputPlaceholder": {
+      "description": "Textarea placeholder",
+      "message": "Введите один вопрос на строку, поддерживается массовый ввод..."
+   },
+   "inputTitle": {
+      "description": "Input section title",
+      "message": "Ввод вопросов"
+   },
+   "logTitle": {
+      "description": "Log section title",
+      "message": "Журнал выполнения"
+   },
+   "loginBrowseWithoutLogin": {
+      "description": "Browse without login button",
+      "message": "Просмотр без входа"
+   },
+   "loginEmail": {
+      "description": "Email label",
+      "message": "Email"
+   },
+   "loginFailed": {
+      "description": "Login failed message",
+      "message": "Ошибка входа"
+   },
+   "loginGoToRegister": {
+      "description": "Go to register button",
+      "message": "Зарегистрироваться"
+   },
+   "loginInvalidEmail": {
+      "description": "Invalid email message",
+      "message": "Неверный email"
+   },
+   "loginLoggingIn": {
+      "description": "Logging in status",
+      "message": "Вход..."
+   },
+   "loginLoginBtn": {
+      "description": "Login button",
+      "message": "Войти"
+   },
+   "loginNoAccount": {
+      "description": "No account prompt",
+      "message": "Нет аккаунта?"
+   },
+   "loginPassword": {
+      "description": "Password label",
+      "message": "Пароль"
+   },
+   "loginPasswordTooShort": {
+      "description": "Password too short message",
+      "message": "Пароль должен содержать минимум 6 символов"
+   },
+   "loginPleaseLoginFirst": {
+      "description": "Login required message",
+      "message": "Пожалуйста, войдите, чтобы использовать эту функцию"
+   },
+   "loginRegisterBtn": {
+      "description": "Register button",
+      "message": "Зарегистрироваться"
+   },
+   "loginRegisterFailed": {
+      "description": "Register failed message",
+      "message": "Ошибка регистрации"
+   },
+   "loginRegisterSuccess": {
+      "description": "Register success message",
+      "message": "Регистрация успешна, пожалуйста, войдите"
+   },
+   "loginRegistering": {
+      "description": "Registering status",
+      "message": "Регистрация..."
+   },
+   "loginSubtitle": {
+      "description": "Login subtitle",
+      "message": "Пожалуйста, войдите, чтобы продолжить"
+   },
+   "loginSuccess": {
+      "description": "Login success message",
+      "message": "Вход выполнен успешно"
+   },
+   "loginTitle": {
+      "description": "Login title",
+      "message": "Вход в аккаунт"
+   },
+   "msgAllCleared": {
+      "description": "All cleared message",
+      "message": "Все вопросы очищены"
+   },
+   "msgAllCompleted": {
+      "description": "All completed message",
+      "message": "Все вопросы завершены!"
+   },
+   "msgCannotOpenChatGPT": {
+      "description": "Cannot open ChatGPT error",
+      "message": "Невозможно открыть ChatGPT"
+   },
+   "msgChatGPTOpenFailed": {
+      "description": "ChatGPT open failed message",
+      "message": "Не удалось открыть ChatGPT"
+   },
+   "msgChatGPTOpened": {
+      "description": "ChatGPT opened message",
+      "message": "ChatGPT открыт в новой вкладке"
+   },
+   "msgCompleted": {
+      "description": "Completed message",
+      "message": "Завершено"
+   },
+   "msgConfirmClearAll": {
+      "description": "Confirm clear all dialog",
+      "message": "Вы уверены, что хотите очистить все вопросы?"
+   },
+   "msgError": {
+      "description": "Error label",
+      "message": "Ошибка"
+   },
+   "msgExecutionPaused": {
+      "description": "Execution paused message",
+      "message": "Приостановлено"
+   },
+   "msgExecutionResumed": {
+      "description": "Execution resumed message",
+      "message": "Возобновлено"
+   },
+   "msgExecutionStopped": {
+      "description": "Execution stopped message",
+      "message": "Остановлено"
+   },
+   "msgFailed": {
+      "description": "Failed message",
+      "message": "Неудачно"
+   },
+   "msgFoundPending": {
+      "description": "Found pending questions message",
+      "message": "Найдено $COUNT$ ожидающих вопросов",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "5"
+         }
+      }
+   },
+   "msgLoadFailed": {
+      "description": "Load failed message",
+      "message": "Не удалось загрузить вопросы"
+   },
+   "msgLoadedQuestions": {
+      "description": "Loaded questions message",
+      "message": "Загружено $COUNT$ вопросов",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "10"
+         }
+      }
+   },
+   "msgNoFailedQuestions": {
+      "description": "No failed questions message",
+      "message": "Нет неудачных вопросов для повтора"
+   },
+   "msgNoQuestions": {
+      "description": "No questions warning",
+      "message": "Нет вопросов для обработки"
+   },
+   "msgNoResults": {
+      "description": "No results to export warning",
+      "message": "Нет данных для экспорта"
+   },
+   "msgOpeningChatGPT": {
+      "description": "Opening ChatGPT message",
+      "message": "Открытие ChatGPT..."
+   },
+   "msgPleaseEnterQuestion": {
+      "description": "Please enter question warning",
+      "message": "Пожалуйста, введите вопрос"
+   },
+   "msgPleaseStopFirst": {
+      "description": "Please stop first warning",
+      "message": "Пожалуйста, сначала остановите обработку"
+   },
+   "msgProcessingFailed": {
+      "description": "Processing failed message",
+      "message": "Обработка не удалась"
+   },
+   "msgQuestionsAdded": {
+      "description": "Questions added success message",
+      "message": "вопросов добавлено"
+   },
+   "msgReady": {
+      "description": "Ready message",
+      "message": "Помощник массовых вопросов ChatGPT готов"
+   },
+   "msgResetFailed": {
+      "description": "Reset failed questions message",
+      "message": "Сброшено $COUNT$ неудачных вопросов, нажмите \"Начать\" для повтора",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "3"
+         }
+      }
+   },
+   "msgResultsExported": {
+      "description": "Results exported success message",
+      "message": "Результаты экспортированы"
+   },
+   "msgStartingBatch": {
+      "description": "Starting batch message",
+      "message": "Запуск массовой обработки..."
+   },
+   "msgStartingFirst": {
+      "description": "Starting first question message",
+      "message": "Начало первого вопроса"
+   },
+   "msgSubmittedWaiting": {
+      "description": "Submitted waiting message",
+      "message": "Вопрос отправлен, ожидание ответа..."
+   },
+   "msgTempChatDisabled": {
+      "description": "Temporary chat disabled message",
+      "message": "Временный чат деактивирован"
+   },
+   "msgTempChatEnabled": {
+      "description": "Temporary chat enabled message",
+      "message": "Временный чат активирован"
+   },
+   "msgWaitingNext": {
+      "description": "Waiting next message",
+      "message": "Ожидание 3 секунды перед следующим вопросом..."
+   },
+   "msgWaitingPage": {
+      "description": "Waiting for page message",
+      "message": "Ожидание загрузки страницы ChatGPT (будет автоматически обновлена при необходимости)..."
+   },
+   "msgWebSearchDisabled": {
+      "description": "Web search disabled message",
+      "message": "Веб-поиск деактивирован"
+   },
+   "msgWebSearchEnabled": {
+      "description": "Web search enabled message",
+      "message": "Веб-поиск активирован"
+   },
+   "progressCompleted": {
+      "description": "Progress status: completed",
+      "message": "Все завершено"
+   },
+   "progressPaused": {
+      "description": "Progress status: paused",
+      "message": "Приостановлено"
+   },
+   "progressProcessing": {
+      "description": "Progress status: processing",
+      "message": "Обработка {current}/{total}"
+   },
+   "progressReady": {
+      "description": "Progress status: ready",
+      "message": "Готово"
+   },
+   "progressRunning": {
+      "description": "Progress status: running",
+      "message": "Выполняется..."
+   },
+   "questionsAddToStart": {
+      "description": "Empty state hint",
+      "message": "Добавьте вопросы в поле ввода выше, чтобы начать"
+   },
+   "questionsAnswer": {
+      "description": "Answer label",
+      "message": "Ответ"
+   },
+   "questionsClearBtn": {
+      "description": "Clear all button",
+      "message": "Очистить все"
+   },
+   "questionsErrorInfo": {
+      "description": "Error info label",
+      "message": "Информация об ошибке"
+   },
+   "questionsExportBtn": {
+      "description": "Export button",
+      "message": "Экспортировать результаты (JSON)"
+   },
+   "questionsNoAnswer": {
+      "description": "No answer placeholder",
+      "message": "Нет ответа"
+   },
+   "questionsNoQuestions": {
+      "description": "Empty state message",
+      "message": "Пока нет вопросов"
+   },
+   "questionsQuestion": {
+      "description": "Question label",
+      "message": "Вопрос"
+   },
+   "questionsSources": {
+      "description": "Sources label",
+      "message": "Источники"
+   },
+   "questionsTitle": {
+      "description": "Questions section title",
+      "message": "Список вопросов"
+   },
+   "questionsUnknownError": {
+      "description": "Unknown error message",
+      "message": "Неизвестная ошибка"
+   },
+   "registerBackToLogin": {
+      "description": "Back to login button",
+      "message": "Вернуться к входу"
+   },
+   "registerGoToLogin": {
+      "description": "Go to login button",
+      "message": "Войти"
+   },
+   "registerHasAccount": {
+      "description": "Has account prompt",
+      "message": "Уже есть аккаунт?"
+   },
+   "registerPasswordConfirm": {
+      "description": "Confirm password label",
+      "message": "Подтвердите пароль"
+   },
+   "registerPasswordMismatch": {
+      "description": "Password mismatch message",
+      "message": "Пароли не совпадают"
+   },
+   "registerSubtitle": {
+      "description": "Register subtitle",
+      "message": "Зарегистрируйтесь, чтобы начать"
+   },
+   "registerTitle": {
+      "description": "Register title",
+      "message": "Создать аккаунт"
+   },
+   "statsCompleted": {
+      "description": "Completed count label",
+      "message": "Завершено"
+   },
+   "statsFailed": {
+      "description": "Failed count label",
+      "message": "Неудачно"
+   },
+   "statsSuccess": {
+      "description": "Success count label",
+      "message": "Успешно"
+   },
+   "statsTotal": {
+      "description": "Total count label",
+      "message": "Всего"
+   },
+   "statusCompleted": {
+      "description": "Completed status",
+      "message": "Завершено"
+   },
+   "statusFailed": {
+      "description": "Failed status",
+      "message": "Неудачно"
+   },
+   "statusPending": {
+      "description": "Pending status",
+      "message": "Ожидание"
+   },
+   "statusProcessing": {
+      "description": "Processing status",
+      "message": "Обработка"
+   },
+   "title": {
+      "description": "Page title",
+      "message": "Помощник массовых вопросов ChatGPT"
+   }
+}

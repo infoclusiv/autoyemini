@@ -1,0 +1,1 @@
+const CONFIG={APP_VERSION:"1.0.0",APP_NAME:"ChatGPT Batch Question Assistant"};"undefined"!=typeof module&&module.exports&&(module.exports=CONFIG);

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title">ChatGPT Batch Question Assistant</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <!-- Main Panel -->
+  <div id="mainPanel" class="container">
+    <section class="input-section">
+      <h2 data-i18n="input.title">Question Input</h2>
+      <textarea 
+        id="questionsInput" 
+        data-i18n-placeholder="input.placeholder"
+        placeholder="Enter one question per line, batch input supported..."
+        rows="8"
+      ></textarea>
+      <div class="button-group">
+        <button id="addQuestionsBtn" class="btn btn-primary" data-i18n="input.addBtn">Add Questions</button>
+        <button id="clearInputBtn" class="btn btn-secondary" data-i18n="input.clearBtn">Clear Input</button>
+      </div>
+    </section>
+
+    <section class="control-section">
+      <h2 data-i18n="control.title">执行控制</h2>
+      
+      <!-- Settings Group -->
+      <div class="settings-group">
+        <!-- Temporary Chat Setting -->
+        <div class="setting-item">
+          <label class="setting-label">
+            <span class="setting-icon">⏱️</span>
+            <input type="checkbox" id="useTempChatCheckbox" checked>
+            <span class="setting-text" data-i18n="control.useTempChat">使用临时聊天</span>
+          </label>
+          <span class="setting-hint" data-i18n="control.useTempChatHint">临时聊天不会保存历史记录</span>
+        </div>
+        
+        <!-- Web Search Setting -->
+        <div class="setting-item">
+          <label class="setting-label">
+            <span class="setting-icon">🌐</span>
+            <input type="checkbox" id="useWebSearchCheckbox" checked>
+            <span class="setting-text" data-i18n="control.useWebSearch">使用联网搜索</span>
+          </label>
+          <span class="setting-hint" data-i18n="control.useWebSearchHint">启用后会自动开启网页搜索功能</span>
+        </div>
+      </div>
+      
+      <!-- Divider -->
+      <div class="control-divider"></div>
+      
+      <!-- Progress Section -->
+      <div class="progress-section">
+        <div class="progress-status">
+          <span id="progressText" data-i18n="progress.ready">就绪</span>
+          <span id="progressPercent" class="progress-badge">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+      </div>
+      
+      <!-- Control Buttons -->
+      <div class="control-buttons">
+        <!-- Idle State -->
+        <div id="idleButtons" class="button-state">
+          <button id="startBtn" class="btn btn-success btn-large">
+            <span class="btn-icon">🚀</span>
+            <span data-i18n="control.startBtn">开始执行</span>
+          </button>
+        </div>
+        
+        <!-- Running State -->
+        <div id="runningButtons" class="button-state" style="display: none;">
+          <button id="pauseBtn" class="btn btn-warning">
+            <span class="btn-icon">⏸</span>
+            <span data-i18n="control.pauseBtn">暂停</span>
+          </button>
+          <button id="stopBtn" class="btn btn-danger">
+            <span class="btn-icon">⏹</span>
+            <span data-i18n="control.stopBtn">停止</span>
+          </button>
+        </div>
+        
+        <!-- Paused State -->
+        <div id="pausedButtons" class="button-state" style="display: none;">
+          <button id="resumeBtn" class="btn btn-info">
+            <span class="btn-icon">▶️</span>
+            <span data-i18n="control.resumeBtn">恢复</span>
+          </button>
+          <button id="stopBtn2" class="btn btn-danger">
+            <span class="btn-icon">⏹</span>
+            <span data-i18n="control.stopBtn">停止</span>
+          </button>
+        </div>
+        
+        <!-- Retry Button (shows when failed > 0) -->
+        <div id="retryButtonContainer" class="button-state" style="display: none; margin-top: 8px;">
+          <button id="retryFailedBtn" class="btn btn-secondary btn-large">
+            <span class="btn-icon">🔄</span>
+            <span data-i18n="control.retryBtn">重试失败问题</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Statistics Cards -->
+      <div class="stats-cards">
+        <div class="stat-card stat-total">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label" data-i18n="stats.total">总数</div>
+            <div class="stat-value" id="totalCount">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-completed">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label" data-i18n="stats.completed">已完成</div>
+            <div class="stat-value" id="completedCount">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-success">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label" data-i18n="stats.success">成功</div>
+            <div class="stat-value" id="successCount">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-failed">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M15 9l-6 6M9 9l6 6"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <div class="stat-label" data-i18n="stats.failed">失败</div>
+            <div class="stat-value" id="failedCount">0</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="log-section">
+      <h2 data-i18n="log.title">Execution Log</h2>
+      <div id="logContainer" class="log-container"></div>
+    </section>
+
+    <section class="questions-section">
+      <h2 data-i18n="questions.title">Question List</h2>
+      <div class="action-bar">
+        <button id="exportBtn" class="btn btn-primary" data-i18n="questions.exportBtn">Export Results (JSON)</button>
+        <button id="clearAllBtn" class="btn btn-danger" data-i18n="questions.clearBtn">Clear All</button>
+      </div>
+      <div id="questionsList" class="questions-list"></div>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
+

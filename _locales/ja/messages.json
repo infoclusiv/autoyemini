@@ -1,0 +1,460 @@
+{
+   "controlPauseBtn": {
+      "description": "Pause button",
+      "message": "一時停止"
+   },
+   "controlResumeBtn": {
+      "description": "Resume button",
+      "message": "再開"
+   },
+   "controlRetryBtn": {
+      "description": "Retry failed questions button",
+      "message": "失敗した質問を再試行"
+   },
+   "controlStartBtn": {
+      "description": "Start button",
+      "message": "開始"
+   },
+   "controlStopBtn": {
+      "description": "Stop button",
+      "message": "停止"
+   },
+   "controlTitle": {
+      "description": "Control section title",
+      "message": "実行制御"
+   },
+   "controlUseTempChat": {
+      "description": "Use temporary chat option",
+      "message": "一時的なチャットを使用"
+   },
+   "controlUseTempChatHint": {
+      "description": "Temporary chat hint text",
+      "message": "一時的なチャットは履歴を保存しません"
+   },
+   "controlUseWebSearch": {
+      "description": "Web search option",
+      "message": "ウェブ検索を使用"
+   },
+   "controlUseWebSearchHint": {
+      "description": "Web search hint text",
+      "message": "有効にすると自動的にウェブ検索を有効化"
+   },
+   "extDescription": {
+      "description": "Extension description",
+      "message": "ChatGPTに一括質問しJSON出力。ウェブ検索、引用、自動タスク対応。SEO/GEOコンテンツ作成に最適"
+   },
+   "extName": {
+      "description": "Extension name",
+      "message": "ChatGPT一括Q&Aジェネレーター"
+   },
+   "headerGreeting": {
+      "description": "User greeting",
+      "message": "こんにちは"
+   },
+   "headerGuestMode": {
+      "description": "Guest mode message",
+      "message": "ゲストモードで閲覧しています。すべての機能を使用するにはログインしてください。"
+   },
+   "headerLoggedInAs": {
+      "description": "Logged in user label",
+      "message": "ログイン中"
+   },
+   "headerLogin": {
+      "description": "Login button",
+      "message": "ログイン"
+   },
+   "headerLogout": {
+      "description": "Logout button",
+      "message": "ログアウト"
+   },
+   "headerOpenChatGPT": {
+      "description": "Open ChatGPT button",
+      "message": "ChatGPTを開く"
+   },
+   "headerRegister": {
+      "description": "Register button",
+      "message": "登録"
+   },
+   "headerTitle": {
+      "description": "Header title",
+      "message": "ChatGPT一括質問アシスタント"
+   },
+   "inputAddBtn": {
+      "description": "Add to task button",
+      "message": "タスクに追加"
+   },
+   "inputClearBtn": {
+      "description": "Clear input button",
+      "message": "入力をクリア"
+   },
+   "inputPlaceholder": {
+      "description": "Textarea placeholder",
+      "message": "1行に1つの質問を入力、一括入力サポート..."
+   },
+   "inputTitle": {
+      "description": "Input section title",
+      "message": "質問入力"
+   },
+   "logTitle": {
+      "description": "Log section title",
+      "message": "実行ログ"
+   },
+   "loginBrowseWithoutLogin": {
+      "description": "Browse without login button",
+      "message": "ログインせずに閲覧"
+   },
+   "loginEmail": {
+      "description": "Email label",
+      "message": "メールアドレス"
+   },
+   "loginFailed": {
+      "description": "Login failed message",
+      "message": "ログインに失敗しました"
+   },
+   "loginGoToRegister": {
+      "description": "Go to register button",
+      "message": "登録"
+   },
+   "loginInvalidEmail": {
+      "description": "Invalid email message",
+      "message": "無効なメールアドレス"
+   },
+   "loginLoggingIn": {
+      "description": "Logging in status",
+      "message": "ログイン中..."
+   },
+   "loginLoginBtn": {
+      "description": "Login button",
+      "message": "ログイン"
+   },
+   "loginNoAccount": {
+      "description": "No account prompt",
+      "message": "アカウントをお持ちでない場合"
+   },
+   "loginPassword": {
+      "description": "Password label",
+      "message": "パスワード"
+   },
+   "loginPasswordTooShort": {
+      "description": "Password too short message",
+      "message": "パスワードは6文字以上である必要があります"
+   },
+   "loginPleaseLoginFirst": {
+      "description": "Login required message",
+      "message": "この機能を使用するにはログインしてください"
+   },
+   "loginRegisterBtn": {
+      "description": "Register button",
+      "message": "登録"
+   },
+   "loginRegisterFailed": {
+      "description": "Register failed message",
+      "message": "登録に失敗しました"
+   },
+   "loginRegisterSuccess": {
+      "description": "Register success message",
+      "message": "登録に成功しました、ログインしてください"
+   },
+   "loginRegistering": {
+      "description": "Registering status",
+      "message": "登録中..."
+   },
+   "loginSubtitle": {
+      "description": "Login subtitle",
+      "message": "続行するにはログインしてください"
+   },
+   "loginSuccess": {
+      "description": "Login success message",
+      "message": "ログインに成功しました"
+   },
+   "loginTitle": {
+      "description": "Login title",
+      "message": "アカウントログイン"
+   },
+   "msgAllCleared": {
+      "description": "All cleared message",
+      "message": "すべての質問をクリアしました"
+   },
+   "msgAllCompleted": {
+      "description": "All completed message",
+      "message": "すべての質問が完了しました！"
+   },
+   "msgCannotOpenChatGPT": {
+      "description": "Cannot open ChatGPT error",
+      "message": "ChatGPTを開けません"
+   },
+   "msgChatGPTOpenFailed": {
+      "description": "ChatGPT open failed message",
+      "message": "ChatGPTを開けませんでした"
+   },
+   "msgChatGPTOpened": {
+      "description": "ChatGPT opened message",
+      "message": "ChatGPTを新しいタブで開きました"
+   },
+   "msgCompleted": {
+      "description": "Completed message",
+      "message": "完了"
+   },
+   "msgConfirmClearAll": {
+      "description": "Confirm clear all dialog",
+      "message": "すべての質問をクリアしてもよろしいですか？"
+   },
+   "msgError": {
+      "description": "Error label",
+      "message": "エラー"
+   },
+   "msgExecutionPaused": {
+      "description": "Execution paused message",
+      "message": "一時停止しました"
+   },
+   "msgExecutionResumed": {
+      "description": "Execution resumed message",
+      "message": "再開しました"
+   },
+   "msgExecutionStopped": {
+      "description": "Execution stopped message",
+      "message": "停止しました"
+   },
+   "msgFailed": {
+      "description": "Failed message",
+      "message": "失敗"
+   },
+   "msgFoundPending": {
+      "description": "Found pending questions message",
+      "message": "$COUNT$件の保留中の質問が見つかりました",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "5"
+         }
+      }
+   },
+   "msgLoadFailed": {
+      "description": "Load failed message",
+      "message": "質問の読み込みに失敗しました"
+   },
+   "msgLoadedQuestions": {
+      "description": "Loaded questions message",
+      "message": "$COUNT$件の質問を読み込みました",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "10"
+         }
+      }
+   },
+   "msgNoFailedQuestions": {
+      "description": "No failed questions message",
+      "message": "再試行する失敗した質問がありません"
+   },
+   "msgNoQuestions": {
+      "description": "No questions warning",
+      "message": "処理する質問がありません"
+   },
+   "msgNoResults": {
+      "description": "No results to export warning",
+      "message": "エクスポートするデータがありません"
+   },
+   "msgOpeningChatGPT": {
+      "description": "Opening ChatGPT message",
+      "message": "ChatGPTを開いています..."
+   },
+   "msgPleaseEnterQuestion": {
+      "description": "Please enter question warning",
+      "message": "質問を入力してください"
+   },
+   "msgPleaseStopFirst": {
+      "description": "Please stop first warning",
+      "message": "まず処理を停止してください"
+   },
+   "msgProcessingFailed": {
+      "description": "Processing failed message",
+      "message": "処理に失敗しました"
+   },
+   "msgQuestionsAdded": {
+      "description": "Questions added success message",
+      "message": "件の質問を追加しました"
+   },
+   "msgReady": {
+      "description": "Ready message",
+      "message": "ChatGPT一括質問アシスタント準備完了"
+   },
+   "msgResetFailed": {
+      "description": "Reset failed questions message",
+      "message": "$COUNT$件の失敗した質問をリセットしました。「開始」をクリックして再試行してください",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "3"
+         }
+      }
+   },
+   "msgResultsExported": {
+      "description": "Results exported success message",
+      "message": "結果をエクスポートしました"
+   },
+   "msgStartingBatch": {
+      "description": "Starting batch message",
+      "message": "一括処理を開始しています..."
+   },
+   "msgStartingFirst": {
+      "description": "Starting first question message",
+      "message": "最初の質問を開始しています"
+   },
+   "msgSubmittedWaiting": {
+      "description": "Submitted waiting message",
+      "message": "質問を送信しました、回答を待っています..."
+   },
+   "msgTempChatDisabled": {
+      "description": "Temporary chat disabled message",
+      "message": "一時的なチャットを無効にしました"
+   },
+   "msgTempChatEnabled": {
+      "description": "Temporary chat enabled message",
+      "message": "一時的なチャットを有効にしました"
+   },
+   "msgWaitingNext": {
+      "description": "Waiting next message",
+      "message": "次の質問まで3秒待機中..."
+   },
+   "msgWaitingPage": {
+      "description": "Waiting for page message",
+      "message": "ChatGPTページの読み込みを待っています（必要に応じて自動的に更新されます）..."
+   },
+   "msgWebSearchDisabled": {
+      "description": "Web search disabled message",
+      "message": "ウェブ検索を無効にしました"
+   },
+   "msgWebSearchEnabled": {
+      "description": "Web search enabled message",
+      "message": "ウェブ検索を有効にしました"
+   },
+   "progressCompleted": {
+      "description": "Progress status: completed",
+      "message": "すべて完了"
+   },
+   "progressPaused": {
+      "description": "Progress status: paused",
+      "message": "一時停止中"
+   },
+   "progressProcessing": {
+      "description": "Progress status: processing",
+      "message": "処理中 {current}/{total}"
+   },
+   "progressReady": {
+      "description": "Progress status: ready",
+      "message": "準備完了"
+   },
+   "progressRunning": {
+      "description": "Progress status: running",
+      "message": "実行中..."
+   },
+   "questionsAddToStart": {
+      "description": "Empty state hint",
+      "message": "上の入力ボックスに質問を追加して開始してください"
+   },
+   "questionsAnswer": {
+      "description": "Answer label",
+      "message": "回答"
+   },
+   "questionsClearBtn": {
+      "description": "Clear all button",
+      "message": "すべてクリア"
+   },
+   "questionsErrorInfo": {
+      "description": "Error info label",
+      "message": "エラー情報"
+   },
+   "questionsExportBtn": {
+      "description": "Export button",
+      "message": "結果をエクスポート (JSON)"
+   },
+   "questionsNoAnswer": {
+      "description": "No answer placeholder",
+      "message": "回答なし"
+   },
+   "questionsNoQuestions": {
+      "description": "Empty state message",
+      "message": "まだ質問がありません"
+   },
+   "questionsQuestion": {
+      "description": "Question label",
+      "message": "質問"
+   },
+   "questionsSources": {
+      "description": "Sources label",
+      "message": "情報源"
+   },
+   "questionsTitle": {
+      "description": "Questions section title",
+      "message": "質問リスト"
+   },
+   "questionsUnknownError": {
+      "description": "Unknown error message",
+      "message": "不明なエラー"
+   },
+   "registerBackToLogin": {
+      "description": "Back to login button",
+      "message": "ログインに戻る"
+   },
+   "registerGoToLogin": {
+      "description": "Go to login button",
+      "message": "ログイン"
+   },
+   "registerHasAccount": {
+      "description": "Has account prompt",
+      "message": "すでにアカウントをお持ちですか？"
+   },
+   "registerPasswordConfirm": {
+      "description": "Confirm password label",
+      "message": "パスワード確認"
+   },
+   "registerPasswordMismatch": {
+      "description": "Password mismatch message",
+      "message": "パスワードが一致しません"
+   },
+   "registerSubtitle": {
+      "description": "Register subtitle",
+      "message": "登録して始めましょう"
+   },
+   "registerTitle": {
+      "description": "Register title",
+      "message": "アカウント作成"
+   },
+   "statsCompleted": {
+      "description": "Completed count label",
+      "message": "完了"
+   },
+   "statsFailed": {
+      "description": "Failed count label",
+      "message": "失敗"
+   },
+   "statsSuccess": {
+      "description": "Success count label",
+      "message": "成功"
+   },
+   "statsTotal": {
+      "description": "Total count label",
+      "message": "合計"
+   },
+   "statusCompleted": {
+      "description": "Completed status",
+      "message": "完了"
+   },
+   "statusFailed": {
+      "description": "Failed status",
+      "message": "失敗"
+   },
+   "statusPending": {
+      "description": "Pending status",
+      "message": "保留中"
+   },
+   "statusProcessing": {
+      "description": "Processing status",
+      "message": "処理中"
+   },
+   "title": {
+      "description": "Page title",
+      "message": "ChatGPT一括質問アシスタント"
+   }
+}

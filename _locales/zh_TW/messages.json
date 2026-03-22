@@ -1,0 +1,460 @@
+{
+   "controlPauseBtn": {
+      "description": "暫停按鈕",
+      "message": "暫停"
+   },
+   "controlResumeBtn": {
+      "description": "恢復按鈕",
+      "message": "恢復"
+   },
+   "controlRetryBtn": {
+      "description": "重試失敗問題按鈕",
+      "message": "重試失敗問題"
+   },
+   "controlStartBtn": {
+      "description": "開始按鈕",
+      "message": "開始執行"
+   },
+   "controlStopBtn": {
+      "description": "停止按鈕",
+      "message": "停止"
+   },
+   "controlTitle": {
+      "description": "控制區標題",
+      "message": "執行控制"
+   },
+   "controlUseTempChat": {
+      "description": "使用臨時聊天選項",
+      "message": "使用臨時聊天"
+   },
+   "controlUseTempChatHint": {
+      "description": "臨時聊天提示文字",
+      "message": "臨時聊天不會儲存歷史記錄"
+   },
+   "controlUseWebSearch": {
+      "description": "聯網搜尋選項",
+      "message": "使用聯網搜尋"
+   },
+   "controlUseWebSearchHint": {
+      "description": "聯網搜尋提示文字",
+      "message": "啟用後會自動開啟網頁搜尋功能"
+   },
+   "extDescription": {
+      "description": "外掛描述",
+      "message": "批次自動向ChatGPT提問並匯出JSON結果。支援網頁搜尋、引用追蹤。適用於SEO/GEO內容創作"
+   },
+   "extName": {
+      "description": "外掛名稱",
+      "message": "ChatGPT 批次自動問答生成器"
+   },
+   "headerGreeting": {
+      "description": "使用者問候語",
+      "message": "您好"
+   },
+   "headerGuestMode": {
+      "description": "訪客模式提示",
+      "message": "您正在以訪客模式瀏覽，登入後可使用全部功能。"
+   },
+   "headerLoggedInAs": {
+      "description": "已登入使用者標籤",
+      "message": "目前使用者"
+   },
+   "headerLogin": {
+      "description": "登入按鈕",
+      "message": "登入"
+   },
+   "headerLogout": {
+      "description": "登出按鈕",
+      "message": "登出"
+   },
+   "headerOpenChatGPT": {
+      "description": "開啟ChatGPT按鈕",
+      "message": "開啟 ChatGPT"
+   },
+   "headerRegister": {
+      "description": "註冊按鈕",
+      "message": "註冊"
+   },
+   "headerTitle": {
+      "description": "頁眉標題",
+      "message": "ChatGPT 批次提問助手"
+   },
+   "inputAddBtn": {
+      "description": "加入任務按鈕",
+      "message": "加入任務"
+   },
+   "inputClearBtn": {
+      "description": "清空輸入按鈕",
+      "message": "清空輸入"
+   },
+   "inputPlaceholder": {
+      "description": "輸入框佔位符",
+      "message": "每行輸入一個問題，支援批次輸入..."
+   },
+   "inputTitle": {
+      "description": "輸入區標題",
+      "message": "問題錄入"
+   },
+   "logTitle": {
+      "description": "日誌區標題",
+      "message": "執行日誌"
+   },
+   "loginBrowseWithoutLogin": {
+      "description": "暫不登入按鈕",
+      "message": "暫不登入，先瀏覽"
+   },
+   "loginEmail": {
+      "description": "電子郵件標籤",
+      "message": "電子郵件"
+   },
+   "loginFailed": {
+      "description": "登入失敗訊息",
+      "message": "登入失敗"
+   },
+   "loginGoToRegister": {
+      "description": "跳轉註冊按鈕",
+      "message": "註冊帳號"
+   },
+   "loginInvalidEmail": {
+      "description": "電子郵件無效訊息",
+      "message": "電子郵件格式無效"
+   },
+   "loginLoggingIn": {
+      "description": "登入中狀態",
+      "message": "正在登入..."
+   },
+   "loginLoginBtn": {
+      "description": "登入按鈕",
+      "message": "登入"
+   },
+   "loginNoAccount": {
+      "description": "沒有帳號提示",
+      "message": "還沒有帳號？"
+   },
+   "loginPassword": {
+      "description": "密碼標籤",
+      "message": "密碼"
+   },
+   "loginPasswordTooShort": {
+      "description": "密碼太短訊息",
+      "message": "密碼至少需要6個字元"
+   },
+   "loginPleaseLoginFirst": {
+      "description": "需要登入提示",
+      "message": "請先登入以使用此功能"
+   },
+   "loginRegisterBtn": {
+      "description": "註冊按鈕",
+      "message": "註冊"
+   },
+   "loginRegisterFailed": {
+      "description": "註冊失敗訊息",
+      "message": "註冊失敗"
+   },
+   "loginRegisterSuccess": {
+      "description": "註冊成功訊息",
+      "message": "註冊成功，請登入"
+   },
+   "loginRegistering": {
+      "description": "註冊中狀態",
+      "message": "正在註冊..."
+   },
+   "loginSubtitle": {
+      "description": "登入副標題",
+      "message": "請登入以繼續使用"
+   },
+   "loginSuccess": {
+      "description": "登入成功訊息",
+      "message": "登入成功"
+   },
+   "loginTitle": {
+      "description": "登入標題",
+      "message": "帳號登入"
+   },
+   "msgAllCleared": {
+      "description": "已清空訊息",
+      "message": "已清空所有問題"
+   },
+   "msgAllCompleted": {
+      "description": "全部完成訊息",
+      "message": "所有問題已處理完成！"
+   },
+   "msgCannotOpenChatGPT": {
+      "description": "無法開啟ChatGPT錯誤",
+      "message": "無法開啟 ChatGPT"
+   },
+   "msgChatGPTOpenFailed": {
+      "description": "ChatGPT開啟失敗訊息",
+      "message": "開啟ChatGPT失敗"
+   },
+   "msgChatGPTOpened": {
+      "description": "ChatGPT開啟訊息",
+      "message": "ChatGPT已在新分頁開啟"
+   },
+   "msgCompleted": {
+      "description": "完成訊息",
+      "message": "完成"
+   },
+   "msgConfirmClearAll": {
+      "description": "確認清空對話框",
+      "message": "確定要清空所有問題嗎？"
+   },
+   "msgError": {
+      "description": "錯誤標籤",
+      "message": "錯誤"
+   },
+   "msgExecutionPaused": {
+      "description": "執行暫停訊息",
+      "message": "已暫停"
+   },
+   "msgExecutionResumed": {
+      "description": "執行恢復訊息",
+      "message": "已恢復"
+   },
+   "msgExecutionStopped": {
+      "description": "執行停止訊息",
+      "message": "已停止"
+   },
+   "msgFailed": {
+      "description": "失敗訊息",
+      "message": "失敗"
+   },
+   "msgFoundPending": {
+      "description": "找到待處理問題訊息",
+      "message": "找到 $COUNT$ 個待處理問題",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "5"
+         }
+      }
+   },
+   "msgLoadFailed": {
+      "description": "載入失敗訊息",
+      "message": "載入問題失敗"
+   },
+   "msgLoadedQuestions": {
+      "description": "已載入問題訊息",
+      "message": "已載入 $COUNT$ 個問題",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "10"
+         }
+      }
+   },
+   "msgNoFailedQuestions": {
+      "description": "沒有失敗問題訊息",
+      "message": "沒有失敗的問題需要重試"
+   },
+   "msgNoQuestions": {
+      "description": "沒有問題警告",
+      "message": "沒有待處理的問題"
+   },
+   "msgNoResults": {
+      "description": "無結果匯出警告",
+      "message": "沒有資料可匯出"
+   },
+   "msgOpeningChatGPT": {
+      "description": "正在開啟ChatGPT訊息",
+      "message": "正在開啟 ChatGPT..."
+   },
+   "msgPleaseEnterQuestion": {
+      "description": "請輸入問題警告",
+      "message": "請輸入問題"
+   },
+   "msgPleaseStopFirst": {
+      "description": "請先停止警告",
+      "message": "請先停止目前處理"
+   },
+   "msgProcessingFailed": {
+      "description": "處理失敗訊息",
+      "message": "處理失敗"
+   },
+   "msgQuestionsAdded": {
+      "description": "問題已加入成功訊息",
+      "message": "個問題已加入"
+   },
+   "msgReady": {
+      "description": "就緒訊息",
+      "message": "ChatGPT 批次提問助手已就緒"
+   },
+   "msgResetFailed": {
+      "description": "重置失敗問題訊息",
+      "message": "已重置 $COUNT$ 個失敗的問題，點選「開始執行」重試",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "3"
+         }
+      }
+   },
+   "msgResultsExported": {
+      "description": "結果匯出成功訊息",
+      "message": "結果已匯出"
+   },
+   "msgStartingBatch": {
+      "description": "開始批次訊息",
+      "message": "開始批次處理問題..."
+   },
+   "msgStartingFirst": {
+      "description": "開始第一個問題訊息",
+      "message": "開始處理第一個問題"
+   },
+   "msgSubmittedWaiting": {
+      "description": "已提交等待訊息",
+      "message": "已提交問題，等待答案..."
+   },
+   "msgTempChatDisabled": {
+      "description": "停用臨時聊天訊息",
+      "message": "已停用臨時聊天"
+   },
+   "msgTempChatEnabled": {
+      "description": "啟用臨時聊天訊息",
+      "message": "已啟用臨時聊天"
+   },
+   "msgWaitingNext": {
+      "description": "等待下一個訊息",
+      "message": "等待3秒後處理下一個問題..."
+   },
+   "msgWaitingPage": {
+      "description": "等待頁面訊息",
+      "message": "等待ChatGPT頁面完全載入（如需要會自動重新整理頁面）..."
+   },
+   "msgWebSearchDisabled": {
+      "description": "停用聯網搜尋訊息",
+      "message": "已停用聯網搜尋"
+   },
+   "msgWebSearchEnabled": {
+      "description": "啟用聯網搜尋訊息",
+      "message": "已啟用聯網搜尋"
+   },
+   "progressCompleted": {
+      "description": "進度狀態:完成",
+      "message": "全部完成"
+   },
+   "progressPaused": {
+      "description": "進度狀態:已暫停",
+      "message": "已暫停"
+   },
+   "progressProcessing": {
+      "description": "進度狀態:處理中",
+      "message": "正在處理第 {current}/{total} 個問題"
+   },
+   "progressReady": {
+      "description": "進度狀態:就緒",
+      "message": "就緒"
+   },
+   "progressRunning": {
+      "description": "進度狀態:執行中",
+      "message": "執行中..."
+   },
+   "questionsAddToStart": {
+      "description": "空狀態提示",
+      "message": "在上方輸入框加入問題開始使用"
+   },
+   "questionsAnswer": {
+      "description": "答案標籤",
+      "message": "答案"
+   },
+   "questionsClearBtn": {
+      "description": "清空清單按鈕",
+      "message": "清空清單"
+   },
+   "questionsErrorInfo": {
+      "description": "錯誤資訊標籤",
+      "message": "錯誤資訊"
+   },
+   "questionsExportBtn": {
+      "description": "匯出按鈕",
+      "message": "匯出結果 (JSON)"
+   },
+   "questionsNoAnswer": {
+      "description": "無答案佔位符",
+      "message": "暫無答案"
+   },
+   "questionsNoQuestions": {
+      "description": "空狀態訊息",
+      "message": "暫無問題"
+   },
+   "questionsQuestion": {
+      "description": "問題標籤",
+      "message": "問題"
+   },
+   "questionsSources": {
+      "description": "來源標籤",
+      "message": "來源"
+   },
+   "questionsTitle": {
+      "description": "問題清單標題",
+      "message": "問題清單"
+   },
+   "questionsUnknownError": {
+      "description": "未知錯誤訊息",
+      "message": "未知錯誤"
+   },
+   "registerBackToLogin": {
+      "description": "返回登入按鈕",
+      "message": "返回登入"
+   },
+   "registerGoToLogin": {
+      "description": "跳轉登入按鈕",
+      "message": "立即登入"
+   },
+   "registerHasAccount": {
+      "description": "已有帳號提示",
+      "message": "已有帳號？"
+   },
+   "registerPasswordConfirm": {
+      "description": "確認密碼標籤",
+      "message": "確認密碼"
+   },
+   "registerPasswordMismatch": {
+      "description": "密碼不一致提示",
+      "message": "兩次輸入的密碼不一致"
+   },
+   "registerSubtitle": {
+      "description": "註冊副標題",
+      "message": "註冊以開始使用"
+   },
+   "registerTitle": {
+      "description": "註冊標題",
+      "message": "建立帳號"
+   },
+   "statsCompleted": {
+      "description": "已完成標籤",
+      "message": "已完成"
+   },
+   "statsFailed": {
+      "description": "失敗標籤",
+      "message": "失敗"
+   },
+   "statsSuccess": {
+      "description": "成功標籤",
+      "message": "成功"
+   },
+   "statsTotal": {
+      "description": "總數標籤",
+      "message": "總數"
+   },
+   "statusCompleted": {
+      "description": "已完成狀態",
+      "message": "已完成"
+   },
+   "statusFailed": {
+      "description": "失敗狀態",
+      "message": "失敗"
+   },
+   "statusPending": {
+      "description": "待處理狀態",
+      "message": "待處理"
+   },
+   "statusProcessing": {
+      "description": "處理中狀態",
+      "message": "處理中"
+   },
+   "title": {
+      "description": "頁面標題",
+      "message": "ChatGPT 批次提問助手"
+   }
+}

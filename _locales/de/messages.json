@@ -1,0 +1,460 @@
+{
+   "controlPauseBtn": {
+      "description": "Pause button",
+      "message": "Pause"
+   },
+   "controlResumeBtn": {
+      "description": "Resume button",
+      "message": "Fortsetzen"
+   },
+   "controlRetryBtn": {
+      "description": "Retry failed questions button",
+      "message": "Fehlgeschlagene Fragen wiederholen"
+   },
+   "controlStartBtn": {
+      "description": "Start button",
+      "message": "Starten"
+   },
+   "controlStopBtn": {
+      "description": "Stop button",
+      "message": "Stoppen"
+   },
+   "controlTitle": {
+      "description": "Control section title",
+      "message": "Ausführungssteuerung"
+   },
+   "controlUseTempChat": {
+      "description": "Use temporary chat option",
+      "message": "Temporären Chat verwenden"
+   },
+   "controlUseTempChatHint": {
+      "description": "Temporary chat hint text",
+      "message": "Temporärer Chat speichert keinen Verlauf"
+   },
+   "controlUseWebSearch": {
+      "description": "Web search option",
+      "message": "Websuche verwenden"
+   },
+   "controlUseWebSearchHint": {
+      "description": "Web search hint text",
+      "message": "Aktiviert automatisch Websuche"
+   },
+   "extDescription": {
+      "description": "Extension description",
+      "message": "Massenfragen an ChatGPT mit JSON-Export. Websuche, Zitate, automatisierte Aufgaben für SEO/GEO-Inhaltserstellung"
+   },
+   "extName": {
+      "description": "Extension name",
+      "message": "ChatGPT Massen-Q&A-Generator"
+   },
+   "headerGreeting": {
+      "description": "User greeting",
+      "message": "Hallo"
+   },
+   "headerGuestMode": {
+      "description": "Guest mode message",
+      "message": "Sie sind im Gastmodus. Melden Sie sich an, um alle Funktionen zu nutzen."
+   },
+   "headerLoggedInAs": {
+      "description": "Logged in user label",
+      "message": "Angemeldet als"
+   },
+   "headerLogin": {
+      "description": "Login button",
+      "message": "Anmelden"
+   },
+   "headerLogout": {
+      "description": "Logout button",
+      "message": "Abmelden"
+   },
+   "headerOpenChatGPT": {
+      "description": "Open ChatGPT button",
+      "message": "ChatGPT öffnen"
+   },
+   "headerRegister": {
+      "description": "Register button",
+      "message": "Registrieren"
+   },
+   "headerTitle": {
+      "description": "Header title",
+      "message": "ChatGPT Massenfragen-Assistent"
+   },
+   "inputAddBtn": {
+      "description": "Add to task button",
+      "message": "Zur Aufgabe hinzufügen"
+   },
+   "inputClearBtn": {
+      "description": "Clear input button",
+      "message": "Eingabe löschen"
+   },
+   "inputPlaceholder": {
+      "description": "Textarea placeholder",
+      "message": "Geben Sie eine Frage pro Zeile ein, Masseneingabe unterstützt..."
+   },
+   "inputTitle": {
+      "description": "Input section title",
+      "message": "Frageneingabe"
+   },
+   "logTitle": {
+      "description": "Log section title",
+      "message": "Ausführungsprotokoll"
+   },
+   "loginBrowseWithoutLogin": {
+      "description": "Browse without login button",
+      "message": "Ohne Anmeldung durchsuchen"
+   },
+   "loginEmail": {
+      "description": "Email label",
+      "message": "E-Mail"
+   },
+   "loginFailed": {
+      "description": "Login failed message",
+      "message": "Anmeldung fehlgeschlagen"
+   },
+   "loginGoToRegister": {
+      "description": "Go to register button",
+      "message": "Registrieren"
+   },
+   "loginInvalidEmail": {
+      "description": "Invalid email message",
+      "message": "Ungültige E-Mail"
+   },
+   "loginLoggingIn": {
+      "description": "Logging in status",
+      "message": "Anmeldung läuft..."
+   },
+   "loginLoginBtn": {
+      "description": "Login button",
+      "message": "Anmelden"
+   },
+   "loginNoAccount": {
+      "description": "No account prompt",
+      "message": "Noch kein Konto?"
+   },
+   "loginPassword": {
+      "description": "Password label",
+      "message": "Passwort"
+   },
+   "loginPasswordTooShort": {
+      "description": "Password too short message",
+      "message": "Passwort muss mindestens 6 Zeichen lang sein"
+   },
+   "loginPleaseLoginFirst": {
+      "description": "Login required message",
+      "message": "Bitte melden Sie sich an, um diese Funktion zu nutzen"
+   },
+   "loginRegisterBtn": {
+      "description": "Register button",
+      "message": "Registrieren"
+   },
+   "loginRegisterFailed": {
+      "description": "Register failed message",
+      "message": "Registrierung fehlgeschlagen"
+   },
+   "loginRegisterSuccess": {
+      "description": "Register success message",
+      "message": "Registrierung erfolgreich, bitte melden Sie sich an"
+   },
+   "loginRegistering": {
+      "description": "Registering status",
+      "message": "Registrierung läuft..."
+   },
+   "loginSubtitle": {
+      "description": "Login subtitle",
+      "message": "Bitte melden Sie sich an, um fortzufahren"
+   },
+   "loginSuccess": {
+      "description": "Login success message",
+      "message": "Anmeldung erfolgreich"
+   },
+   "loginTitle": {
+      "description": "Login title",
+      "message": "Kontoanmeldung"
+   },
+   "msgAllCleared": {
+      "description": "All cleared message",
+      "message": "Alle Fragen gelöscht"
+   },
+   "msgAllCompleted": {
+      "description": "All completed message",
+      "message": "Alle Fragen abgeschlossen!"
+   },
+   "msgCannotOpenChatGPT": {
+      "description": "Cannot open ChatGPT error",
+      "message": "ChatGPT kann nicht geöffnet werden"
+   },
+   "msgChatGPTOpenFailed": {
+      "description": "ChatGPT open failed message",
+      "message": "ChatGPT konnte nicht geöffnet werden"
+   },
+   "msgChatGPTOpened": {
+      "description": "ChatGPT opened message",
+      "message": "ChatGPT in neuem Tab geöffnet"
+   },
+   "msgCompleted": {
+      "description": "Completed message",
+      "message": "Abgeschlossen"
+   },
+   "msgConfirmClearAll": {
+      "description": "Confirm clear all dialog",
+      "message": "Möchten Sie wirklich alle Fragen löschen?"
+   },
+   "msgError": {
+      "description": "Error label",
+      "message": "Fehler"
+   },
+   "msgExecutionPaused": {
+      "description": "Execution paused message",
+      "message": "Pausiert"
+   },
+   "msgExecutionResumed": {
+      "description": "Execution resumed message",
+      "message": "Fortgesetzt"
+   },
+   "msgExecutionStopped": {
+      "description": "Execution stopped message",
+      "message": "Gestoppt"
+   },
+   "msgFailed": {
+      "description": "Failed message",
+      "message": "Fehlgeschlagen"
+   },
+   "msgFoundPending": {
+      "description": "Found pending questions message",
+      "message": "$COUNT$ ausstehende Fragen gefunden",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "5"
+         }
+      }
+   },
+   "msgLoadFailed": {
+      "description": "Load failed message",
+      "message": "Fragen konnten nicht geladen werden"
+   },
+   "msgLoadedQuestions": {
+      "description": "Loaded questions message",
+      "message": "$COUNT$ Fragen geladen",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "10"
+         }
+      }
+   },
+   "msgNoFailedQuestions": {
+      "description": "No failed questions message",
+      "message": "Keine fehlgeschlagenen Fragen zum Wiederholen"
+   },
+   "msgNoQuestions": {
+      "description": "No questions warning",
+      "message": "Keine Fragen zu verarbeiten"
+   },
+   "msgNoResults": {
+      "description": "No results to export warning",
+      "message": "Keine Daten zum Exportieren"
+   },
+   "msgOpeningChatGPT": {
+      "description": "Opening ChatGPT message",
+      "message": "ChatGPT wird geöffnet..."
+   },
+   "msgPleaseEnterQuestion": {
+      "description": "Please enter question warning",
+      "message": "Bitte geben Sie eine Frage ein"
+   },
+   "msgPleaseStopFirst": {
+      "description": "Please stop first warning",
+      "message": "Bitte stoppen Sie zuerst die Verarbeitung"
+   },
+   "msgProcessingFailed": {
+      "description": "Processing failed message",
+      "message": "Verarbeitung fehlgeschlagen"
+   },
+   "msgQuestionsAdded": {
+      "description": "Questions added success message",
+      "message": "Fragen hinzugefügt"
+   },
+   "msgReady": {
+      "description": "Ready message",
+      "message": "ChatGPT Massenfragen-Assistent bereit"
+   },
+   "msgResetFailed": {
+      "description": "Reset failed questions message",
+      "message": "$COUNT$ fehlgeschlagene Fragen zurückgesetzt, klicken Sie auf \"Starten\" zum Wiederholen",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "3"
+         }
+      }
+   },
+   "msgResultsExported": {
+      "description": "Results exported success message",
+      "message": "Ergebnisse exportiert"
+   },
+   "msgStartingBatch": {
+      "description": "Starting batch message",
+      "message": "Stapelverarbeitung wird gestartet..."
+   },
+   "msgStartingFirst": {
+      "description": "Starting first question message",
+      "message": "Erste Frage wird gestartet"
+   },
+   "msgSubmittedWaiting": {
+      "description": "Submitted waiting message",
+      "message": "Frage übermittelt, warte auf Antwort..."
+   },
+   "msgTempChatDisabled": {
+      "description": "Temporary chat disabled message",
+      "message": "Temporärer Chat deaktiviert"
+   },
+   "msgTempChatEnabled": {
+      "description": "Temporary chat enabled message",
+      "message": "Temporärer Chat aktiviert"
+   },
+   "msgWaitingNext": {
+      "description": "Waiting next message",
+      "message": "Warte 3 Sekunden vor der nächsten Frage..."
+   },
+   "msgWaitingPage": {
+      "description": "Waiting for page message",
+      "message": "Warte auf ChatGPT-Seite (wird bei Bedarf automatisch aktualisiert)..."
+   },
+   "msgWebSearchDisabled": {
+      "description": "Web search disabled message",
+      "message": "Websuche deaktiviert"
+   },
+   "msgWebSearchEnabled": {
+      "description": "Web search enabled message",
+      "message": "Websuche aktiviert"
+   },
+   "progressCompleted": {
+      "description": "Progress status: completed",
+      "message": "Alles abgeschlossen"
+   },
+   "progressPaused": {
+      "description": "Progress status: paused",
+      "message": "Pausiert"
+   },
+   "progressProcessing": {
+      "description": "Progress status: processing",
+      "message": "Verarbeite {current}/{total}"
+   },
+   "progressReady": {
+      "description": "Progress status: ready",
+      "message": "Bereit"
+   },
+   "progressRunning": {
+      "description": "Progress status: running",
+      "message": "Läuft..."
+   },
+   "questionsAddToStart": {
+      "description": "Empty state hint",
+      "message": "Fügen Sie Fragen im Eingabefeld oben hinzu, um zu beginnen"
+   },
+   "questionsAnswer": {
+      "description": "Answer label",
+      "message": "Antwort"
+   },
+   "questionsClearBtn": {
+      "description": "Clear all button",
+      "message": "Alle löschen"
+   },
+   "questionsErrorInfo": {
+      "description": "Error info label",
+      "message": "Fehlerinformation"
+   },
+   "questionsExportBtn": {
+      "description": "Export button",
+      "message": "Ergebnisse exportieren (JSON)"
+   },
+   "questionsNoAnswer": {
+      "description": "No answer placeholder",
+      "message": "Keine Antwort"
+   },
+   "questionsNoQuestions": {
+      "description": "Empty state message",
+      "message": "Noch keine Fragen"
+   },
+   "questionsQuestion": {
+      "description": "Question label",
+      "message": "Frage"
+   },
+   "questionsSources": {
+      "description": "Sources label",
+      "message": "Quellen"
+   },
+   "questionsTitle": {
+      "description": "Questions section title",
+      "message": "Fragenliste"
+   },
+   "questionsUnknownError": {
+      "description": "Unknown error message",
+      "message": "Unbekannter Fehler"
+   },
+   "registerBackToLogin": {
+      "description": "Back to login button",
+      "message": "Zurück zur Anmeldung"
+   },
+   "registerGoToLogin": {
+      "description": "Go to login button",
+      "message": "Anmelden"
+   },
+   "registerHasAccount": {
+      "description": "Has account prompt",
+      "message": "Bereits ein Konto?"
+   },
+   "registerPasswordConfirm": {
+      "description": "Confirm password label",
+      "message": "Passwort bestätigen"
+   },
+   "registerPasswordMismatch": {
+      "description": "Password mismatch message",
+      "message": "Passwörter stimmen nicht überein"
+   },
+   "registerSubtitle": {
+      "description": "Register subtitle",
+      "message": "Registrieren Sie sich, um loszulegen"
+   },
+   "registerTitle": {
+      "description": "Register title",
+      "message": "Konto erstellen"
+   },
+   "statsCompleted": {
+      "description": "Completed count label",
+      "message": "Abgeschlossen"
+   },
+   "statsFailed": {
+      "description": "Failed count label",
+      "message": "Fehlgeschlagen"
+   },
+   "statsSuccess": {
+      "description": "Success count label",
+      "message": "Erfolgreich"
+   },
+   "statsTotal": {
+      "description": "Total count label",
+      "message": "Gesamt"
+   },
+   "statusCompleted": {
+      "description": "Completed status",
+      "message": "Abgeschlossen"
+   },
+   "statusFailed": {
+      "description": "Failed status",
+      "message": "Fehlgeschlagen"
+   },
+   "statusPending": {
+      "description": "Pending status",
+      "message": "Ausstehend"
+   },
+   "statusProcessing": {
+      "description": "Processing status",
+      "message": "Wird verarbeitet"
+   },
+   "title": {
+      "description": "Page title",
+      "message": "ChatGPT Massenfragen-Assistent"
+   }
+}

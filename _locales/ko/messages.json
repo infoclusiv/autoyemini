@@ -1,0 +1,460 @@
+{
+   "controlPauseBtn": {
+      "description": "Pause button",
+      "message": "일시 정지"
+   },
+   "controlResumeBtn": {
+      "description": "Resume button",
+      "message": "재개"
+   },
+   "controlRetryBtn": {
+      "description": "Retry failed questions button",
+      "message": "실패한 질문 재시도"
+   },
+   "controlStartBtn": {
+      "description": "Start button",
+      "message": "시작"
+   },
+   "controlStopBtn": {
+      "description": "Stop button",
+      "message": "중지"
+   },
+   "controlTitle": {
+      "description": "Control section title",
+      "message": "실행 제어"
+   },
+   "controlUseTempChat": {
+      "description": "Use temporary chat option",
+      "message": "임시 채팅 사용"
+   },
+   "controlUseTempChatHint": {
+      "description": "Temporary chat hint text",
+      "message": "임시 채팅은 기록을 저장하지 않습니다"
+   },
+   "controlUseWebSearch": {
+      "description": "Web search option",
+      "message": "웹 검색 사용"
+   },
+   "controlUseWebSearchHint": {
+      "description": "Web search hint text",
+      "message": "활성화 시 자동으로 웹 검색을 활성화합니다"
+   },
+   "extDescription": {
+      "description": "Extension description",
+      "message": "ChatGPT에 대량 질문하고 JSON 내보내기. 웹 검색, 인용, 자동 작업 지원. SEO/GEO 콘텐츠 제작에 최적"
+   },
+   "extName": {
+      "description": "Extension name",
+      "message": "ChatGPT 대량 Q&A 생성기"
+   },
+   "headerGreeting": {
+      "description": "User greeting",
+      "message": "안녕하세요"
+   },
+   "headerGuestMode": {
+      "description": "Guest mode message",
+      "message": "게스트 모드로 탐색 중입니다. 모든 기능을 사용하려면 로그인하세요."
+   },
+   "headerLoggedInAs": {
+      "description": "Logged in user label",
+      "message": "로그인됨"
+   },
+   "headerLogin": {
+      "description": "Login button",
+      "message": "로그인"
+   },
+   "headerLogout": {
+      "description": "Logout button",
+      "message": "로그아웃"
+   },
+   "headerOpenChatGPT": {
+      "description": "Open ChatGPT button",
+      "message": "ChatGPT 열기"
+   },
+   "headerRegister": {
+      "description": "Register button",
+      "message": "회원가입"
+   },
+   "headerTitle": {
+      "description": "Header title",
+      "message": "ChatGPT 대량 질문 도우미"
+   },
+   "inputAddBtn": {
+      "description": "Add to task button",
+      "message": "작업에 추가"
+   },
+   "inputClearBtn": {
+      "description": "Clear input button",
+      "message": "입력 지우기"
+   },
+   "inputPlaceholder": {
+      "description": "Textarea placeholder",
+      "message": "한 줄에 하나의 질문을 입력하세요, 대량 입력 지원..."
+   },
+   "inputTitle": {
+      "description": "Input section title",
+      "message": "질문 입력"
+   },
+   "logTitle": {
+      "description": "Log section title",
+      "message": "실행 로그"
+   },
+   "loginBrowseWithoutLogin": {
+      "description": "Browse without login button",
+      "message": "로그인 없이 둘러보기"
+   },
+   "loginEmail": {
+      "description": "Email label",
+      "message": "이메일"
+   },
+   "loginFailed": {
+      "description": "Login failed message",
+      "message": "로그인 실패"
+   },
+   "loginGoToRegister": {
+      "description": "Go to register button",
+      "message": "회원가입"
+   },
+   "loginInvalidEmail": {
+      "description": "Invalid email message",
+      "message": "잘못된 이메일"
+   },
+   "loginLoggingIn": {
+      "description": "Logging in status",
+      "message": "로그인 중..."
+   },
+   "loginLoginBtn": {
+      "description": "Login button",
+      "message": "로그인"
+   },
+   "loginNoAccount": {
+      "description": "No account prompt",
+      "message": "계정이 없으신가요?"
+   },
+   "loginPassword": {
+      "description": "Password label",
+      "message": "비밀번호"
+   },
+   "loginPasswordTooShort": {
+      "description": "Password too short message",
+      "message": "비밀번호는 최소 6자 이상이어야 합니다"
+   },
+   "loginPleaseLoginFirst": {
+      "description": "Login required message",
+      "message": "이 기능을 사용하려면 로그인하세요"
+   },
+   "loginRegisterBtn": {
+      "description": "Register button",
+      "message": "회원가입"
+   },
+   "loginRegisterFailed": {
+      "description": "Register failed message",
+      "message": "회원가입 실패"
+   },
+   "loginRegisterSuccess": {
+      "description": "Register success message",
+      "message": "회원가입 성공, 로그인하세요"
+   },
+   "loginRegistering": {
+      "description": "Registering status",
+      "message": "회원가입 중..."
+   },
+   "loginSubtitle": {
+      "description": "Login subtitle",
+      "message": "계속하려면 로그인하세요"
+   },
+   "loginSuccess": {
+      "description": "Login success message",
+      "message": "로그인 성공"
+   },
+   "loginTitle": {
+      "description": "Login title",
+      "message": "계정 로그인"
+   },
+   "msgAllCleared": {
+      "description": "All cleared message",
+      "message": "모든 질문이 지워졌습니다"
+   },
+   "msgAllCompleted": {
+      "description": "All completed message",
+      "message": "모든 질문이 완료되었습니다!"
+   },
+   "msgCannotOpenChatGPT": {
+      "description": "Cannot open ChatGPT error",
+      "message": "ChatGPT를 열 수 없습니다"
+   },
+   "msgChatGPTOpenFailed": {
+      "description": "ChatGPT open failed message",
+      "message": "ChatGPT를 열지 못했습니다"
+   },
+   "msgChatGPTOpened": {
+      "description": "ChatGPT opened message",
+      "message": "새 탭에서 ChatGPT를 열었습니다"
+   },
+   "msgCompleted": {
+      "description": "Completed message",
+      "message": "완료"
+   },
+   "msgConfirmClearAll": {
+      "description": "Confirm clear all dialog",
+      "message": "모든 질문을 지우시겠습니까?"
+   },
+   "msgError": {
+      "description": "Error label",
+      "message": "오류"
+   },
+   "msgExecutionPaused": {
+      "description": "Execution paused message",
+      "message": "일시 정지됨"
+   },
+   "msgExecutionResumed": {
+      "description": "Execution resumed message",
+      "message": "재개됨"
+   },
+   "msgExecutionStopped": {
+      "description": "Execution stopped message",
+      "message": "중지됨"
+   },
+   "msgFailed": {
+      "description": "Failed message",
+      "message": "실패"
+   },
+   "msgFoundPending": {
+      "description": "Found pending questions message",
+      "message": "$COUNT$개의 대기 중인 질문을 찾았습니다",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "5"
+         }
+      }
+   },
+   "msgLoadFailed": {
+      "description": "Load failed message",
+      "message": "질문을 불러오지 못했습니다"
+   },
+   "msgLoadedQuestions": {
+      "description": "Loaded questions message",
+      "message": "$COUNT$개의 질문을 불러왔습니다",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "10"
+         }
+      }
+   },
+   "msgNoFailedQuestions": {
+      "description": "No failed questions message",
+      "message": "재시도할 실패한 질문이 없습니다"
+   },
+   "msgNoQuestions": {
+      "description": "No questions warning",
+      "message": "처리할 질문이 없습니다"
+   },
+   "msgNoResults": {
+      "description": "No results to export warning",
+      "message": "내보낼 데이터가 없습니다"
+   },
+   "msgOpeningChatGPT": {
+      "description": "Opening ChatGPT message",
+      "message": "ChatGPT를 여는 중..."
+   },
+   "msgPleaseEnterQuestion": {
+      "description": "Please enter question warning",
+      "message": "질문을 입력하세요"
+   },
+   "msgPleaseStopFirst": {
+      "description": "Please stop first warning",
+      "message": "먼저 처리를 중지하세요"
+   },
+   "msgProcessingFailed": {
+      "description": "Processing failed message",
+      "message": "처리 실패"
+   },
+   "msgQuestionsAdded": {
+      "description": "Questions added success message",
+      "message": "개의 질문이 추가되었습니다"
+   },
+   "msgReady": {
+      "description": "Ready message",
+      "message": "ChatGPT 대량 질문 도우미 준비 완료"
+   },
+   "msgResetFailed": {
+      "description": "Reset failed questions message",
+      "message": "$COUNT$개의 실패한 질문을 재설정했습니다. \"시작\"을 클릭하여 재시도하세요",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "3"
+         }
+      }
+   },
+   "msgResultsExported": {
+      "description": "Results exported success message",
+      "message": "결과를 내보냈습니다"
+   },
+   "msgStartingBatch": {
+      "description": "Starting batch message",
+      "message": "대량 처리를 시작하는 중..."
+   },
+   "msgStartingFirst": {
+      "description": "Starting first question message",
+      "message": "첫 번째 질문 시작 중"
+   },
+   "msgSubmittedWaiting": {
+      "description": "Submitted waiting message",
+      "message": "질문을 제출했습니다. 답변을 기다리는 중..."
+   },
+   "msgTempChatDisabled": {
+      "description": "Temporary chat disabled message",
+      "message": "임시 채팅이 비활성화되었습니다"
+   },
+   "msgTempChatEnabled": {
+      "description": "Temporary chat enabled message",
+      "message": "임시 채팅이 활성화되었습니다"
+   },
+   "msgWaitingNext": {
+      "description": "Waiting next message",
+      "message": "다음 질문까지 3초 대기 중..."
+   },
+   "msgWaitingPage": {
+      "description": "Waiting for page message",
+      "message": "ChatGPT 페이지 로드 대기 중 (필요시 자동으로 새로고침됩니다)..."
+   },
+   "msgWebSearchDisabled": {
+      "description": "Web search disabled message",
+      "message": "웹 검색이 비활성화되었습니다"
+   },
+   "msgWebSearchEnabled": {
+      "description": "Web search enabled message",
+      "message": "웹 검색이 활성화되었습니다"
+   },
+   "progressCompleted": {
+      "description": "Progress status: completed",
+      "message": "모두 완료"
+   },
+   "progressPaused": {
+      "description": "Progress status: paused",
+      "message": "일시 정지됨"
+   },
+   "progressProcessing": {
+      "description": "Progress status: processing",
+      "message": "처리 중 {current}/{total}"
+   },
+   "progressReady": {
+      "description": "Progress status: ready",
+      "message": "준비"
+   },
+   "progressRunning": {
+      "description": "Progress status: running",
+      "message": "실행 중..."
+   },
+   "questionsAddToStart": {
+      "description": "Empty state hint",
+      "message": "위의 입력 상자에 질문을 추가하여 시작하세요"
+   },
+   "questionsAnswer": {
+      "description": "Answer label",
+      "message": "답변"
+   },
+   "questionsClearBtn": {
+      "description": "Clear all button",
+      "message": "모두 지우기"
+   },
+   "questionsErrorInfo": {
+      "description": "Error info label",
+      "message": "오류 정보"
+   },
+   "questionsExportBtn": {
+      "description": "Export button",
+      "message": "결과 내보내기 (JSON)"
+   },
+   "questionsNoAnswer": {
+      "description": "No answer placeholder",
+      "message": "답변 없음"
+   },
+   "questionsNoQuestions": {
+      "description": "Empty state message",
+      "message": "아직 질문이 없습니다"
+   },
+   "questionsQuestion": {
+      "description": "Question label",
+      "message": "질문"
+   },
+   "questionsSources": {
+      "description": "Sources label",
+      "message": "출처"
+   },
+   "questionsTitle": {
+      "description": "Questions section title",
+      "message": "질문 목록"
+   },
+   "questionsUnknownError": {
+      "description": "Unknown error message",
+      "message": "알 수 없는 오류"
+   },
+   "registerBackToLogin": {
+      "description": "Back to login button",
+      "message": "로그인으로 돌아가기"
+   },
+   "registerGoToLogin": {
+      "description": "Go to login button",
+      "message": "로그인"
+   },
+   "registerHasAccount": {
+      "description": "Has account prompt",
+      "message": "이미 계정이 있으신가요?"
+   },
+   "registerPasswordConfirm": {
+      "description": "Confirm password label",
+      "message": "비밀번호 확인"
+   },
+   "registerPasswordMismatch": {
+      "description": "Password mismatch message",
+      "message": "비밀번호가 일치하지 않습니다"
+   },
+   "registerSubtitle": {
+      "description": "Register subtitle",
+      "message": "가입하여 시작하세요"
+   },
+   "registerTitle": {
+      "description": "Register title",
+      "message": "계정 만들기"
+   },
+   "statsCompleted": {
+      "description": "Completed count label",
+      "message": "완료"
+   },
+   "statsFailed": {
+      "description": "Failed count label",
+      "message": "실패"
+   },
+   "statsSuccess": {
+      "description": "Success count label",
+      "message": "성공"
+   },
+   "statsTotal": {
+      "description": "Total count label",
+      "message": "전체"
+   },
+   "statusCompleted": {
+      "description": "Completed status",
+      "message": "완료됨"
+   },
+   "statusFailed": {
+      "description": "Failed status",
+      "message": "실패함"
+   },
+   "statusPending": {
+      "description": "Pending status",
+      "message": "대기 중"
+   },
+   "statusProcessing": {
+      "description": "Processing status",
+      "message": "처리 중"
+   },
+   "title": {
+      "description": "Page title",
+      "message": "ChatGPT 대량 질문 도우미"
+   }
+}

@@ -1,0 +1,460 @@
+{
+   "controlPauseBtn": {
+      "description": "暂停按钮",
+      "message": "暂停"
+   },
+   "controlResumeBtn": {
+      "description": "恢复按钮",
+      "message": "恢复"
+   },
+   "controlRetryBtn": {
+      "description": "重试失败问题按钮",
+      "message": "重试失败问题"
+   },
+   "controlStartBtn": {
+      "description": "开始按钮",
+      "message": "开始执行"
+   },
+   "controlStopBtn": {
+      "description": "停止按钮",
+      "message": "停止"
+   },
+   "controlTitle": {
+      "description": "控制区标题",
+      "message": "执行控制"
+   },
+   "controlUseTempChat": {
+      "description": "使用临时聊天选项",
+      "message": "使用临时聊天"
+   },
+   "controlUseTempChatHint": {
+      "description": "临时聊天提示文字",
+      "message": "临时聊天不会保存历史记录"
+   },
+   "controlUseWebSearch": {
+      "description": "联网搜索选项",
+      "message": "使用联网搜索"
+   },
+   "controlUseWebSearchHint": {
+      "description": "联网搜索提示文字",
+      "message": "启用后会自动开启网页搜索功能"
+   },
+   "extDescription": {
+      "description": "插件描述",
+      "message": "批量自动向ChatGPT提问并导出JSON结果。支持网页搜索、引用追踪。适用于SEO/GEO内容创作"
+   },
+   "extName": {
+      "description": "插件名称",
+      "message": "ChatGPT 批量自动问答生成器"
+   },
+   "headerGreeting": {
+      "description": "用户问候语",
+      "message": "您好"
+   },
+   "headerGuestMode": {
+      "description": "访客模式提示",
+      "message": "您正在以访客模式浏览，登录后可使用全部功能。"
+   },
+   "headerLoggedInAs": {
+      "description": "已登录用户标签",
+      "message": "当前用户"
+   },
+   "headerLogin": {
+      "description": "登录按钮",
+      "message": "登录"
+   },
+   "headerLogout": {
+      "description": "登出按钮",
+      "message": "登出"
+   },
+   "headerOpenChatGPT": {
+      "description": "打开ChatGPT按钮",
+      "message": "打开 ChatGPT"
+   },
+   "headerRegister": {
+      "description": "注册按钮",
+      "message": "注册"
+   },
+   "headerTitle": {
+      "description": "页眉标题",
+      "message": "ChatGPT 批量提问助手"
+   },
+   "inputAddBtn": {
+      "description": "添加到任务按钮",
+      "message": "添加到任务"
+   },
+   "inputClearBtn": {
+      "description": "清空输入按钮",
+      "message": "清空输入"
+   },
+   "inputPlaceholder": {
+      "description": "输入框占位符",
+      "message": "每行输入一个问题，支持批量输入..."
+   },
+   "inputTitle": {
+      "description": "输入区标题",
+      "message": "问题录入"
+   },
+   "logTitle": {
+      "description": "日志区标题",
+      "message": "执行日志"
+   },
+   "loginBrowseWithoutLogin": {
+      "description": "暂不登录按钮",
+      "message": "暂不登录，先浏览"
+   },
+   "loginEmail": {
+      "description": "邮箱标签",
+      "message": "邮箱"
+   },
+   "loginFailed": {
+      "description": "登录失败消息",
+      "message": "登录失败"
+   },
+   "loginGoToRegister": {
+      "description": "跳转注册按钮",
+      "message": "注册账号"
+   },
+   "loginInvalidEmail": {
+      "description": "邮箱无效消息",
+      "message": "邮箱格式无效"
+   },
+   "loginLoggingIn": {
+      "description": "登录中状态",
+      "message": "正在登录..."
+   },
+   "loginLoginBtn": {
+      "description": "登录按钮",
+      "message": "登录"
+   },
+   "loginNoAccount": {
+      "description": "没有账号提示",
+      "message": "还没有账号？"
+   },
+   "loginPassword": {
+      "description": "密码标签",
+      "message": "密码"
+   },
+   "loginPasswordTooShort": {
+      "description": "密码太短消息",
+      "message": "密码至少需要6个字符"
+   },
+   "loginPleaseLoginFirst": {
+      "description": "需要登录提示",
+      "message": "请先登录以使用此功能"
+   },
+   "loginRegisterBtn": {
+      "description": "注册按钮",
+      "message": "注册"
+   },
+   "loginRegisterFailed": {
+      "description": "注册失败消息",
+      "message": "注册失败"
+   },
+   "loginRegisterSuccess": {
+      "description": "注册成功消息",
+      "message": "注册成功，请登录"
+   },
+   "loginRegistering": {
+      "description": "注册中状态",
+      "message": "正在注册..."
+   },
+   "loginSubtitle": {
+      "description": "登录副标题",
+      "message": "请登录以继续使用"
+   },
+   "loginSuccess": {
+      "description": "登录成功消息",
+      "message": "登录成功"
+   },
+   "loginTitle": {
+      "description": "登录标题",
+      "message": "账户登录"
+   },
+   "msgAllCleared": {
+      "description": "已清空消息",
+      "message": "已清空所有问题"
+   },
+   "msgAllCompleted": {
+      "description": "全部完成消息",
+      "message": "所有问题已处理完成！"
+   },
+   "msgCannotOpenChatGPT": {
+      "description": "无法打开ChatGPT错误",
+      "message": "无法打开 ChatGPT"
+   },
+   "msgChatGPTOpenFailed": {
+      "description": "ChatGPT打开失败消息",
+      "message": "打开ChatGPT失败"
+   },
+   "msgChatGPTOpened": {
+      "description": "ChatGPT打开消息",
+      "message": "ChatGPT已在新标签页打开"
+   },
+   "msgCompleted": {
+      "description": "完成消息",
+      "message": "完成"
+   },
+   "msgConfirmClearAll": {
+      "description": "确认清空对话框",
+      "message": "确定要清空所有问题吗？"
+   },
+   "msgError": {
+      "description": "错误标签",
+      "message": "错误"
+   },
+   "msgExecutionPaused": {
+      "description": "执行暂停消息",
+      "message": "已暂停"
+   },
+   "msgExecutionResumed": {
+      "description": "执行恢复消息",
+      "message": "已恢复"
+   },
+   "msgExecutionStopped": {
+      "description": "执行停止消息",
+      "message": "已停止"
+   },
+   "msgFailed": {
+      "description": "失败消息",
+      "message": "失败"
+   },
+   "msgFoundPending": {
+      "description": "找到待处理问题消息",
+      "message": "找到 $COUNT$ 个待处理问题",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "5"
+         }
+      }
+   },
+   "msgLoadFailed": {
+      "description": "加载失败消息",
+      "message": "加载问题失败"
+   },
+   "msgLoadedQuestions": {
+      "description": "已加载问题消息",
+      "message": "已加载 $COUNT$ 个问题",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "10"
+         }
+      }
+   },
+   "msgNoFailedQuestions": {
+      "description": "没有失败问题消息",
+      "message": "没有失败的问题需要重试"
+   },
+   "msgNoQuestions": {
+      "description": "没有问题警告",
+      "message": "没有待处理的问题"
+   },
+   "msgNoResults": {
+      "description": "无结果导出警告",
+      "message": "没有数据可导出"
+   },
+   "msgOpeningChatGPT": {
+      "description": "正在打开ChatGPT消息",
+      "message": "正在打开 ChatGPT..."
+   },
+   "msgPleaseEnterQuestion": {
+      "description": "请输入问题警告",
+      "message": "请输入问题"
+   },
+   "msgPleaseStopFirst": {
+      "description": "请先停止警告",
+      "message": "请先停止当前处理"
+   },
+   "msgProcessingFailed": {
+      "description": "处理失败消息",
+      "message": "处理失败"
+   },
+   "msgQuestionsAdded": {
+      "description": "问题已添加成功消息",
+      "message": "个问题已添加"
+   },
+   "msgReady": {
+      "description": "就绪消息",
+      "message": "ChatGPT 批量提问助手已就绪"
+   },
+   "msgResetFailed": {
+      "description": "重置失败问题消息",
+      "message": "已重置 $COUNT$ 个失败的问题，点击'开始执行'重试",
+      "placeholders": {
+         "count": {
+            "content": "$1",
+            "example": "3"
+         }
+      }
+   },
+   "msgResultsExported": {
+      "description": "结果导出成功消息",
+      "message": "结果已导出"
+   },
+   "msgStartingBatch": {
+      "description": "开始批量消息",
+      "message": "开始批量处理问题..."
+   },
+   "msgStartingFirst": {
+      "description": "开始第一个问题消息",
+      "message": "开始处理第一个问题"
+   },
+   "msgSubmittedWaiting": {
+      "description": "已提交等待消息",
+      "message": "已提交问题，等待答案..."
+   },
+   "msgTempChatDisabled": {
+      "description": "禁用临时聊天消息",
+      "message": "已禁用临时聊天"
+   },
+   "msgTempChatEnabled": {
+      "description": "启用临时聊天消息",
+      "message": "已启用临时聊天"
+   },
+   "msgWaitingNext": {
+      "description": "等待下一个消息",
+      "message": "等待3秒后处理下一个问题..."
+   },
+   "msgWaitingPage": {
+      "description": "等待页面消息",
+      "message": "等待ChatGPT页面完全加载（如需要会自动刷新页面）..."
+   },
+   "msgWebSearchDisabled": {
+      "description": "禁用联网搜索消息",
+      "message": "已禁用联网搜索"
+   },
+   "msgWebSearchEnabled": {
+      "description": "启用联网搜索消息",
+      "message": "已启用联网搜索"
+   },
+   "progressCompleted": {
+      "description": "进度状态:完成",
+      "message": "全部完成"
+   },
+   "progressPaused": {
+      "description": "进度状态:已暂停",
+      "message": "已暂停"
+   },
+   "progressProcessing": {
+      "description": "进度状态:处理中",
+      "message": "正在处理第 {current}/{total} 个问题"
+   },
+   "progressReady": {
+      "description": "进度状态:就绪",
+      "message": "就绪"
+   },
+   "progressRunning": {
+      "description": "进度状态:运行中",
+      "message": "运行中..."
+   },
+   "questionsAddToStart": {
+      "description": "空状态提示",
+      "message": "在上方输入框添加问题开始使用"
+   },
+   "questionsAnswer": {
+      "description": "答案标签",
+      "message": "答案"
+   },
+   "questionsClearBtn": {
+      "description": "清空列表按钮",
+      "message": "清空列表"
+   },
+   "questionsErrorInfo": {
+      "description": "错误信息标签",
+      "message": "错误信息"
+   },
+   "questionsExportBtn": {
+      "description": "导出按钮",
+      "message": "导出结果 (JSON)"
+   },
+   "questionsNoAnswer": {
+      "description": "无答案占位符",
+      "message": "暂无答案"
+   },
+   "questionsNoQuestions": {
+      "description": "空状态消息",
+      "message": "暂无问题"
+   },
+   "questionsQuestion": {
+      "description": "问题标签",
+      "message": "问题"
+   },
+   "questionsSources": {
+      "description": "来源标签",
+      "message": "来源"
+   },
+   "questionsTitle": {
+      "description": "问题列表标题",
+      "message": "问题列表"
+   },
+   "questionsUnknownError": {
+      "description": "未知错误消息",
+      "message": "未知错误"
+   },
+   "registerBackToLogin": {
+      "description": "返回登录按钮",
+      "message": "返回登录"
+   },
+   "registerGoToLogin": {
+      "description": "跳转登录按钮",
+      "message": "立即登录"
+   },
+   "registerHasAccount": {
+      "description": "已有账号提示",
+      "message": "已有账号？"
+   },
+   "registerPasswordConfirm": {
+      "description": "确认密码标签",
+      "message": "确认密码"
+   },
+   "registerPasswordMismatch": {
+      "description": "密码不匹配提示",
+      "message": "两次输入的密码不一致"
+   },
+   "registerSubtitle": {
+      "description": "注册副标题",
+      "message": "注册以开始使用"
+   },
+   "registerTitle": {
+      "description": "注册标题",
+      "message": "创建账户"
+   },
+   "statsCompleted": {
+      "description": "已完成标签",
+      "message": "已完成"
+   },
+   "statsFailed": {
+      "description": "失败标签",
+      "message": "失败"
+   },
+   "statsSuccess": {
+      "description": "成功标签",
+      "message": "成功"
+   },
+   "statsTotal": {
+      "description": "总数标签",
+      "message": "总数"
+   },
+   "statusCompleted": {
+      "description": "已完成状态",
+      "message": "已完成"
+   },
+   "statusFailed": {
+      "description": "失败状态",
+      "message": "失败"
+   },
+   "statusPending": {
+      "description": "待处理状态",
+      "message": "待处理"
+   },
+   "statusProcessing": {
+      "description": "处理中状态",
+      "message": "处理中"
+   },
+   "title": {
+      "description": "页面标题",
+      "message": "ChatGPT 批量提问助手"
+   }
+}
