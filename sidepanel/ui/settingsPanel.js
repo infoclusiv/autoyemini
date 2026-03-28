@@ -31,38 +31,50 @@ export class SettingsPanel {
     this.fatigueMaxMinutesInput = fatigueMaxMinutesInput;
   }
 
-  setValues({
-    useTempChat,
-    useWebSearch,
-    keepSameChat,
-    useExtraction,
-    extractionRegex,
-    injectionPlaceholder,
-    humanTyping,
-    randomDelays,
-    biologicalPauses,
-    fatigueCount,
-    fatigueMinMinutes,
-    fatigueMaxMinutes
-  }) {
-    this.useTempChatCheckbox.checked = useTempChat;
-    this.useWebSearchCheckbox.checked = useWebSearch;
-    this.keepSameChatCheckbox.checked = keepSameChat || false;
-    this.useExtractionCheckbox.checked = useExtraction === true;
-    this.extractionRegexInput.value =
-      extractionRegex || globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
-    this.injectionPlaceholderInput.value =
-      injectionPlaceholder ||
-      globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER ||
-      "{{extract}}";
-    this.humanTypingCheckbox.checked = humanTyping !== false;
-    this.randomDelaysCheckbox.checked = randomDelays !== false;
-    this.biologicalPausesCheckbox.checked = biologicalPauses === true;
-    this.fatigueCountInput.value = String(Math.max(1, Number(fatigueCount) || 10));
-    this.fatigueMinMinutesInput.value = String(Math.max(0.5, Number(fatigueMinMinutes) || 0.5));
-    this.fatigueMaxMinutesInput.value = String(
-      Math.max(Number(this.fatigueMinMinutesInput.value), Number(fatigueMaxMinutes) || 1)
-    );
+  setValues(settings) {
+    if (!settings) {
+      return;
+    }
+
+    if (settings.useTempChat !== undefined) {
+      this.useTempChatCheckbox.checked = settings.useTempChat;
+    }
+    if (settings.useWebSearch !== undefined) {
+      this.useWebSearchCheckbox.checked = settings.useWebSearch;
+    }
+    if (settings.keepSameChat !== undefined) {
+      this.keepSameChatCheckbox.checked = settings.keepSameChat;
+    }
+
+    if (settings.useExtraction !== undefined) {
+      this.useExtractionCheckbox.checked = settings.useExtraction;
+    }
+    if (settings.extractionRegex !== undefined) {
+      this.extractionRegexInput.value = settings.extractionRegex;
+    }
+    if (settings.injectionPlaceholder !== undefined) {
+      this.injectionPlaceholderInput.value = settings.injectionPlaceholder;
+    }
+
+    if (settings.humanTyping !== undefined) {
+      this.humanTypingCheckbox.checked = settings.humanTyping;
+    }
+    if (settings.randomDelays !== undefined) {
+      this.randomDelaysCheckbox.checked = settings.randomDelays;
+    }
+    if (settings.biologicalPauses !== undefined) {
+      this.biologicalPausesCheckbox.checked = settings.biologicalPauses;
+    }
+    if (settings.fatigueCount !== undefined) {
+      this.fatigueCountInput.value = String(settings.fatigueCount);
+    }
+    if (settings.fatigueMinMinutes !== undefined) {
+      this.fatigueMinMinutesInput.value = String(settings.fatigueMinMinutes);
+    }
+    if (settings.fatigueMaxMinutes !== undefined) {
+      this.fatigueMaxMinutesInput.value = String(settings.fatigueMaxMinutes);
+    }
+
     this.setExtractionVisibility(this.useExtractionCheckbox.checked);
     this.setBiologicalPauseVisibility(this.biologicalPausesCheckbox.checked);
   }

@@ -177,6 +177,14 @@ function buildAntiBotConfig(settings) {
   };
 }
 
+function patchGeneralSettings(settings) {
+  AppState.patch({
+    useTempChat: settings.useTempChat,
+    useWebSearch: settings.useWebSearch,
+    keepSameChat: settings.keepSameChat
+  });
+}
+
 function patchAntiBotState(settings) {
   AppState.patch({
     humanTyping: settings.humanTyping,
@@ -196,6 +204,15 @@ function patchExtractionState(settings) {
     extractionRegex: extractionSettings.extractionRegex,
     injectionPlaceholder: extractionSettings.injectionPlaceholder
   });
+}
+
+async function persistGeneralSettings(settings) {
+  patchGeneralSettings(settings);
+  await Promise.all([
+    saveSetting(StorageKeys.USE_TEMP_CHAT, settings.useTempChat),
+    saveSetting(StorageKeys.USE_WEB_SEARCH, settings.useWebSearch),
+    saveSetting(StorageKeys.KEEP_SAME_CHAT, settings.keepSameChat)
+  ]);
 }
 
 async function persistAntiBotSettings(settings) {
@@ -758,14 +775,24 @@ async function initialize() {
     deleteButton: elements.deleteTemplateBtn,
     questionsInput,
     addLog,
+    getSettings: () => settingsPanel.getValues(),
     onLoadTemplate: (template) => {
-      if (template.useExtraction !== undefined) {
-        elements.useExtractionCheckbox.checked = template.useExtraction;
-        elements.extractionRegexInput.value =
-          template.extractionRegex || AppConfig.EXTRACTION.DEFAULT_REGEX;
-        elements.injectionPlaceholderInput.value =
-          template.injectionPlaceholder || AppConfig.EXTRACTION.DEFAULT_PLACEHOLDER;
-        void handleExtractionSettingsChange();
+      if (template.settings) {
+        settingsPanel.setValues(template.settings);
+        const resolvedSettings = settingsPanel.getValues();
+        void Promise.all([
+          persistGeneralSettings(resolvedSettings),
+          persistAntiBotSettings(resolvedSettings),
+          persistExtractionSettings(resolvedSettings)
+        ]);
+      } else if (template.useExtraction !== undefined) {
+        const legacySettings = {
+          useExtraction: template.useExtraction,
+          extractionRegex: template.extractionRegex,
+          injectionPlaceholder: template.injectionPlaceholder
+        };
+        settingsPanel.setValues(legacySettings);
+        void persistExtractionSettings(settingsPanel.getValues());
       }
     }
   });

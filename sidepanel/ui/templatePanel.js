@@ -12,7 +12,8 @@ export class TemplatePanel {
     deleteButton,
     questionsInput,
     addLog,
-    onLoadTemplate
+    onLoadTemplate,
+    getSettings
   }) {
     this.selectElement = selectElement;
     this.loadButton = loadButton;
@@ -21,6 +22,7 @@ export class TemplatePanel {
     this.questionsInput = questionsInput;
     this.addLog = addLog;
     this.onLoadTemplate = onLoadTemplate;
+    this.getSettings = getSettings;
     this.pendingSelectedTemplateId = "";
 
     this.loadButton.addEventListener("click", () => {
@@ -92,14 +94,12 @@ export class TemplatePanel {
       return;
     }
 
-    const state = AppState.getState();
+    const currentSettings = this.getSettings ? this.getSettings() : {};
     const template = {
       id: generateUUID(),
       name: trimmedName,
       content: this.questionsInput.value,
-      useExtraction: state.useExtraction,
-      extractionRegex: state.extractionRegex,
-      injectionPlaceholder: state.injectionPlaceholder
+      settings: currentSettings
     };
     const nextTemplates = [...AppState.getState().templates, template];
 
