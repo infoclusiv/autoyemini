@@ -39,6 +39,29 @@
       </div>
     </section>
 
+    <section class="workflow-section" id="workflowSection">
+      <h2 data-i18n="workflow.title">Workflows</h2>
+      <div class="workflow-controls">
+        <select id="workflowSelect" class="template-select">
+          <option value="" data-i18n="workflow.selectDefault">Select a workflow</option>
+        </select>
+        <button id="saveWorkflowBtn" class="btn btn-success btn-sm" data-i18n="workflow.saveBtn">New</button>
+        <button id="renameWorkflowBtn" class="btn btn-secondary btn-sm" data-i18n="workflow.renameBtn">Rename</button>
+        <button id="deleteWorkflowBtn" class="btn btn-danger btn-sm" data-i18n="workflow.deleteBtn">Delete</button>
+      </div>
+      <div class="workflow-add-step-row">
+        <select id="stepTemplateSelect" class="template-select">
+          <option value="" data-i18n="workflow.selectTemplate">Select a template</option>
+        </select>
+        <button id="addWorkflowStepBtn" class="btn btn-info btn-sm" data-i18n="workflow.addStepBtn">Add Step</button>
+      </div>
+      <div id="workflowStepsList" class="workflow-steps"></div>
+      <button id="startWorkflowBtn" class="btn btn-primary btn-large workflow-start-btn">
+        <span class="btn-icon">⚡</span>
+        <span data-i18n="workflow.startBtn">Run Workflow</span>
+      </button>
+    </section>
+
     <section class="control-section">
       <h2 data-i18n="control.title">执行控制</h2>
       

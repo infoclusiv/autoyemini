@@ -1,5 +1,6 @@
 import { normalizeRange, normalizeNumber, normalizeString } from "./normalizers.js";
 import { normalizeTemplates } from "./templateService.js";
+import { normalizeWorkflows } from "./workflowService.js";
 
 const storageKeys = globalThis.CONFIG?.STORAGE_KEYS || {
   QUESTIONS: "questions",
@@ -55,7 +56,8 @@ export async function loadAll() {
     StorageKeys.TYPING_SPEED,
     StorageKeys.FATIGUE_COUNT,
     StorageKeys.FATIGUE_MIN_PAUSE_MINUTES,
-    StorageKeys.FATIGUE_MAX_PAUSE_MINUTES
+    StorageKeys.FATIGUE_MAX_PAUSE_MINUTES,
+    StorageKeys.WORKFLOWS
   ]);
 
   const defaultTypingSpeed = normalizeRange(antiBotDefaults.TYPING_SPEED_MS, [30, 100]);
@@ -71,9 +73,12 @@ export async function loadAll() {
     fatigueMinMinutes
   );
 
+  const templates = normalizeTemplates(stored[StorageKeys.TEMPLATES]);
+
   return {
     questions: stored[StorageKeys.QUESTIONS] || [],
-    templates: normalizeTemplates(stored[StorageKeys.TEMPLATES]),
+    templates,
+    workflows: normalizeWorkflows(stored[StorageKeys.WORKFLOWS], templates),
     useTempChat: stored[StorageKeys.USE_TEMP_CHAT] !== false,
     useWebSearch: stored[StorageKeys.USE_WEB_SEARCH] !== false,
     keepSameChat: stored[StorageKeys.KEEP_SAME_CHAT] === true,
@@ -111,4 +116,8 @@ export function saveSetting(key, value) {
 
 export function removePendingMessage() {
   return chrome.storage.local.remove(StorageKeys.PENDING_MESSAGE);
+}
+
+export function saveWorkflows(workflows) {
+  return chrome.storage.local.set({ [StorageKeys.WORKFLOWS]: workflows });
 }

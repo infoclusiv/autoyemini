@@ -1,6 +1,9 @@
 const state = {
   questions: [],
   templates: [],
+  workflows: [],
+  activeWorkflow: null,
+  activeWorkflowStepIndex: -1,
   isRunning: false,
   isPaused: false,
   currentIndex: 0,

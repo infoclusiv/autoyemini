@@ -532,5 +532,133 @@
    "title": {
       "description": "Page title",
       "message": "ChatGPT一括質問アシスタント"
+   },
+   "workflowTitle": {
+      "description": "Workflow section title",
+      "message": "Workflows"
+   },
+   "workflowSelectDefault": {
+      "description": "Default workflow select option",
+      "message": "Select a workflow"
+   },
+   "workflowSaveBtn": {
+      "description": "Save workflow button",
+      "message": "New"
+   },
+   "workflowRenameBtn": {
+      "description": "Rename workflow button",
+      "message": "Rename"
+   },
+   "workflowDeleteBtn": {
+      "description": "Delete workflow button",
+      "message": "Delete"
+   },
+   "workflowAddStepBtn": {
+      "description": "Add step to workflow button",
+      "message": "Add Step"
+   },
+   "workflowRemoveStep": {
+      "description": "Remove step from workflow",
+      "message": "Remove"
+   },
+   "workflowNoSteps": {
+      "description": "Empty workflow message",
+      "message": "No steps added yet. Add templates as steps."
+   },
+   "workflowNamePrompt": {
+      "description": "Workflow name prompt",
+      "message": "Workflow name"
+   },
+   "workflowRenamePrompt": {
+      "description": "Workflow rename prompt",
+      "message": "New workflow name"
+   },
+   "workflowStepLabel": {
+      "description": "Workflow step label",
+      "message": "Step $NUM$",
+      "placeholders": {
+         "num": {
+            "content": "$1",
+            "example": "1"
+         }
+      }
+   },
+   "workflowSelectTemplate": {
+      "description": "Select template for step",
+      "message": "Select a template"
+   },
+   "workflowStartBtn": {
+      "description": "Start workflow button",
+      "message": "Run Workflow"
+   },
+   "workflowInvalidSteps": {
+      "description": "Invalid steps warning",
+      "message": "Some steps reference deleted templates and will be skipped"
+   },
+   "msgWorkflowSaved": {
+      "description": "Workflow saved message",
+      "message": "Workflow saved"
+   },
+   "msgWorkflowRenamed": {
+      "description": "Workflow renamed message",
+      "message": "Workflow renamed successfully"
+   },
+   "msgWorkflowDeleted": {
+      "description": "Workflow deleted message",
+      "message": "Workflow deleted"
+   },
+   "msgWorkflowStarting": {
+      "description": "Workflow starting message",
+      "message": "Starting workflow: $NAME$",
+      "placeholders": {
+         "name": {
+            "content": "$1",
+            "example": "My SEO Workflow"
+         }
+      }
+   },
+   "msgWorkflowStepStarting": {
+      "description": "Workflow step starting message",
+      "message": "Starting step $NUM$: $NAME$",
+      "placeholders": {
+         "num": {
+            "content": "$1",
+            "example": "2"
+         },
+         "name": {
+            "content": "$2",
+            "example": "Template Name"
+         }
+      }
+   },
+   "msgWorkflowStepComplete": {
+      "description": "Workflow step complete message",
+      "message": "Step $NUM$ completed",
+      "placeholders": {
+         "num": {
+            "content": "$1",
+            "example": "1"
+         }
+      }
+   },
+   "msgWorkflowComplete": {
+      "description": "Workflow complete message",
+      "message": "Workflow completed successfully!"
+   },
+   "msgWorkflowSelectRequired": {
+      "description": "Workflow selection required message",
+      "message": "Select a workflow first"
+   },
+   "msgWorkflowNameRequired": {
+      "description": "Workflow name required message",
+      "message": "Workflow name cannot be empty"
+   },
+   "msgWorkflowNoSteps": {
+      "description": "No steps in workflow message",
+      "message": "This workflow has no steps"
+   },
+   "msgConfirmWorkflowDelete": {
+      "description": "Confirm workflow delete dialog",
+      "message": "Delete the selected workflow?"
    }
 }

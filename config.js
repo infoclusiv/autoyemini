@@ -51,7 +51,8 @@ const CONFIG = {
 		FATIGUE_COUNT: "fatigueCount",
 		FATIGUE_MIN_PAUSE_MINUTES: "fatigueMinPauseMinutes",
 		FATIGUE_MAX_PAUSE_MINUTES: "fatigueMaxPauseMinutes",
-		PENDING_MESSAGE: "pendingMessage"
+		PENDING_MESSAGE: "pendingMessage",
+		WORKFLOWS: "savedWorkflows"
 	},
 
 	LOG_MAX_ENTRIES: 100

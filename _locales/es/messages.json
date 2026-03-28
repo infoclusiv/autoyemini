@@ -636,5 +636,133 @@
    "title": {
       "description": "Page title",
       "message": "Asistente de preguntas masivas ChatGPT"
+   },
+   "workflowTitle": {
+      "description": "Workflow section title",
+      "message": "Flujos"
+   },
+   "workflowSelectDefault": {
+      "description": "Default workflow select option",
+      "message": "Seleccionar un flujo"
+   },
+   "workflowSaveBtn": {
+      "description": "Save workflow button",
+      "message": "Nuevo"
+   },
+   "workflowRenameBtn": {
+      "description": "Rename workflow button",
+      "message": "Renombrar"
+   },
+   "workflowDeleteBtn": {
+      "description": "Delete workflow button",
+      "message": "Eliminar"
+   },
+   "workflowAddStepBtn": {
+      "description": "Add step to workflow button",
+      "message": "Agregar paso"
+   },
+   "workflowRemoveStep": {
+      "description": "Remove step from workflow",
+      "message": "Quitar"
+   },
+   "workflowNoSteps": {
+      "description": "Empty workflow message",
+      "message": "Sin pasos aún. Agrega plantillas como pasos."
+   },
+   "workflowNamePrompt": {
+      "description": "Workflow name prompt",
+      "message": "Nombre del flujo"
+   },
+   "workflowRenamePrompt": {
+      "description": "Workflow rename prompt",
+      "message": "Nuevo nombre del flujo"
+   },
+   "workflowStepLabel": {
+      "description": "Workflow step label",
+      "message": "Paso $NUM$",
+      "placeholders": {
+         "num": {
+            "content": "$1",
+            "example": "1"
+         }
+      }
+   },
+   "workflowSelectTemplate": {
+      "description": "Select template for step",
+      "message": "Seleccionar plantilla"
+   },
+   "workflowStartBtn": {
+      "description": "Start workflow button",
+      "message": "Ejecutar flujo"
+   },
+   "workflowInvalidSteps": {
+      "description": "Invalid steps warning",
+      "message": "Algunos pasos hacen referencia a plantillas eliminadas y serán omitidos"
+   },
+   "msgWorkflowSaved": {
+      "description": "Workflow saved message",
+      "message": "Flujo guardado"
+   },
+   "msgWorkflowRenamed": {
+      "description": "Workflow renamed message",
+      "message": "Flujo renombrado con éxito"
+   },
+   "msgWorkflowDeleted": {
+      "description": "Workflow deleted message",
+      "message": "Flujo eliminado"
+   },
+   "msgWorkflowStarting": {
+      "description": "Workflow starting message",
+      "message": "Iniciando flujo: $NAME$",
+      "placeholders": {
+         "name": {
+            "content": "$1",
+            "example": "Mi flujo SEO"
+         }
+      }
+   },
+   "msgWorkflowStepStarting": {
+      "description": "Workflow step starting message",
+      "message": "Iniciando paso $NUM$: $NAME$",
+      "placeholders": {
+         "num": {
+            "content": "$1",
+            "example": "2"
+         },
+         "name": {
+            "content": "$2",
+            "example": "Nombre de plantilla"
+         }
+      }
+   },
+   "msgWorkflowStepComplete": {
+      "description": "Workflow step complete message",
+      "message": "Paso $NUM$ completado",
+      "placeholders": {
+         "num": {
+            "content": "$1",
+            "example": "1"
+         }
+      }
+   },
+   "msgWorkflowComplete": {
+      "description": "Workflow complete message",
+      "message": "¡Flujo completado con éxito!"
+   },
+   "msgWorkflowSelectRequired": {
+      "description": "Workflow selection required message",
+      "message": "Seleccione un flujo primero"
+   },
+   "msgWorkflowNameRequired": {
+      "description": "Workflow name required message",
+      "message": "El nombre del flujo no puede estar vacío"
+   },
+   "msgWorkflowNoSteps": {
+      "description": "No steps in workflow message",
+      "message": "Este flujo no tiene pasos"
+   },
+   "msgConfirmWorkflowDelete": {
+      "description": "Confirm workflow delete dialog",
+      "message": "¿Eliminar el flujo seleccionado?"
    }
 }

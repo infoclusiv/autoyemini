@@ -23,9 +23,10 @@ export function parseQuestionsInput(rawValue, isSinglePrompt) {
 }
 
 export class QuestionProcessor {
-  constructor({ getSettings, addLog }) {
+  constructor({ getSettings, addLog, onAllCompleted }) {
     this.getSettings = getSettings;
     this.addLog = addLog;
+    this.onAllCompleted = onAllCompleted || null;
   }
 
   persistQuestions() {
@@ -74,6 +75,9 @@ export class QuestionProcessor {
     if (nextIndex === -1) {
       AppState.patch({ isRunning: false, lastExtractedText: "" });
       this.addLog(t("messages.allCompleted"), "success");
+      if (this.onAllCompleted) {
+        this.onAllCompleted();
+      }
       return;
     }
 

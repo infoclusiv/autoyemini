@@ -9,6 +9,7 @@ import { ControlPanel } from "./ui/controlPanel.js";
 import { StatsPanel } from "./ui/statsPanel.js";
 import { SettingsPanel } from "./ui/settingsPanel.js";
 import { TemplatePanel } from "./ui/templatePanel.js";
+import { WorkflowPanel } from "./ui/workflowPanel.js";
 import { QuestionProcessor, parseQuestionsInput } from "./core/questionProcessor.js";
 import { waitForConfiguredDelay } from "./core/antiBotController.js";
 import { normalizeExtractionSettings } from "./core/extractionEngine.js";
@@ -22,6 +23,7 @@ let controlPanel;
 let statsPanel;
 let settingsPanel;
 let templatePanel;
+let workflowPanel;
 let questionProcessor;
 
 let questionsInput;
@@ -75,7 +77,8 @@ function getElements() {
     completedCount: document.getElementById("completedCount"),
     successCount: document.getElementById("successCount"),
     failedCount: document.getElementById("failedCount"),
-    progressFill: document.getElementById("progressFill")
+    progressFill: document.getElementById("progressFill"),
+    workflowSection: document.getElementById("workflowSection")
   };
 }
 
@@ -264,6 +267,187 @@ async function handleStart() {
   void questionProcessor.processNextQuestion();
 }
 
+function loadWorkflowStepQuestions(template) {
+  const state = AppState.getState();
+  const isSinglePrompt = state.singlePromptMode === true;
+  const questionsToAdd = parseQuestionsInput(template.content, isSinglePrompt);
+
+  const extractionConfig = {
+    useExtraction: state.useExtraction,
+    extractionRegex: state.extractionRegex,
+    injectionPlaceholder: state.injectionPlaceholder
+  };
+
+  const nextQuestions = [...state.questions];
+  questionsToAdd.forEach((question) => {
+    nextQuestions.push({
+      id: generateUUID(),
+      question,
+      status: "pending",
+      answer: "",
+      sources: [],
+      timestamp: Date.now(),
+      error: null,
+      extractionConfig
+    });
+  });
+
+  AppState.setQuestions(nextQuestions);
+  void persistQuestions();
+  return questionsToAdd.length;
+}
+
+function applyTemplateSettings(template) {
+  if (!template.settings) {
+    return;
+  }
+  settingsPanel.setValuesFromTemplate(template.settings);
+  const resolvedSettings = settingsPanel.getValues();
+  patchGeneralSettings(resolvedSettings);
+  patchAntiBotState(resolvedSettings);
+  patchExtractionState(resolvedSettings);
+  void Promise.all([
+    persistGeneralSettings(resolvedSettings),
+    persistAntiBotSettings(resolvedSettings),
+    persistExtractionSettings(resolvedSettings)
+  ]);
+}
+
+async function handleStartWorkflow() {
+  const state = AppState.getState();
+  if (state.isRunning) {
+    addLog(t("messages.alreadyRunning"), "warning");
+    return;
+  }
+
+  const workflow = workflowPanel.getSelectedWorkflow();
+  if (!workflow) {
+    addLog(t("messages.workflowSelectRequired"), "warning");
+    return;
+  }
+
+  if (workflow.steps.length === 0) {
+    addLog(t("messages.workflowNoSteps"), "warning");
+    return;
+  }
+
+  const templates = state.templates;
+  const validSteps = workflow.steps.filter((step) =>
+    templates.some((tpl) => tpl.id === step.templateId)
+  );
+
+  if (validSteps.length === 0) {
+    addLog(t("messages.workflowNoSteps"), "warning");
+    return;
+  }
+
+  if (validSteps.length < workflow.steps.length) {
+    addLog(t("workflow.invalidSteps"), "warning");
+  }
+
+  addLog(t("messages.workflowStarting", { name: workflow.name }), "info");
+
+  AppState.patch({
+    activeWorkflow: { ...workflow, steps: validSteps },
+    activeWorkflowStepIndex: 0
+  });
+
+  await executeWorkflowStep(0);
+}
+
+async function executeWorkflowStep(stepIndex) {
+  const state = AppState.getState();
+  const workflow = state.activeWorkflow;
+
+  if (!workflow || stepIndex >= workflow.steps.length) {
+    addLog(t("messages.workflowComplete"), "success");
+    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1 });
+    return;
+  }
+
+  const step = workflow.steps[stepIndex];
+  const template = state.templates.find((tpl) => tpl.id === step.templateId);
+
+  if (!template) {
+    AppState.patch({ activeWorkflowStepIndex: stepIndex + 1 });
+    await executeWorkflowStep(stepIndex + 1);
+    return;
+  }
+
+  AppState.patch({ activeWorkflowStepIndex: stepIndex });
+  addLog(t("messages.workflowStepStarting", [stepIndex + 1, template.name]), "info");
+
+  applyTemplateSettings(template);
+  const addedCount = loadWorkflowStepQuestions(template);
+  addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
+
+  addLog(t("messages.openingChatGPT"), "info");
+
+  try {
+    const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
+    const response = await sendToBackground({
+      type: "OPEN_CHATGPT",
+      useTempChat,
+      useWebSearch,
+      keepSameChat
+    });
+
+    if (!response?.success) {
+      addLog(`${t("messages.cannotOpenChatGPT")}: ${response?.error || "Unknown error"}`, "error");
+      AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1 });
+      return;
+    }
+  } catch (error) {
+    addLog(`${t("messages.error")}: ${error.message}`, "error");
+    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1 });
+    return;
+  }
+
+  const antiBotSettings = settingsPanel.getValues();
+  await Promise.all([
+    persistAntiBotSettings(antiBotSettings),
+    persistExtractionSettings(antiBotSettings)
+  ]);
+
+  const pendingQuestions = AppState.getState().questions.filter(
+    (q) => q.status === "pending"
+  );
+
+  AppState.patch({
+    isRunning: true,
+    isPaused: false,
+    currentIndex: 0,
+    processedSincePause: 0,
+    lastExtractedText: ""
+  });
+
+  addLog(t("messages.startingBatch"), "info");
+  addLog(t("messages.foundPending", { count: pendingQuestions.length }), "info");
+  addLog(t("messages.waitingPage"), "info");
+
+  await waitForConfiguredDelay(AppConfig.TIMING.BETWEEN_QUESTIONS_MS, antiBotSettings.randomDelays);
+  addLog(t("messages.startingFirst"), "info");
+  void questionProcessor.processNextQuestion();
+}
+
+async function advanceWorkflowStep() {
+  const state = AppState.getState();
+  if (!state.activeWorkflow) {
+    return;
+  }
+
+  const nextStepIndex = state.activeWorkflowStepIndex + 1;
+  addLog(t("messages.workflowStepComplete", { num: state.activeWorkflowStepIndex + 1 }), "success");
+
+  if (nextStepIndex >= state.activeWorkflow.steps.length) {
+    addLog(t("messages.workflowComplete"), "success");
+    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1 });
+    return;
+  }
+
+  await executeWorkflowStep(nextStepIndex);
+}
+
 function handlePause() {
   AppState.patch({ isPaused: true });
   addLog(t("messages.executionPaused"), "warning");
@@ -280,7 +464,9 @@ function handleStop() {
     isRunning: false,
     isPaused: false,
     processedSincePause: 0,
-    lastExtractedText: ""
+    lastExtractedText: "",
+    activeWorkflow: null,
+    activeWorkflowStepIndex: -1
   });
   addLog(t("messages.executionStopped"), "warning");
 }
@@ -560,9 +746,20 @@ async function initialize() {
     }
   });
 
+  workflowPanel = new WorkflowPanel({
+    containerElement: elements.workflowSection,
+    addLog,
+    onStartWorkflow: () => {
+      void handleStartWorkflow();
+    }
+  });
+
   questionProcessor = new QuestionProcessor({
     getSettings: () => settingsPanel.getValues(),
-    addLog
+    addLog,
+    onAllCompleted: () => {
+      void advanceWorkflowStep();
+    }
   });
 
   setupEventListeners(elements);
@@ -573,6 +770,7 @@ async function initialize() {
     AppState.setQuestions(stored.questions);
     AppState.patch({
       templates: stored.templates,
+      workflows: stored.workflows,
       useTempChat: stored.useTempChat,
       useWebSearch: stored.useWebSearch,
       keepSameChat: stored.keepSameChat,

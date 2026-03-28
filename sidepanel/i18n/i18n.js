@@ -116,7 +116,32 @@ const KEY_MAP = {
   "messages.invalidExtractionRegex": "msgInvalidExtractionRegex",
   "messages.loadedQuestions": "msgLoadedQuestions",
   "messages.loadFailed": "msgLoadFailed",
-  "messages.ready": "msgReady"
+  "messages.ready": "msgReady",
+  "workflow.title": "workflowTitle",
+  "workflow.selectDefault": "workflowSelectDefault",
+  "workflow.saveBtn": "workflowSaveBtn",
+  "workflow.renameBtn": "workflowRenameBtn",
+  "workflow.deleteBtn": "workflowDeleteBtn",
+  "workflow.addStepBtn": "workflowAddStepBtn",
+  "workflow.removeStep": "workflowRemoveStep",
+  "workflow.noSteps": "workflowNoSteps",
+  "workflow.namePrompt": "workflowNamePrompt",
+  "workflow.renamePrompt": "workflowRenamePrompt",
+  "workflow.stepLabel": "workflowStepLabel",
+  "workflow.selectTemplate": "workflowSelectTemplate",
+  "workflow.startBtn": "workflowStartBtn",
+  "workflow.invalidSteps": "workflowInvalidSteps",
+  "messages.workflowSaved": "msgWorkflowSaved",
+  "messages.workflowRenamed": "msgWorkflowRenamed",
+  "messages.workflowDeleted": "msgWorkflowDeleted",
+  "messages.workflowStarting": "msgWorkflowStarting",
+  "messages.workflowStepStarting": "msgWorkflowStepStarting",
+  "messages.workflowStepComplete": "msgWorkflowStepComplete",
+  "messages.workflowComplete": "msgWorkflowComplete",
+  "messages.workflowSelectRequired": "msgWorkflowSelectRequired",
+  "messages.workflowNameRequired": "msgWorkflowNameRequired",
+  "messages.workflowNoSteps": "msgWorkflowNoSteps",
+  "messages.confirmWorkflowDelete": "msgConfirmWorkflowDelete"
 };
 
 export function t(key, substitutions) {
