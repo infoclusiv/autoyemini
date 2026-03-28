@@ -35,6 +35,10 @@
     "message": "清空輸入",
     "description": "清空輸入按鈕"
   },
+  "inputSinglePrompt": {
+    "message": "將所有文字視為單一多行提示詞",
+    "description": "單一提示模式選項"
+  },
   "controlTitle": {
     "message": "執行控制",
     "description": "控制區標題"

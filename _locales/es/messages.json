@@ -167,6 +167,10 @@
       "description": "Clear input button",
       "message": "Borrar entrada"
    },
+   "inputSinglePrompt": {
+      "description": "Single prompt mode option",
+      "message": "Tratar todo el texto como un solo prompt multilínea"
+   },
    "inputPlaceholder": {
       "description": "Textarea placeholder",
       "message": "Ingrese una pregunta por línea, entrada masiva admitida..."

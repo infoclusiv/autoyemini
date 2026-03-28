@@ -4,6 +4,7 @@ const storageKeys = globalThis.CONFIG?.STORAGE_KEYS || {
   USE_TEMP_CHAT: "useTempChat",
   USE_WEB_SEARCH: "useWebSearch",
   KEEP_SAME_CHAT: "keepSameChat",
+  SINGLE_PROMPT_MODE: "singlePromptMode",
   USE_EXTRACTION: "useExtraction",
   EXTRACTION_REGEX: "extractionRegex",
   INJECTION_PLACEHOLDER: "injectionPlaceholder",
@@ -79,6 +80,7 @@ export async function loadAll() {
     StorageKeys.USE_TEMP_CHAT,
     StorageKeys.USE_WEB_SEARCH,
     StorageKeys.KEEP_SAME_CHAT,
+    StorageKeys.SINGLE_PROMPT_MODE,
     StorageKeys.USE_EXTRACTION,
     StorageKeys.EXTRACTION_REGEX,
     StorageKeys.INJECTION_PLACEHOLDER,
@@ -110,6 +112,7 @@ export async function loadAll() {
     useTempChat: stored[StorageKeys.USE_TEMP_CHAT] !== false,
     useWebSearch: stored[StorageKeys.USE_WEB_SEARCH] !== false,
     keepSameChat: stored[StorageKeys.KEEP_SAME_CHAT] === true,
+    singlePromptMode: stored[StorageKeys.SINGLE_PROMPT_MODE] === true,
     useExtraction: stored[StorageKeys.USE_EXTRACTION] === true,
     extractionRegex: normalizeString(
       stored[StorageKeys.EXTRACTION_REGEX],

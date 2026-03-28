@@ -95,6 +95,10 @@
       "description": "清空輸入按鈕",
       "message": "清空輸入"
    },
+   "inputSinglePrompt": {
+      "description": "單一提示模式選項",
+      "message": "將所有文字視為單一多行提示詞"
+   },
    "inputPlaceholder": {
       "description": "輸入框佔位符",
       "message": "每行輸入一個問題，支援批次輸入..."

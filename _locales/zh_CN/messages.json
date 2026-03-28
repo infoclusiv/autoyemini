@@ -95,6 +95,10 @@
       "description": "清空输入按钮",
       "message": "清空输入"
    },
+   "inputSinglePrompt": {
+      "description": "单一提示模式选项",
+      "message": "将所有文本视为单个多行提示词"
+   },
    "inputPlaceholder": {
       "description": "输入框占位符",
       "message": "每行输入一个问题，支持批量输入..."

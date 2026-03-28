@@ -7,6 +7,7 @@ const state = {
   useTempChat: true,
   useWebSearch: true,
   keepSameChat: false,
+  singlePromptMode: false,
   useExtraction: false,
   extractionRegex:
     globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>",

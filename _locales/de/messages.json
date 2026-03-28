@@ -95,6 +95,10 @@
       "description": "Clear input button",
       "message": "Eingabe löschen"
    },
+   "inputSinglePrompt": {
+      "description": "Single prompt mode option",
+      "message": "Gesamten Text als einen mehrzeiligen Prompt behandeln"
+   },
    "inputPlaceholder": {
       "description": "Textarea placeholder",
       "message": "Geben Sie eine Frage pro Zeile ein, Masseneingabe unterstützt..."

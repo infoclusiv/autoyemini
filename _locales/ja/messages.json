@@ -95,6 +95,10 @@
       "description": "Clear input button",
       "message": "入力をクリア"
    },
+   "inputSinglePrompt": {
+      "description": "Single prompt mode option",
+      "message": "すべてのテキストを1つの複数行プロンプトとして扱う"
+   },
    "inputPlaceholder": {
       "description": "Textarea placeholder",
       "message": "1行に1つの質問を入力、一括入力サポート..."

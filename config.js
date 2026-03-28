@@ -40,6 +40,7 @@ const CONFIG = {
 		USE_TEMP_CHAT: "useTempChat",
 		USE_WEB_SEARCH: "useWebSearch",
 		KEEP_SAME_CHAT: "keepSameChat",
+		SINGLE_PROMPT_MODE: "singlePromptMode",
 		USE_EXTRACTION: "useExtraction",
 		EXTRACTION_REGEX: "extractionRegex",
 		INJECTION_PLACEHOLDER: "injectionPlaceholder",

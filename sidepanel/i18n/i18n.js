@@ -6,6 +6,7 @@ const KEY_MAP = {
   "input.placeholder": "inputPlaceholder",
   "input.addBtn": "inputAddBtn",
   "input.clearBtn": "inputClearBtn",
+  "input.singlePrompt": "inputSinglePrompt",
   "template.selectDefault": "templateSelectDefault",
   "template.loadBtn": "templateLoadBtn",
   "template.saveBtn": "templateSaveBtn",

@@ -79,9 +79,19 @@ function buildQuestionForSubmission(questionText, settings, lastExtractedText) {
   );
 }
 
+function parseQuestionsInput(rawValue, isSinglePrompt) {
+  if (isSinglePrompt) {
+    return [rawValue];
+  }
+
+  const segments = rawValue.includes("===") ? rawValue.split("===") : rawValue.split("\n");
+  return segments.map((segment) => segment.trim()).filter(Boolean);
+}
+
 function getElements() {
   return {
     questionsInput: document.getElementById("questionsInput"),
+    singlePromptModeCheckbox: document.getElementById("singlePromptModeCheckbox"),
     addQuestionsBtn: document.getElementById("addQuestionsBtn"),
     clearInputBtn: document.getElementById("clearInputBtn"),
     templateSelect: document.getElementById("templateSelect"),
@@ -235,34 +245,30 @@ function handleAddQuestions() {
     return;
   }
 
+  const isSinglePrompt = AppState.getState().singlePromptMode === true;
   const nextQuestions = [...AppState.getState().questions];
-  let addedCount = 0;
+  const questionsToAdd = parseQuestionsInput(rawValue, isSinglePrompt);
 
-  rawValue
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .forEach((question) => {
-      nextQuestions.push({
-        id: generateUUID(),
-        question,
-        status: "pending",
-        answer: "",
-        sources: [],
-        timestamp: Date.now(),
-        error: null
-      });
-      addedCount += 1;
+  questionsToAdd.forEach((question) => {
+    nextQuestions.push({
+      id: generateUUID(),
+      question,
+      status: "pending",
+      answer: "",
+      sources: [],
+      timestamp: Date.now(),
+      error: null
     });
+  });
 
-  if (!addedCount) {
+  if (questionsToAdd.length === 0) {
     return;
   }
 
   questionsInput.value = "";
   AppState.setQuestions(nextQuestions);
   void persistQuestions();
-  addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
+  addLog(`${questionsToAdd.length} ${t("messages.questionsAdded")}`, "success");
 }
 
 function handleClearInput() {
@@ -560,6 +566,12 @@ async function handleKeepSameChatChange(event) {
   await saveSetting(StorageKeys.KEEP_SAME_CHAT, enabled);
 }
 
+async function handleSinglePromptModeChange(event) {
+  const enabled = event.target.checked;
+  AppState.patch({ singlePromptMode: enabled });
+  await saveSetting(StorageKeys.SINGLE_PROMPT_MODE, enabled);
+}
+
 async function handleAntiBotSettingsChange() {
   const settings = settingsPanel.getValues();
   settingsPanel.setBiologicalPauseVisibility(settings.biologicalPauses);
@@ -658,6 +670,9 @@ function setupEventListeners(elements) {
   elements.keepSameChatCheckbox.addEventListener("change", (event) => {
     void handleKeepSameChatChange(event);
   });
+  elements.singlePromptModeCheckbox.addEventListener("change", (event) => {
+    void handleSinglePromptModeChange(event);
+  });
   elements.useExtractionCheckbox.addEventListener("change", () => {
     void handleExtractionSettingsChange();
   });
@@ -746,6 +761,7 @@ async function initialize() {
       useTempChat: stored.useTempChat,
       useWebSearch: stored.useWebSearch,
       keepSameChat: stored.keepSameChat,
+      singlePromptMode: stored.singlePromptMode,
       useExtraction: stored.useExtraction,
       extractionRegex: stored.extractionRegex,
       injectionPlaceholder: stored.injectionPlaceholder,
@@ -757,6 +773,7 @@ async function initialize() {
       fatigueMinMinutes: stored.fatigueMinMinutes,
       fatigueMaxMinutes: stored.fatigueMaxMinutes
     });
+    elements.singlePromptModeCheckbox.checked = stored.singlePromptMode;
     settingsPanel.setValues(stored);
 
     if (stored.questions.length > 0) {

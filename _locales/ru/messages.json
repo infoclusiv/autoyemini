@@ -95,6 +95,10 @@
       "description": "Clear input button",
       "message": "Очистить ввод"
    },
+   "inputSinglePrompt": {
+      "description": "Single prompt mode option",
+      "message": "Считать весь текст одной многострочной подсказкой"
+   },
    "inputPlaceholder": {
       "description": "Textarea placeholder",
       "message": "Введите один вопрос на строку, поддерживается массовый ввод..."

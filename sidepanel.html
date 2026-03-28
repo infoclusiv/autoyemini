@@ -25,6 +25,12 @@
         placeholder="Enter one question per line, batch input supported..."
         rows="8"
       ></textarea>
+      <div class="setting-item" style="margin-bottom: 12px; background: transparent; border: none; padding: 0;">
+        <label class="setting-label">
+          <input type="checkbox" id="singlePromptModeCheckbox">
+          <span class="setting-text" data-i18n="input.singlePrompt">Treat all text as a single multi-line prompt</span>
+        </label>
+      </div>
       <div class="button-group">
         <button id="addQuestionsBtn" class="btn btn-primary" data-i18n="input.addBtn">Add Questions</button>
         <button id="clearInputBtn" class="btn btn-secondary" data-i18n="input.clearBtn">Clear Input</button>

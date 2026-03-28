@@ -95,6 +95,10 @@
       "description": "Clear input button",
       "message": "입력 지우기"
    },
+   "inputSinglePrompt": {
+      "description": "Single prompt mode option",
+      "message": "모든 텍스트를 하나의 여러 줄 프롬프트로 처리"
+   },
    "inputPlaceholder": {
       "description": "Textarea placeholder",
       "message": "한 줄에 하나의 질문을 입력하세요, 대량 입력 지원..."

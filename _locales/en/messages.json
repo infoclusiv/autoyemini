@@ -167,6 +167,10 @@
       "description": "Clear input button",
       "message": "Clear Input"
    },
+   "inputSinglePrompt": {
+      "description": "Single prompt mode option",
+      "message": "Treat all text as a single multi-line prompt"
+   },
    "inputPlaceholder": {
       "description": "Textarea placeholder",
       "message": "Enter one question per line, batch input supported..."

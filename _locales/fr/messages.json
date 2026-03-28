@@ -95,6 +95,10 @@
       "description": "Clear input button",
       "message": "Effacer la saisie"
    },
+   "inputSinglePrompt": {
+      "description": "Single prompt mode option",
+      "message": "Traiter tout le texte comme une seule invite multiligne"
+   },
    "inputPlaceholder": {
       "description": "Textarea placeholder",
       "message": "Entrez une question par ligne, saisie en masse prise en charge..."
