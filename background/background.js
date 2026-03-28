@@ -1,0 +1,13 @@
+importScripts(
+  "../config.js",
+  "../shared/utils.js",
+  "tabManager.js",
+  "sidePanelBridge.js",
+  "messageRouter.js"
+);
+
+chrome.action.onClicked.addListener((tab) => {
+  chrome.sidePanel.open({ windowId: tab.windowId });
+});
+
+registerMessageRouter();

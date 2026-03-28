@@ -1,0 +1,161 @@
+(function contentEntryPoint() {
+  const modules = globalThis.ContentModules || {};
+
+  const ContentState = {
+    currentQuestion: null,
+    currentAnswer: "",
+    currentSources: [],
+    isProcessing: false,
+    sendQuestionResult,
+    handleAnswerComplete
+  };
+
+  function injectSSEInterceptor() {
+    try {
+      const script = document.createElement("script");
+      script.src = chrome.runtime.getURL("injected.js");
+      script.onload = function onLoad() {
+        this.remove();
+      };
+      script.onerror = function onError() {
+        this.remove();
+      };
+      (document.head || document.documentElement).appendChild(script);
+    } catch {
+    }
+  }
+
+  function resetState() {
+    ContentState.currentQuestion = null;
+    ContentState.currentAnswer = "";
+    ContentState.currentSources = [];
+    ContentState.isProcessing = false;
+    modules.initSSEState();
+  }
+
+  function sendQuestionResult(success, error = null) {
+    const result = {
+      success,
+      questionId: ContentState.currentQuestion?.questionId,
+      question: ContentState.currentQuestion?.question,
+      answer: ContentState.currentAnswer,
+      sources: ContentState.currentSources,
+      error
+    };
+
+    chrome.runtime.sendMessage({ type: "QUESTION_COMPLETE", result }, () => {
+      chrome.runtime.lastError;
+    });
+
+    resetState();
+  }
+
+  function handleAnswerComplete() {
+    if (!ContentState.isProcessing || !ContentState.currentQuestion) {
+      return;
+    }
+
+    sendQuestionResult(true);
+  }
+
+  async function askQuestion(question, questionId, useTempChat = true, useWebSearch = true) {
+    ContentState.currentQuestion = { question, questionId };
+    ContentState.currentAnswer = "";
+    ContentState.currentSources = [];
+    ContentState.isProcessing = true;
+    modules.initSSEState();
+
+    try {
+      if (useWebSearch) {
+        await modules.enableWebSearch();
+      }
+
+      if (!(await modules.inputQuestion(question))) {
+        throw new Error("Failed to input question");
+      }
+
+      if (!(await modules.submitQuestion())) {
+        throw new Error("Failed to submit question");
+      }
+
+      setTimeout(async () => {
+        if (!ContentState.isProcessing || ContentState.currentQuestion?.questionId !== questionId) {
+          return;
+        }
+
+        const scraped = await modules
+          .waitForAssistantAnswer(6, 1500)
+          .catch(() => ({ answer: "", sources: [] }));
+
+        if (scraped.answer) {
+          ContentState.currentAnswer = scraped.answer;
+          ContentState.currentSources = scraped.sources;
+          handleAnswerComplete();
+          return;
+        }
+
+        if (ContentState.currentAnswer) {
+          handleAnswerComplete();
+          return;
+        }
+
+        sendQuestionResult(false, "Timeout waiting for answer");
+      }, CONFIG.TIMING.ANSWER_TIMEOUT_MS);
+
+      return { success: true, message: "Question submitted, waiting for answer" };
+    } catch (error) {
+      sendQuestionResult(false, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  function initializeContentScript() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", injectSSEInterceptor);
+    } else {
+      injectSSEInterceptor();
+    }
+  }
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) {
+      return;
+    }
+
+    const { type, data, error } = event.data;
+    switch (type) {
+      case "SSE_DATA":
+        modules.handleSSEData(data, ContentState);
+        break;
+      case "SSE_DONE":
+        modules.handleSSEDone(ContentState);
+        break;
+      case "SSE_ERROR":
+        modules.handleSSEError(error, ContentState);
+        break;
+      default:
+        break;
+    }
+  });
+
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "PING") {
+      sendResponse({ ready: true });
+      return true;
+    }
+
+    if (message.type === "ASK_QUESTION") {
+      const useTempChat = message.useTempChat !== false;
+      const useWebSearch = message.useWebSearch !== false;
+
+      askQuestion(message.question, message.questionId, useTempChat, useWebSearch)
+        .then((response) => sendResponse(response))
+        .catch((error) => sendResponse({ success: false, error: error.message }));
+      return true;
+    }
+
+    return false;
+  });
+
+  initializeContentScript();
+})();

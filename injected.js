@@ -1,1 +1,97 @@
-!function(){const t=window.fetch;window.fetch=async function(...e){const[n,o]=e;let s="";"string"==typeof n?s=n:n instanceof Request?s=n.url:n instanceof URL?s=n.href:n&&"object"==typeof n&&n.url&&(s=n.url);if(s&&(s.includes("/backend-api/conversation")||s.includes("/backend-api/f/conversation")||s.includes("/backend-anon/conversation")||s.includes("/backend-anon/f/conversation")))try{const n=await t.apply(this,e);if(!n.ok)return 404!==n.status||s.includes("/textdocs"),n;const o=n.clone();if(!o.body)return n;const a=o.body.getReader(),c=new TextDecoder;return(async()=>{let t="";try{for(;;){const{done:n,value:o}=await a.read();if(n){t.trim()&&e(t.trim()),window.postMessage({type:"SSE_STREAM_END"},"*");break}t+=c.decode(o,{stream:!0});const s=t.split("\n");t=s.pop()||"";for(const t of s)e(t.trim())}}catch(t){window.postMessage({type:"SSE_ERROR",error:t.message},"*")}function e(t){if(t)if(t.startsWith("data: ")&&"data: [DONE]"!==t)try{const e=t.substring(6),n=JSON.parse(e);window.postMessage({type:"SSE_DATA",data:n},"*")}catch(t){}else"data: [DONE]"===t&&window.postMessage({type:"SSE_DONE"},"*")}})(),n}catch(t){throw t}return t.apply(this,e)}}();
+(function interceptFetchForSSE() {
+	const originalFetch = window.fetch;
+
+	function resolveRequestUrl(resource) {
+		if (typeof resource === "string") {
+			return resource;
+		}
+		if (resource instanceof Request) {
+			return resource.url;
+		}
+		if (resource instanceof URL) {
+			return resource.href;
+		}
+		if (resource && typeof resource === "object" && resource.url) {
+			return resource.url;
+		}
+		return "";
+	}
+
+	function isConversationRequest(url) {
+		return [
+			"/backend-api/conversation",
+			"/backend-api/f/conversation",
+			"/backend-anon/conversation",
+			"/backend-anon/f/conversation"
+		].some((segment) => url.includes(segment));
+	}
+
+	function dispatchLine(line) {
+		if (!line) {
+			return;
+		}
+
+		if (line === "data: [DONE]") {
+			window.postMessage({ type: "SSE_DONE" }, "*");
+			return;
+		}
+
+		if (!line.startsWith("data: ")) {
+			return;
+		}
+
+		try {
+			const payload = JSON.parse(line.substring(6));
+			window.postMessage({ type: "SSE_DATA", data: payload }, "*");
+		} catch {
+		}
+	}
+
+	async function forwardStream(response) {
+		const clonedResponse = response.clone();
+		if (!clonedResponse.body) {
+			return response;
+		}
+
+		const reader = clonedResponse.body.getReader();
+		const decoder = new TextDecoder();
+		let buffer = "";
+
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) {
+					if (buffer.trim()) {
+						dispatchLine(buffer.trim());
+					}
+					break;
+				}
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split("\n");
+				buffer = lines.pop() || "";
+				lines.forEach((line) => dispatchLine(line.trim()));
+			}
+		} catch (error) {
+			window.postMessage({ type: "SSE_ERROR", error: error.message }, "*");
+		}
+
+		window.postMessage({ type: "SSE_STREAM_END" }, "*");
+		return response;
+	}
+
+	window.fetch = async function patchedFetch(...args) {
+		const url = resolveRequestUrl(args[0]);
+		if (!isConversationRequest(url)) {
+			return originalFetch.apply(this, args);
+		}
+
+		const response = await originalFetch.apply(this, args);
+		if (!response.ok || !response.body) {
+			return response;
+		}
+
+		void forwardStream(response);
+		return response;
+	};
+})();
