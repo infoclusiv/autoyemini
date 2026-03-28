@@ -79,6 +79,22 @@
       "description": "Human typing option hint",
       "message": "Types the prompt character by character instead of injecting it instantly"
    },
+   "controlTypingSpeedMin": {
+      "description": "Min typing speed label",
+      "message": "Min Delay (ms)"
+   },
+   "controlTypingSpeedMinHint": {
+      "description": "Min typing speed hint",
+      "message": "Minimum time between keystrokes"
+   },
+   "controlTypingSpeedMax": {
+      "description": "Max typing speed label",
+      "message": "Max Delay (ms)"
+   },
+   "controlTypingSpeedMaxHint": {
+      "description": "Max typing speed hint",
+      "message": "Maximum time between keystrokes"
+   },
    "controlRandomDelays": {
       "description": "Random delays option",
       "message": "Enable Random Delays"

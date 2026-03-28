@@ -115,6 +115,9 @@ function getElements() {
     extractionRegexInput: document.getElementById("extractionRegexInput"),
     injectionPlaceholderInput: document.getElementById("injectionPlaceholderInput"),
     humanTypingCheckbox: document.getElementById("humanTypingCheckbox"),
+    humanTypingFields: document.getElementById("humanTypingFields"),
+    typingSpeedMinInput: document.getElementById("typingSpeedMinInput"),
+    typingSpeedMaxInput: document.getElementById("typingSpeedMaxInput"),
     randomDelaysCheckbox: document.getElementById("randomDelaysCheckbox"),
     biologicalPausesCheckbox: document.getElementById("biologicalPausesCheckbox"),
     biologicalPauseFields: document.getElementById("biologicalPauseFields"),
@@ -604,6 +607,7 @@ async function handleSinglePromptModeChange(event) {
 async function handleAntiBotSettingsChange() {
   const settings = settingsPanel.getValues();
   settingsPanel.setBiologicalPauseVisibility(settings.biologicalPauses);
+  settingsPanel.setHumanTypingVisibility(settings.humanTyping);
   await persistAntiBotSettings(settings);
 }
 
@@ -729,6 +733,12 @@ function setupEventListeners(elements) {
   elements.fatigueMaxMinutesInput.addEventListener("change", () => {
     void handleAntiBotSettingsChange();
   });
+  elements.typingSpeedMinInput.addEventListener("change", () => {
+    void handleAntiBotSettingsChange();
+  });
+  elements.typingSpeedMaxInput.addEventListener("change", () => {
+    void handleAntiBotSettingsChange();
+  });
 }
 
 async function initialize() {
@@ -763,6 +773,9 @@ async function initialize() {
     extractionRegexInput: elements.extractionRegexInput,
     injectionPlaceholderInput: elements.injectionPlaceholderInput,
     humanTypingCheckbox: elements.humanTypingCheckbox,
+    humanTypingFields: elements.humanTypingFields,
+    typingSpeedMinInput: elements.typingSpeedMinInput,
+    typingSpeedMaxInput: elements.typingSpeedMaxInput,
     randomDelaysCheckbox: elements.randomDelaysCheckbox,
     biologicalPausesCheckbox: elements.biologicalPausesCheckbox,
     biologicalPauseFields: elements.biologicalPauseFields,
@@ -781,23 +794,13 @@ async function initialize() {
     addLog,
     getSettings: () => settingsPanel.getValues(),
     onLoadTemplate: (template) => {
-      if (template.settings) {
-        settingsPanel.setValues(template.settings);
-        const resolvedSettings = settingsPanel.getValues();
-        void Promise.all([
-          persistGeneralSettings(resolvedSettings),
-          persistAntiBotSettings(resolvedSettings),
-          persistExtractionSettings(resolvedSettings)
-        ]);
-      } else if (template.useExtraction !== undefined) {
-        const legacySettings = {
-          useExtraction: template.useExtraction,
-          extractionRegex: template.extractionRegex,
-          injectionPlaceholder: template.injectionPlaceholder
-        };
-        settingsPanel.setValues(legacySettings);
-        void persistExtractionSettings(settingsPanel.getValues());
-      }
+      settingsPanel.setValuesFromTemplate(template.settings);
+      const resolvedSettings = settingsPanel.getValues();
+      void Promise.all([
+        persistGeneralSettings(resolvedSettings),
+        persistAntiBotSettings(resolvedSettings),
+        persistExtractionSettings(resolvedSettings)
+      ]);
     }
   });
 

@@ -300,7 +300,7 @@
       input.focus();
       await waitForDelay(CONFIG.TIMING.INPUT_WAIT_MS, antiBotConfig);
 
-      if (antiBotConfig.humanTyping !== false) {
+      if (antiBotConfig.humanTyping === true) {
         await humanTypeQuestion(input, question, antiBotConfig);
       } else {
         directInputQuestion(input, question);

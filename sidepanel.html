@@ -85,6 +85,24 @@
             <span class="setting-hint" data-i18n="control.humanTypingHint">Types the prompt character by character instead of injecting it instantly</span>
           </div>
 
+          <div id="humanTypingFields" class="settings-subgroup is-hidden">
+            <div class="setting-item setting-item-compact">
+              <label class="number-setting-label" for="typingSpeedMinInput">
+                <span class="setting-text" data-i18n="control.typingSpeedMin">Min Delay (ms)</span>
+                <span class="setting-hint-inline" data-i18n="control.typingSpeedMinHint">Minimum time between keystrokes</span>
+              </label>
+              <input type="number" id="typingSpeedMinInput" min="0" step="10" value="30">
+            </div>
+
+            <div class="setting-item setting-item-compact">
+              <label class="number-setting-label" for="typingSpeedMaxInput">
+                <span class="setting-text" data-i18n="control.typingSpeedMax">Max Delay (ms)</span>
+                <span class="setting-hint-inline" data-i18n="control.typingSpeedMaxHint">Maximum time between keystrokes</span>
+              </label>
+              <input type="number" id="typingSpeedMaxInput" min="0" step="10" value="100">
+            </div>
+          </div>
+
           <div class="setting-item">
             <label class="setting-label">
               <span class="setting-icon">🎲</span>
