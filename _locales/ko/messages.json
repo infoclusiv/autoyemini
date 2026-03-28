@@ -107,6 +107,38 @@
       "description": "Input section title",
       "message": "질문 입력"
    },
+   "templateDeleteBtn": {
+      "description": "Delete template button",
+      "message": "삭제"
+   },
+   "templateLoadBtn": {
+      "description": "Load template button",
+      "message": "불러오기"
+   },
+   "templateNamePrompt": {
+      "description": "Template name prompt",
+      "message": "템플릿 이름"
+   },
+   "templateRenameBtn": {
+      "description": "Rename template button",
+      "message": "이름 변경"
+   },
+   "templateRenamePrompt": {
+      "description": "Template rename prompt",
+      "message": "새 템플릿 이름"
+   },
+   "templateSaveBtn": {
+      "description": "Save template button",
+      "message": "새로 만들기"
+   },
+   "templateSelectDefault": {
+      "description": "Default template select option",
+      "message": "템플릿 선택"
+   },
+   "templateUpdateBtn": {
+      "description": "Update template button",
+      "message": "업데이트"
+   },
    "logTitle": {
       "description": "Log section title",
       "message": "실행 로그"
@@ -304,6 +336,38 @@
    "msgResultsExported": {
       "description": "Results exported success message",
       "message": "결과를 내보냈습니다"
+   },
+   "msgConfirmTemplateDelete": {
+      "description": "Confirm template delete dialog",
+      "message": "이 템플릿을 삭제하시겠습니까?"
+   },
+   "msgTemplateDeleted": {
+      "description": "Template deleted message",
+      "message": "템플릿이 삭제되었습니다"
+   },
+   "msgTemplateLoaded": {
+      "description": "Template loaded message",
+      "message": "템플릿을 편집기에 불러왔습니다"
+   },
+   "msgTemplateNameRequired": {
+      "description": "Template name required message",
+      "message": "템플릿 이름은 비워 둘 수 없습니다"
+   },
+   "msgTemplateSaved": {
+      "description": "Template saved message",
+      "message": "템플릿이 저장되었습니다"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "Template selection required message",
+      "message": "먼저 템플릿을 선택하세요"
+   },
+   "msgTemplateUpdated": {
+      "description": "Template updated message",
+      "message": "템플릿이 성공적으로 업데이트되었습니다"
+   },
+   "msgTemplateRenamed": {
+      "description": "Template renamed message",
+      "message": "템플릿 이름이 성공적으로 변경되었습니다"
    },
    "msgStartingBatch": {
       "description": "Starting batch message",

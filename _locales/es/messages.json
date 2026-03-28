@@ -191,13 +191,25 @@
       "description": "Template name prompt",
       "message": "Nombre de la plantilla"
    },
+   "templateRenameBtn": {
+      "description": "Rename template button",
+      "message": "Renombrar"
+   },
+   "templateRenamePrompt": {
+      "description": "Template rename prompt",
+      "message": "Nuevo nombre de la plantilla"
+   },
    "templateSaveBtn": {
       "description": "Save template button",
-      "message": "Guardar"
+      "message": "Nuevo"
    },
    "templateSelectDefault": {
       "description": "Default template select option",
       "message": "Seleccionar plantilla"
+   },
+   "templateUpdateBtn": {
+      "description": "Update template button",
+      "message": "Actualizar"
    },
    "logTitle": {
       "description": "Log section title",
@@ -402,6 +414,14 @@
    "msgTemplateSaved": {
       "description": "Template saved message",
       "message": "Plantilla guardada"
+   },
+   "msgTemplateUpdated": {
+      "description": "Template updated message",
+      "message": "Plantilla actualizada con éxito"
+   },
+   "msgTemplateRenamed": {
+      "description": "Template renamed message",
+      "message": "Plantilla renombrada con éxito"
    },
    "msgTemplateSelectRequired": {
       "description": "Template selection required message",

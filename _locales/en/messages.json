@@ -191,13 +191,25 @@
       "description": "Template name prompt",
       "message": "Template name"
    },
+   "templateRenameBtn": {
+      "description": "Rename template button",
+      "message": "Rename"
+   },
+   "templateRenamePrompt": {
+      "description": "Template rename prompt",
+      "message": "New template name"
+   },
    "templateSaveBtn": {
       "description": "Save template button",
-      "message": "Save"
+      "message": "New"
    },
    "templateSelectDefault": {
       "description": "Default template select option",
       "message": "Select a template"
+   },
+   "templateUpdateBtn": {
+      "description": "Update template button",
+      "message": "Update"
    },
    "logTitle": {
       "description": "Log section title",
@@ -402,6 +414,14 @@
    "msgTemplateSaved": {
       "description": "Template saved message",
       "message": "Template saved"
+   },
+   "msgTemplateUpdated": {
+      "description": "Template updated message",
+      "message": "Template updated successfully"
+   },
+   "msgTemplateRenamed": {
+      "description": "Template renamed message",
+      "message": "Template renamed successfully"
    },
    "msgTemplateSelectRequired": {
       "description": "Template selection required message",

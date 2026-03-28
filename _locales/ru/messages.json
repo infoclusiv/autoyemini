@@ -107,6 +107,38 @@
       "description": "Input section title",
       "message": "Ввод вопросов"
    },
+   "templateDeleteBtn": {
+      "description": "Delete template button",
+      "message": "Удалить"
+   },
+   "templateLoadBtn": {
+      "description": "Load template button",
+      "message": "Загрузить"
+   },
+   "templateNamePrompt": {
+      "description": "Template name prompt",
+      "message": "Имя шаблона"
+   },
+   "templateRenameBtn": {
+      "description": "Rename template button",
+      "message": "Переименовать"
+   },
+   "templateRenamePrompt": {
+      "description": "Template rename prompt",
+      "message": "Новое имя шаблона"
+   },
+   "templateSaveBtn": {
+      "description": "Save template button",
+      "message": "Новый"
+   },
+   "templateSelectDefault": {
+      "description": "Default template select option",
+      "message": "Выберите шаблон"
+   },
+   "templateUpdateBtn": {
+      "description": "Update template button",
+      "message": "Обновить"
+   },
    "logTitle": {
       "description": "Log section title",
       "message": "Журнал выполнения"
@@ -304,6 +336,38 @@
    "msgResultsExported": {
       "description": "Results exported success message",
       "message": "Результаты экспортированы"
+   },
+   "msgConfirmTemplateDelete": {
+      "description": "Confirm template delete dialog",
+      "message": "Вы уверены, что хотите удалить этот шаблон?"
+   },
+   "msgTemplateDeleted": {
+      "description": "Template deleted message",
+      "message": "Шаблон удален"
+   },
+   "msgTemplateLoaded": {
+      "description": "Template loaded message",
+      "message": "Шаблон загружен в редактор"
+   },
+   "msgTemplateNameRequired": {
+      "description": "Template name required message",
+      "message": "Имя шаблона не может быть пустым"
+   },
+   "msgTemplateSaved": {
+      "description": "Template saved message",
+      "message": "Шаблон сохранен"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "Template selection required message",
+      "message": "Сначала выберите шаблон"
+   },
+   "msgTemplateUpdated": {
+      "description": "Template updated message",
+      "message": "Шаблон успешно обновлен"
+   },
+   "msgTemplateRenamed": {
+      "description": "Template renamed message",
+      "message": "Шаблон успешно переименован"
    },
    "msgStartingBatch": {
       "description": "Starting batch message",

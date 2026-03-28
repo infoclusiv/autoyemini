@@ -107,6 +107,38 @@
       "description": "Input section title",
       "message": "質問入力"
    },
+   "templateDeleteBtn": {
+      "description": "Delete template button",
+      "message": "削除"
+   },
+   "templateLoadBtn": {
+      "description": "Load template button",
+      "message": "読み込む"
+   },
+   "templateNamePrompt": {
+      "description": "Template name prompt",
+      "message": "テンプレート名"
+   },
+   "templateRenameBtn": {
+      "description": "Rename template button",
+      "message": "名前変更"
+   },
+   "templateRenamePrompt": {
+      "description": "Template rename prompt",
+      "message": "新しいテンプレート名"
+   },
+   "templateSaveBtn": {
+      "description": "Save template button",
+      "message": "新規"
+   },
+   "templateSelectDefault": {
+      "description": "Default template select option",
+      "message": "テンプレートを選択"
+   },
+   "templateUpdateBtn": {
+      "description": "Update template button",
+      "message": "更新"
+   },
    "logTitle": {
       "description": "Log section title",
       "message": "実行ログ"
@@ -304,6 +336,38 @@
    "msgResultsExported": {
       "description": "Results exported success message",
       "message": "結果をエクスポートしました"
+   },
+   "msgConfirmTemplateDelete": {
+      "description": "Confirm template delete dialog",
+      "message": "このテンプレートを削除してもよろしいですか？"
+   },
+   "msgTemplateDeleted": {
+      "description": "Template deleted message",
+      "message": "テンプレートを削除しました"
+   },
+   "msgTemplateLoaded": {
+      "description": "Template loaded message",
+      "message": "テンプレートをエディターに読み込みました"
+   },
+   "msgTemplateNameRequired": {
+      "description": "Template name required message",
+      "message": "テンプレート名は空にできません"
+   },
+   "msgTemplateSaved": {
+      "description": "Template saved message",
+      "message": "テンプレートを保存しました"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "Template selection required message",
+      "message": "先にテンプレートを選択してください"
+   },
+   "msgTemplateUpdated": {
+      "description": "Template updated message",
+      "message": "テンプレートを更新しました"
+   },
+   "msgTemplateRenamed": {
+      "description": "Template renamed message",
+      "message": "テンプレート名を変更しました"
    },
    "msgStartingBatch": {
       "description": "Starting batch message",

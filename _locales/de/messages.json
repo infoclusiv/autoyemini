@@ -107,6 +107,38 @@
       "description": "Input section title",
       "message": "Frageneingabe"
    },
+   "templateDeleteBtn": {
+      "description": "Delete template button",
+      "message": "Löschen"
+   },
+   "templateLoadBtn": {
+      "description": "Load template button",
+      "message": "Laden"
+   },
+   "templateNamePrompt": {
+      "description": "Template name prompt",
+      "message": "Name der Vorlage"
+   },
+   "templateRenameBtn": {
+      "description": "Rename template button",
+      "message": "Umbenennen"
+   },
+   "templateRenamePrompt": {
+      "description": "Template rename prompt",
+      "message": "Neuer Vorlagenname"
+   },
+   "templateSaveBtn": {
+      "description": "Save template button",
+      "message": "Neu"
+   },
+   "templateSelectDefault": {
+      "description": "Default template select option",
+      "message": "Vorlage auswählen"
+   },
+   "templateUpdateBtn": {
+      "description": "Update template button",
+      "message": "Aktualisieren"
+   },
    "logTitle": {
       "description": "Log section title",
       "message": "Ausführungsprotokoll"
@@ -304,6 +336,38 @@
    "msgResultsExported": {
       "description": "Results exported success message",
       "message": "Ergebnisse exportiert"
+   },
+   "msgConfirmTemplateDelete": {
+      "description": "Confirm template delete dialog",
+      "message": "Möchten Sie diese Vorlage wirklich löschen?"
+   },
+   "msgTemplateDeleted": {
+      "description": "Template deleted message",
+      "message": "Vorlage gelöscht"
+   },
+   "msgTemplateLoaded": {
+      "description": "Template loaded message",
+      "message": "Vorlage in den Editor geladen"
+   },
+   "msgTemplateNameRequired": {
+      "description": "Template name required message",
+      "message": "Der Vorlagenname darf nicht leer sein"
+   },
+   "msgTemplateSaved": {
+      "description": "Template saved message",
+      "message": "Vorlage gespeichert"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "Template selection required message",
+      "message": "Wählen Sie zuerst eine Vorlage aus"
+   },
+   "msgTemplateUpdated": {
+      "description": "Template updated message",
+      "message": "Vorlage erfolgreich aktualisiert"
+   },
+   "msgTemplateRenamed": {
+      "description": "Template renamed message",
+      "message": "Vorlage erfolgreich umbenannt"
    },
    "msgStartingBatch": {
       "description": "Starting batch message",

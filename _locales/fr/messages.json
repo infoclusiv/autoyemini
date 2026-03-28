@@ -107,6 +107,38 @@
       "description": "Input section title",
       "message": "Saisie de questions"
    },
+   "templateDeleteBtn": {
+      "description": "Delete template button",
+      "message": "Supprimer"
+   },
+   "templateLoadBtn": {
+      "description": "Load template button",
+      "message": "Charger"
+   },
+   "templateNamePrompt": {
+      "description": "Template name prompt",
+      "message": "Nom du modèle"
+   },
+   "templateRenameBtn": {
+      "description": "Rename template button",
+      "message": "Renommer"
+   },
+   "templateRenamePrompt": {
+      "description": "Template rename prompt",
+      "message": "Nouveau nom du modèle"
+   },
+   "templateSaveBtn": {
+      "description": "Save template button",
+      "message": "Nouveau"
+   },
+   "templateSelectDefault": {
+      "description": "Default template select option",
+      "message": "Sélectionner un modèle"
+   },
+   "templateUpdateBtn": {
+      "description": "Update template button",
+      "message": "Mettre à jour"
+   },
    "logTitle": {
       "description": "Log section title",
       "message": "Journal d'exécution"
@@ -304,6 +336,38 @@
    "msgResultsExported": {
       "description": "Results exported success message",
       "message": "Résultats exportés"
+   },
+   "msgConfirmTemplateDelete": {
+      "description": "Confirm template delete dialog",
+      "message": "Voulez-vous vraiment supprimer ce modèle ?"
+   },
+   "msgTemplateDeleted": {
+      "description": "Template deleted message",
+      "message": "Modèle supprimé"
+   },
+   "msgTemplateLoaded": {
+      "description": "Template loaded message",
+      "message": "Modèle chargé dans l'éditeur"
+   },
+   "msgTemplateNameRequired": {
+      "description": "Template name required message",
+      "message": "Le nom du modèle ne peut pas être vide"
+   },
+   "msgTemplateSaved": {
+      "description": "Template saved message",
+      "message": "Modèle enregistré"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "Template selection required message",
+      "message": "Sélectionnez d'abord un modèle"
+   },
+   "msgTemplateUpdated": {
+      "description": "Template updated message",
+      "message": "Modèle mis à jour avec succès"
+   },
+   "msgTemplateRenamed": {
+      "description": "Template renamed message",
+      "message": "Modèle renommé avec succès"
    },
    "msgStartingBatch": {
       "description": "Starting batch message",

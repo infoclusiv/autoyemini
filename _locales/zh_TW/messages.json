@@ -107,6 +107,38 @@
       "description": "輸入區標題",
       "message": "問題錄入"
    },
+   "templateDeleteBtn": {
+      "description": "刪除範本按鈕",
+      "message": "刪除"
+   },
+   "templateLoadBtn": {
+      "description": "載入範本按鈕",
+      "message": "載入"
+   },
+   "templateNamePrompt": {
+      "description": "範本名稱提示",
+      "message": "範本名稱"
+   },
+   "templateRenameBtn": {
+      "description": "重新命名範本按鈕",
+      "message": "重新命名"
+   },
+   "templateRenamePrompt": {
+      "description": "範本重新命名提示",
+      "message": "新範本名稱"
+   },
+   "templateSaveBtn": {
+      "description": "保存範本按鈕",
+      "message": "新增"
+   },
+   "templateSelectDefault": {
+      "description": "預設範本選項",
+      "message": "選擇範本"
+   },
+   "templateUpdateBtn": {
+      "description": "更新範本按鈕",
+      "message": "更新"
+   },
    "logTitle": {
       "description": "日誌區標題",
       "message": "執行日誌"
@@ -304,6 +336,38 @@
    "msgResultsExported": {
       "description": "結果匯出成功訊息",
       "message": "結果已匯出"
+   },
+   "msgConfirmTemplateDelete": {
+      "description": "確認刪除範本對話框",
+      "message": "確定要刪除此範本嗎？"
+   },
+   "msgTemplateDeleted": {
+      "description": "範本刪除訊息",
+      "message": "範本已刪除"
+   },
+   "msgTemplateLoaded": {
+      "description": "範本載入訊息",
+      "message": "範本已載入至編輯器"
+   },
+   "msgTemplateNameRequired": {
+      "description": "範本名稱必填訊息",
+      "message": "範本名稱不能為空"
+   },
+   "msgTemplateSaved": {
+      "description": "範本保存訊息",
+      "message": "範本已儲存"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "需要選擇範本訊息",
+      "message": "請先選擇範本"
+   },
+   "msgTemplateUpdated": {
+      "description": "範本更新訊息",
+      "message": "範本已成功更新"
+   },
+   "msgTemplateRenamed": {
+      "description": "範本重新命名訊息",
+      "message": "範本已成功重新命名"
    },
    "msgStartingBatch": {
       "description": "開始批次訊息",

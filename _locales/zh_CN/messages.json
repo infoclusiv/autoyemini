@@ -107,6 +107,38 @@
       "description": "输入区标题",
       "message": "问题录入"
    },
+   "templateDeleteBtn": {
+      "description": "删除模板按钮",
+      "message": "删除"
+   },
+   "templateLoadBtn": {
+      "description": "加载模板按钮",
+      "message": "加载"
+   },
+   "templateNamePrompt": {
+      "description": "模板名称提示",
+      "message": "模板名称"
+   },
+   "templateRenameBtn": {
+      "description": "重命名模板按钮",
+      "message": "重命名"
+   },
+   "templateRenamePrompt": {
+      "description": "模板重命名提示",
+      "message": "新模板名称"
+   },
+   "templateSaveBtn": {
+      "description": "保存模板按钮",
+      "message": "新建"
+   },
+   "templateSelectDefault": {
+      "description": "默认模板选择项",
+      "message": "选择模板"
+   },
+   "templateUpdateBtn": {
+      "description": "更新模板按钮",
+      "message": "更新"
+   },
    "logTitle": {
       "description": "日志区标题",
       "message": "执行日志"
@@ -304,6 +336,38 @@
    "msgResultsExported": {
       "description": "结果导出成功消息",
       "message": "结果已导出"
+   },
+   "msgConfirmTemplateDelete": {
+      "description": "确认删除模板对话框",
+      "message": "确定要删除此模板吗？"
+   },
+   "msgTemplateDeleted": {
+      "description": "模板删除消息",
+      "message": "模板已删除"
+   },
+   "msgTemplateLoaded": {
+      "description": "模板加载消息",
+      "message": "模板已加载到编辑器"
+   },
+   "msgTemplateNameRequired": {
+      "description": "模板名称必填消息",
+      "message": "模板名称不能为空"
+   },
+   "msgTemplateSaved": {
+      "description": "模板保存消息",
+      "message": "模板已保存"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "需要选择模板消息",
+      "message": "请先选择模板"
+   },
+   "msgTemplateUpdated": {
+      "description": "模板更新消息",
+      "message": "模板已成功更新"
+   },
+   "msgTemplateRenamed": {
+      "description": "模板重命名消息",
+      "message": "模板已成功重命名"
    },
    "msgStartingBatch": {
       "description": "开始批量消息",
