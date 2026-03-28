@@ -9,7 +9,7 @@ import { ControlPanel } from "./ui/controlPanel.js";
 import { StatsPanel } from "./ui/statsPanel.js";
 import { SettingsPanel } from "./ui/settingsPanel.js";
 
-const { generateUUID, sleep } = globalThis.SharedUtils;
+const { generateUUID, sleep, randomSleep } = globalThis.SharedUtils;
 const AppConfig = globalThis.CONFIG;
 
 let logPanel;
@@ -35,6 +35,13 @@ function getElements() {
     useTempChatCheckbox: document.getElementById("useTempChatCheckbox"),
     useWebSearchCheckbox: document.getElementById("useWebSearchCheckbox"),
     keepSameChatCheckbox: document.getElementById("keepSameChatCheckbox"),
+    humanTypingCheckbox: document.getElementById("humanTypingCheckbox"),
+    randomDelaysCheckbox: document.getElementById("randomDelaysCheckbox"),
+    biologicalPausesCheckbox: document.getElementById("biologicalPausesCheckbox"),
+    biologicalPauseFields: document.getElementById("biologicalPauseFields"),
+    fatigueCountInput: document.getElementById("fatigueCountInput"),
+    fatigueMinMinutesInput: document.getElementById("fatigueMinMinutesInput"),
+    fatigueMaxMinutesInput: document.getElementById("fatigueMaxMinutesInput"),
     clearAllBtn: document.getElementById("clearAllBtn"),
     progressText: document.getElementById("progressText"),
     progressPercent: document.getElementById("progressPercent"),
@@ -58,6 +65,81 @@ function addLog(message, level = "info") {
 
 function persistQuestions() {
   return saveQuestions(AppState.getState().questions);
+}
+
+function getFixedDelay(delayOrRange) {
+  if (Array.isArray(delayOrRange)) {
+    return Number(delayOrRange[0]) || 0;
+  }
+
+  return Number(delayOrRange) || 0;
+}
+
+async function waitForConfiguredDelay(delayOrRange, useRandomDelays = true) {
+  if (useRandomDelays && Array.isArray(delayOrRange)) {
+    await randomSleep(delayOrRange);
+    return;
+  }
+
+  await sleep(getFixedDelay(delayOrRange));
+}
+
+function buildAntiBotConfig(settings) {
+  const safeSettings = settings || settingsPanel.getValues();
+  const minPauseMs = Math.round(safeSettings.fatigueMinMinutes * 60000);
+  const maxPauseMs = Math.round(safeSettings.fatigueMaxMinutes * 60000);
+
+  return {
+    humanTyping: safeSettings.humanTyping,
+    randomDelays: safeSettings.randomDelays,
+    biologicalPauses: safeSettings.biologicalPauses,
+    typingSpeed: [...safeSettings.typingSpeed],
+    errorProbability: AppConfig.ANTI_BOT.ERROR_PROBABILITY,
+    fatigueCount: safeSettings.fatigueCount,
+    fatiguePauseMs: [Math.min(minPauseMs, maxPauseMs), Math.max(minPauseMs, maxPauseMs)]
+  };
+}
+
+function patchAntiBotState(settings) {
+  AppState.patch({
+    humanTyping: settings.humanTyping,
+    randomDelays: settings.randomDelays,
+    biologicalPauses: settings.biologicalPauses,
+    typingSpeed: [...settings.typingSpeed],
+    fatigueCount: settings.fatigueCount,
+    fatigueMinMinutes: settings.fatigueMinMinutes,
+    fatigueMaxMinutes: settings.fatigueMaxMinutes
+  });
+}
+
+async function persistAntiBotSettings(settings) {
+  patchAntiBotState(settings);
+  await Promise.all([
+    saveSetting(StorageKeys.HUMAN_TYPING, settings.humanTyping),
+    saveSetting(StorageKeys.RANDOM_DELAYS, settings.randomDelays),
+    saveSetting(StorageKeys.BIOLOGICAL_PAUSES, settings.biologicalPauses),
+    saveSetting(StorageKeys.TYPING_SPEED, settings.typingSpeed),
+    saveSetting(StorageKeys.FATIGUE_COUNT, settings.fatigueCount),
+    saveSetting(StorageKeys.FATIGUE_MIN_PAUSE_MINUTES, settings.fatigueMinMinutes),
+    saveSetting(StorageKeys.FATIGUE_MAX_PAUSE_MINUTES, settings.fatigueMaxMinutes)
+  ]);
+}
+
+async function maybeTakeBiologicalPause(settings) {
+  const state = AppState.getState();
+  if (!settings.biologicalPauses || state.processedSincePause < settings.fatigueCount) {
+    return;
+  }
+
+  addLog(t("messages.biologicalPause"), "info");
+  await randomSleep(buildAntiBotConfig(settings).fatiguePauseMs);
+
+  const latestState = AppState.getState();
+  if (!latestState.isRunning || latestState.isPaused) {
+    return;
+  }
+
+  AppState.patch({ processedSincePause: 0 });
 }
 
 function handleAddQuestions() {
@@ -151,12 +233,15 @@ async function handleStart() {
     return;
   }
 
-  AppState.patch({ isRunning: true, isPaused: false, currentIndex: 0 });
+  const antiBotSettings = settingsPanel.getValues();
+  await persistAntiBotSettings(antiBotSettings);
+
+  AppState.patch({ isRunning: true, isPaused: false, currentIndex: 0, processedSincePause: 0 });
   addLog(t("messages.startingBatch"), "info");
   addLog(t("messages.foundPending", { count: pendingQuestions.length }), "info");
   addLog(t("messages.waitingPage"), "info");
 
-  await sleep(AppConfig.TIMING.BETWEEN_QUESTIONS_MS);
+  await waitForConfiguredDelay(AppConfig.TIMING.BETWEEN_QUESTIONS_MS, antiBotSettings.randomDelays);
   addLog(t("messages.startingFirst"), "info");
   void processNextQuestion();
 }
@@ -173,7 +258,7 @@ function handleResume() {
 }
 
 function handleStop() {
-  AppState.patch({ isRunning: false, isPaused: false });
+  AppState.patch({ isRunning: false, isPaused: false, processedSincePause: 0 });
   addLog(t("messages.executionStopped"), "warning");
 }
 
@@ -205,9 +290,17 @@ async function processNextQuestion() {
     return;
   }
 
+  const antiBotSettings = settingsPanel.getValues();
+  await maybeTakeBiologicalPause(antiBotSettings);
+
+  const refreshedState = AppState.getState();
+  if (!refreshedState.isRunning || refreshedState.isPaused) {
+    return;
+  }
+
   let nextIndex = -1;
-  for (let index = state.currentIndex; index < state.questions.length; index += 1) {
-    if (state.questions[index].status === "pending") {
+  for (let index = refreshedState.currentIndex; index < refreshedState.questions.length; index += 1) {
+    if (refreshedState.questions[index].status === "pending") {
       nextIndex = index;
       break;
     }
@@ -219,21 +312,22 @@ async function processNextQuestion() {
     return;
   }
 
-  const nextQuestion = state.questions[nextIndex];
+  const nextQuestion = refreshedState.questions[nextIndex];
   AppState.patch({ currentIndex: nextIndex });
   AppState.updateQuestion(nextQuestion.id, { status: "processing" });
   await persistQuestions();
-  addLog(`[${nextIndex + 1}/${state.questions.length}]: ${nextQuestion.question.substring(0, 50)}...`, "info");
+  addLog(`[${nextIndex + 1}/${refreshedState.questions.length}]: ${nextQuestion.question.substring(0, 50)}...`, "info");
 
   try {
-    const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
+    const { useTempChat, useWebSearch, keepSameChat } = antiBotSettings;
     const response = await sendToBackground({
       type: "PROCESS_QUESTION",
       question: nextQuestion.question,
       questionId: nextQuestion.id,
       useTempChat,
       useWebSearch,
-      keepSameChat
+      keepSameChat,
+      antiBotConfig: buildAntiBotConfig(antiBotSettings)
     });
 
     if (!response?.success) {
@@ -280,12 +374,18 @@ async function handleQuestionComplete(result) {
   }
 
   await persistQuestions();
-  AppState.patch({ currentIndex: state.currentIndex + 1 });
+  AppState.patch({
+    currentIndex: state.currentIndex + 1,
+    processedSincePause: state.processedSincePause + 1
+  });
 
   const latestState = AppState.getState();
   if (latestState.isRunning && !latestState.isPaused) {
     addLog(t("messages.waitingNext"), "info");
-    await sleep(AppConfig.TIMING.BETWEEN_QUESTIONS_MS);
+    await waitForConfiguredDelay(
+      AppConfig.TIMING.BETWEEN_QUESTIONS_MS,
+      latestState.randomDelays
+    );
     void processNextQuestion();
   }
 }
@@ -335,6 +435,12 @@ async function handleKeepSameChatChange(event) {
   const enabled = event.target.checked;
   AppState.patch({ keepSameChat: enabled });
   await saveSetting(StorageKeys.KEEP_SAME_CHAT, enabled);
+}
+
+async function handleAntiBotSettingsChange() {
+  const settings = settingsPanel.getValues();
+  settingsPanel.setBiologicalPauseVisibility(settings.biologicalPauses);
+  await persistAntiBotSettings(settings);
 }
 
 function wireMessageListeners() {
@@ -423,6 +529,24 @@ function setupEventListeners(elements) {
   elements.keepSameChatCheckbox.addEventListener("change", (event) => {
     void handleKeepSameChatChange(event);
   });
+  elements.humanTypingCheckbox.addEventListener("change", () => {
+    void handleAntiBotSettingsChange();
+  });
+  elements.randomDelaysCheckbox.addEventListener("change", () => {
+    void handleAntiBotSettingsChange();
+  });
+  elements.biologicalPausesCheckbox.addEventListener("change", () => {
+    void handleAntiBotSettingsChange();
+  });
+  elements.fatigueCountInput.addEventListener("change", () => {
+    void handleAntiBotSettingsChange();
+  });
+  elements.fatigueMinMinutesInput.addEventListener("change", () => {
+    void handleAntiBotSettingsChange();
+  });
+  elements.fatigueMaxMinutesInput.addEventListener("change", () => {
+    void handleAntiBotSettingsChange();
+  });
 }
 
 async function initialize() {
@@ -451,7 +575,14 @@ async function initialize() {
   settingsPanel = new SettingsPanel({
     useTempChatCheckbox: elements.useTempChatCheckbox,
     useWebSearchCheckbox: elements.useWebSearchCheckbox,
-    keepSameChatCheckbox: elements.keepSameChatCheckbox
+    keepSameChatCheckbox: elements.keepSameChatCheckbox,
+    humanTypingCheckbox: elements.humanTypingCheckbox,
+    randomDelaysCheckbox: elements.randomDelaysCheckbox,
+    biologicalPausesCheckbox: elements.biologicalPausesCheckbox,
+    biologicalPauseFields: elements.biologicalPauseFields,
+    fatigueCountInput: elements.fatigueCountInput,
+    fatigueMinMinutesInput: elements.fatigueMinMinutesInput,
+    fatigueMaxMinutesInput: elements.fatigueMaxMinutesInput
   });
 
   setupEventListeners(elements);
@@ -463,7 +594,14 @@ async function initialize() {
     AppState.patch({
       useTempChat: stored.useTempChat,
       useWebSearch: stored.useWebSearch,
-      keepSameChat: stored.keepSameChat
+      keepSameChat: stored.keepSameChat,
+      humanTyping: stored.humanTyping,
+      randomDelays: stored.randomDelays,
+      biologicalPauses: stored.biologicalPauses,
+      typingSpeed: stored.typingSpeed,
+      fatigueCount: stored.fatigueCount,
+      fatigueMinMinutes: stored.fatigueMinMinutes,
+      fatigueMaxMinutes: stored.fatigueMaxMinutes
     });
     settingsPanel.setValues(stored);
 

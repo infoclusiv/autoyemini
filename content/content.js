@@ -58,7 +58,13 @@
     sendQuestionResult(true);
   }
 
-  async function askQuestion(question, questionId, useTempChat = true, useWebSearch = true) {
+  async function askQuestion(
+    question,
+    questionId,
+    useTempChat = true,
+    useWebSearch = true,
+    antiBotConfig = null
+  ) {
     ContentState.currentQuestion = { question, questionId };
     ContentState.currentAnswer = "";
     ContentState.currentSources = [];
@@ -67,14 +73,14 @@
 
     try {
       if (useWebSearch) {
-        await modules.enableWebSearch();
+        await modules.enableWebSearch(antiBotConfig || {});
       }
 
-      if (!(await modules.inputQuestion(question))) {
+      if (!(await modules.inputQuestion(question, antiBotConfig || {}))) {
         throw new Error("Failed to input question");
       }
 
-      if (!(await modules.submitQuestion())) {
+      if (!(await modules.submitQuestion(antiBotConfig || {}))) {
         throw new Error("Failed to submit question");
       }
 
@@ -147,8 +153,9 @@
     if (message.type === "ASK_QUESTION") {
       const useTempChat = message.useTempChat !== false;
       const useWebSearch = message.useWebSearch !== false;
+      const antiBotConfig = message.antiBotConfig || {};
 
-      askQuestion(message.question, message.questionId, useTempChat, useWebSearch)
+      askQuestion(message.question, message.questionId, useTempChat, useWebSearch, antiBotConfig)
         .then((response) => sendResponse(response))
         .catch((error) => sendResponse({ success: false, error: error.message }));
       return true;

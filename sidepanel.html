@@ -56,6 +56,63 @@
           </label>
           <span class="setting-hint" data-i18n="control.keepSameChatHint">Envia todas las preguntas en la misma sesion sin recargar</span>
         </div>
+
+        <div class="settings-group anti-bot-settings">
+          <div class="settings-group-title" data-i18n="control.antiBotTitle">🤖 Anti-Bot Options</div>
+
+          <div class="setting-item">
+            <label class="setting-label">
+              <span class="setting-icon">⌨️</span>
+              <input type="checkbox" id="humanTypingCheckbox" checked>
+              <span class="setting-text" data-i18n="control.humanTyping">Enable Human Typing</span>
+            </label>
+            <span class="setting-hint" data-i18n="control.humanTypingHint">Types the prompt character by character instead of injecting it instantly</span>
+          </div>
+
+          <div class="setting-item">
+            <label class="setting-label">
+              <span class="setting-icon">🎲</span>
+              <input type="checkbox" id="randomDelaysCheckbox" checked>
+              <span class="setting-text" data-i18n="control.randomDelays">Enable Random Delays</span>
+            </label>
+            <span class="setting-hint" data-i18n="control.randomDelaysHint">Adds jitter between actions to avoid exact repeated timings</span>
+          </div>
+
+          <div class="setting-item">
+            <label class="setting-label">
+              <span class="setting-icon">☕</span>
+              <input type="checkbox" id="biologicalPausesCheckbox">
+              <span class="setting-text" data-i18n="control.biologicalPauses">Enable Biological Pauses</span>
+            </label>
+            <span class="setting-hint" data-i18n="control.biologicalPausesHint">Pause automatically after a configurable number of processed questions</span>
+          </div>
+
+          <div id="biologicalPauseFields" class="settings-subgroup is-hidden">
+            <div class="setting-item setting-item-compact">
+              <label class="number-setting-label" for="fatigueCountInput">
+                <span class="setting-text" data-i18n="control.fatigueAfter">Questions Before Rest</span>
+                <span class="setting-hint-inline" data-i18n="control.fatigueAfterHint">Take a longer break after this many processed questions</span>
+              </label>
+              <input type="number" id="fatigueCountInput" min="1" step="1" value="10">
+            </div>
+
+            <div class="setting-item setting-item-compact">
+              <label class="number-setting-label" for="fatigueMinMinutesInput">
+                <span class="setting-text" data-i18n="control.fatigueMinMinutes">Minimum Rest (Minutes)</span>
+                <span class="setting-hint-inline" data-i18n="control.fatigueMinMinutesHint">Lower bound for the fatigue pause window</span>
+              </label>
+              <input type="number" id="fatigueMinMinutesInput" min="0.5" step="0.5" value="1">
+            </div>
+
+            <div class="setting-item setting-item-compact">
+              <label class="number-setting-label" for="fatigueMaxMinutesInput">
+                <span class="setting-text" data-i18n="control.fatigueMaxMinutes">Maximum Rest (Minutes)</span>
+                <span class="setting-hint-inline" data-i18n="control.fatigueMaxMinutesHint">Upper bound for the fatigue pause window</span>
+              </label>
+              <input type="number" id="fatigueMaxMinutesInput" min="0.5" step="0.5" value="2">
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- Divider -->

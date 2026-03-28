@@ -1,6 +1,23 @@
 (function registerWebSearchModule() {
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
-  const { sleep } = SharedUtils;
+  const { sleep, randomInt, randomSleep } = SharedUtils;
+
+  function getFixedDelay(delayOrRange) {
+    if (Array.isArray(delayOrRange)) {
+      return Number(delayOrRange[0]) || 0;
+    }
+
+    return Number(delayOrRange) || 0;
+  }
+
+  async function waitForDelay(delayOrRange, antiBotConfig = {}) {
+    if (antiBotConfig.randomDelays !== false && Array.isArray(delayOrRange)) {
+      await randomSleep(delayOrRange);
+      return;
+    }
+
+    await sleep(getFixedDelay(delayOrRange));
+  }
 
   function findSearchMenuItem(menu) {
     const menuItems = Array.from(menu.querySelectorAll(".__menu-item"));
@@ -72,15 +89,32 @@
     );
   }
 
-  async function clickWithEvents(element) {
+  function getRandomPoint(rect) {
+    const horizontalPadding = Math.max(4, rect.width * 0.18);
+    const verticalPadding = Math.max(4, rect.height * 0.22);
+
+    return {
+      clientX: randomInt(rect.left + horizontalPadding, rect.right - horizontalPadding),
+      clientY: randomInt(rect.top + verticalPadding, rect.bottom - verticalPadding)
+    };
+  }
+
+  async function clickWithEvents(element, antiBotConfig = {}) {
     const rect = element.getBoundingClientRect();
-    const clientX = rect.left + rect.width / 2;
-    const clientY = rect.top + rect.height / 2;
+    const { clientX, clientY } = getRandomPoint(rect);
+
+    try {
+      element.scrollIntoView({ behavior: "instant", block: "center" });
+    } catch {
+    }
 
     element.dispatchEvent(
       new MouseEvent("mouseover", { bubbles: true, cancelable: true, view: window, clientX, clientY })
     );
-    await sleep(50);
+    element.dispatchEvent(
+      new MouseEvent("mousemove", { bubbles: true, cancelable: true, view: window, clientX, clientY })
+    );
+    await waitForDelay([50, 100], antiBotConfig);
     element.dispatchEvent(
       new MouseEvent("mousedown", {
         bubbles: true,
@@ -91,7 +125,7 @@
         button: 0
       })
     );
-    await sleep(50);
+    await waitForDelay([20, 80], antiBotConfig);
     element.dispatchEvent(
       new MouseEvent("mouseup", {
         bubbles: true,
@@ -102,7 +136,7 @@
         button: 0
       })
     );
-    await sleep(50);
+    await waitForDelay([20, 60], antiBotConfig);
     element.dispatchEvent(
       new MouseEvent("click", {
         bubbles: true,
@@ -113,29 +147,10 @@
         button: 0
       })
     );
-    element.click();
   }
 
-  async function enableWebSearchViaSlash() {
-    try {
-      const input = document.querySelector('div[contenteditable="true"]#prompt-textarea, textarea#prompt-textarea');
-      if (!input) {
-        return false;
-      }
-
-      input.focus();
-      await sleep(CONFIG.TIMING.SUBMIT_WAIT_MS);
-      input.innerHTML = "";
-      input.dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key: "/",
-          code: "Slash",
-          keyCode: 191,
-          which: 191,
-          bubbles: true,
-          cancelable: true
-        })
-      );
+  function setSlashValue(input) {
+    if (input.hasAttribute("contenteditable")) {
       input.innerHTML = "/";
 
       const range = document.createRange();
@@ -147,9 +162,46 @@
         range.selectNodeContents(input);
         range.collapse(false);
       }
-      selection.removeAllRanges();
-      selection.addRange(range);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    } else {
+      input.value = "/";
+      input.setSelectionRange?.(1, 1);
+    }
+  }
 
+  function clearSlashValue(input) {
+    if (input.hasAttribute("contenteditable")) {
+      input.innerHTML = "";
+    } else {
+      input.value = "";
+      input.setSelectionRange?.(0, 0);
+    }
+
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  async function enableWebSearchViaSlash(antiBotConfig = {}) {
+    try {
+      const input = document.querySelector('div[contenteditable="true"]#prompt-textarea, textarea#prompt-textarea');
+      if (!input) {
+        return false;
+      }
+
+      input.focus();
+      await waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
+      clearSlashValue(input);
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "/",
+          code: "Slash",
+          keyCode: 191,
+          which: 191,
+          bubbles: true,
+          cancelable: true
+        })
+      );
+      setSlashValue(input);
       input.dispatchEvent(
         new InputEvent("input", {
           bubbles: true,
@@ -169,7 +221,7 @@
         })
       );
 
-      await sleep(CONFIG.TIMING.MENU_APPEAR_WAIT_MS);
+      await waitForDelay(CONFIG.TIMING.MENU_APPEAR_WAIT_MS, antiBotConfig);
 
       const overlays = document.querySelectorAll('div[style*="position: absolute"], div[style*="position: fixed"]');
       let menu = null;
@@ -200,29 +252,26 @@
       }
 
       if (!menu) {
-        input.innerHTML = "";
-        input.dispatchEvent(new Event("input", { bubbles: true }));
+        clearSlashValue(input);
         return false;
       }
 
       const menuItem = findSearchMenuItem(menu);
       if (!menuItem) {
-        input.innerHTML = "";
-        input.dispatchEvent(new Event("input", { bubbles: true }));
+        clearSlashValue(input);
         return false;
       }
 
-      await clickWithEvents(menuItem);
-      await sleep(CONFIG.TIMING.INPUT_WAIT_MS);
-      input.innerHTML = "";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await clickWithEvents(menuItem, antiBotConfig);
+      await waitForDelay(CONFIG.TIMING.INPUT_WAIT_MS, antiBotConfig);
+      clearSlashValue(input);
       return true;
     } catch {
       return false;
     }
   }
 
-  async function enableWebSearch() {
+  async function enableWebSearch(antiBotConfig = {}) {
     try {
       const selectedButtons = document.querySelectorAll('button[data-is-selected="true"]');
       for (const button of selectedButtons) {
@@ -232,7 +281,7 @@
         }
       }
 
-      return enableWebSearchViaSlash();
+      return enableWebSearchViaSlash(antiBotConfig);
     } catch {
       return false;
     }

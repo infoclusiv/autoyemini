@@ -6,6 +6,14 @@ const state = {
   useTempChat: true,
   useWebSearch: true,
   keepSameChat: false,
+  humanTyping: true,
+  randomDelays: true,
+  biologicalPauses: false,
+  typingSpeed: [...(globalThis.CONFIG?.ANTI_BOT?.TYPING_SPEED_MS || [30, 100])],
+  fatigueCount: globalThis.CONFIG?.ANTI_BOT?.FATIGUE_AFTER_QUESTIONS || 10,
+  fatigueMinMinutes: 0.5,
+  fatigueMaxMinutes: 1,
+  processedSincePause: 0,
   lastProcessedMessageTimestamp: 0
 };
 

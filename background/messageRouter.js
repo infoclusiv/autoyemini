@@ -24,7 +24,8 @@ async function handleProcessQuestion(payload, sendResponse) {
       question: payload.question,
       questionId: payload.questionId,
       useTempChat,
-      useWebSearch
+      useWebSearch,
+      antiBotConfig: payload.antiBotConfig || null
     });
 
     sendResponse(result);

@@ -47,6 +47,58 @@
       "description": "Keep same chat hint",
       "message": "Envia todas las preguntas en la misma sesion sin recargar"
    },
+   "controlAntiBotTitle": {
+      "description": "Anti-bot settings title",
+      "message": "🤖 Opciones Anti-Bot"
+   },
+   "controlHumanTyping": {
+      "description": "Human typing option",
+      "message": "Habilitar escritura humana"
+   },
+   "controlHumanTypingHint": {
+      "description": "Human typing option hint",
+      "message": "Escribe el prompt caracter por caracter en lugar de inyectarlo al instante"
+   },
+   "controlRandomDelays": {
+      "description": "Random delays option",
+      "message": "Habilitar tiempos aleatorios"
+   },
+   "controlRandomDelaysHint": {
+      "description": "Random delays option hint",
+      "message": "Agrega jitter entre acciones para evitar tiempos exactos repetidos"
+   },
+   "controlBiologicalPauses": {
+      "description": "Biological pauses option",
+      "message": "Habilitar pausas biologicas"
+   },
+   "controlBiologicalPausesHint": {
+      "description": "Biological pauses option hint",
+      "message": "Pausa automaticamente tras una cantidad configurable de preguntas procesadas"
+   },
+   "controlFatigueAfter": {
+      "description": "Questions before resting label",
+      "message": "Preguntas antes de descansar"
+   },
+   "controlFatigueAfterHint": {
+      "description": "Questions before resting hint",
+      "message": "Toma un descanso mas largo despues de esta cantidad de preguntas procesadas"
+   },
+   "controlFatigueMinMinutes": {
+      "description": "Minimum rest minutes label",
+      "message": "Descanso minimo (minutos)"
+   },
+   "controlFatigueMinMinutesHint": {
+      "description": "Minimum rest minutes hint",
+      "message": "Limite inferior de la ventana de pausa por fatiga"
+   },
+   "controlFatigueMaxMinutes": {
+      "description": "Maximum rest minutes label",
+      "message": "Descanso maximo (minutos)"
+   },
+   "controlFatigueMaxMinutesHint": {
+      "description": "Maximum rest minutes hint",
+      "message": "Limite superior de la ventana de pausa por fatiga"
+   },
    "extDescription": {
       "description": "Extension description",
       "message": "Preguntas masivas a ChatGPT con exportación JSON. Búsqueda web, citas, tareas automatizadas para SEO/GEO"
@@ -279,6 +331,10 @@
       "description": "Processing failed message",
       "message": "Procesamiento fallido"
    },
+   "msgBiologicalPause": {
+      "description": "Biological pause log message",
+      "message": "Pausa biologica activada. Simulando un descanso humano..."
+   },
    "msgQuestionsAdded": {
       "description": "Questions added success message",
       "message": "preguntas añadidas"
@@ -323,7 +379,7 @@
    },
    "msgWaitingNext": {
       "description": "Waiting next message",
-      "message": "Esperando 3 segundos antes de la siguiente pregunta..."
+      "message": "Esperando antes de procesar la siguiente pregunta..."
    },
    "msgWaitingPage": {
       "description": "Waiting for page message",

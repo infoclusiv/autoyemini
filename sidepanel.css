@@ -259,6 +259,21 @@ h2::before {
   margin-bottom: 16px;
 }
 
+.settings-group-title {
+  margin: 14px 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.anti-bot-settings {
+  margin-top: 14px;
+  padding-top: 2px;
+  border-top: 1px dashed #d1d5db;
+}
+
 /* Setting Item */
 .setting-item {
   background: #f9fafb;
@@ -333,6 +348,56 @@ h2::before {
 
 .setting-item:has(input[type="checkbox"]:disabled) .setting-hint {
   color: #d1d5db;
+}
+
+.settings-subgroup {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 0 18px;
+  padding-left: 14px;
+  border-left: 2px solid #cbd5e1;
+}
+
+.settings-subgroup.is-hidden {
+  display: none;
+}
+
+.setting-item-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.number-setting-label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setting-hint-inline {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.setting-item input[type="number"] {
+  width: 88px;
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.setting-item input[type="number"]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
 }
 
 /* Control Divider */

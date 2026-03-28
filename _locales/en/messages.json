@@ -47,6 +47,58 @@
       "description": "Keep same chat hint",
       "message": "Sends all questions in the same session without reloading"
    },
+   "controlAntiBotTitle": {
+      "description": "Anti-bot settings title",
+      "message": "🤖 Anti-Bot Options"
+   },
+   "controlHumanTyping": {
+      "description": "Human typing option",
+      "message": "Enable Human Typing"
+   },
+   "controlHumanTypingHint": {
+      "description": "Human typing option hint",
+      "message": "Types the prompt character by character instead of injecting it instantly"
+   },
+   "controlRandomDelays": {
+      "description": "Random delays option",
+      "message": "Enable Random Delays"
+   },
+   "controlRandomDelaysHint": {
+      "description": "Random delays option hint",
+      "message": "Adds jitter between actions to avoid exact repeated timings"
+   },
+   "controlBiologicalPauses": {
+      "description": "Biological pauses option",
+      "message": "Enable Biological Pauses"
+   },
+   "controlBiologicalPausesHint": {
+      "description": "Biological pauses option hint",
+      "message": "Pause automatically after a configurable number of processed questions"
+   },
+   "controlFatigueAfter": {
+      "description": "Questions before resting label",
+      "message": "Questions Before Rest"
+   },
+   "controlFatigueAfterHint": {
+      "description": "Questions before resting hint",
+      "message": "Take a longer break after this many processed questions"
+   },
+   "controlFatigueMinMinutes": {
+      "description": "Minimum rest minutes label",
+      "message": "Minimum Rest (Minutes)"
+   },
+   "controlFatigueMinMinutesHint": {
+      "description": "Minimum rest minutes hint",
+      "message": "Lower bound for the fatigue pause window"
+   },
+   "controlFatigueMaxMinutes": {
+      "description": "Maximum rest minutes label",
+      "message": "Maximum Rest (Minutes)"
+   },
+   "controlFatigueMaxMinutesHint": {
+      "description": "Maximum rest minutes hint",
+      "message": "Upper bound for the fatigue pause window"
+   },
    "extDescription": {
       "description": "Extension description",
       "message": "Batch automate ChatGPT Q&A with JSON export. Web search, citations, automated tasks for SEO/GEO content creation"
@@ -279,6 +331,10 @@
       "description": "Processing failed message",
       "message": "Processing failed"
    },
+   "msgBiologicalPause": {
+      "description": "Biological pause log message",
+      "message": "Biological pause activated. Simulating a human rest..."
+   },
    "msgQuestionsAdded": {
       "description": "Questions added success message",
       "message": "questions added"
@@ -323,7 +379,7 @@
    },
    "msgWaitingNext": {
       "description": "Waiting next message",
-      "message": "Waiting 3 seconds before processing next question..."
+      "message": "Waiting before processing the next question..."
    },
    "msgWaitingPage": {
       "description": "Waiting for page message",
