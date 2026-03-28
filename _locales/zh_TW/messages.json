@@ -39,6 +39,14 @@
       "description": "聯網搜尋提示文字",
       "message": "啟用後會自動開啟網頁搜尋功能"
    },
+   "controlKeepSameChat": {
+      "description": "保持同一聊天選項",
+      "message": "保持同一聊天"
+   },
+   "controlKeepSameChatHint": {
+      "description": "保持同一聊天提示文字",
+      "message": "在同一會話中傳送所有問題而不重新載入"
+   },
    "extDescription": {
       "description": "外掛描述",
       "message": "批次自動向ChatGPT提問並匯出JSON結果。支援網頁搜尋、引用追蹤。適用於SEO/GEO內容創作"

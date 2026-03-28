@@ -4,6 +4,25 @@ function getChatGPTUrl(useTempChat) {
     : CONFIG.CHATGPT.BASE_URL;
 }
 
+function canReuseExistingChat(currentUrl) {
+  if (!currentUrl) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(currentUrl);
+    const baseUrl = new URL(CONFIG.CHATGPT.BASE_URL);
+
+    if (parsedUrl.origin !== baseUrl.origin) {
+      return false;
+    }
+
+    return parsedUrl.pathname === "/" || parsedUrl.pathname.startsWith("/c/");
+  } catch {
+    return false;
+  }
+}
+
 function waitForTabLoad(tabId) {
   return new Promise((resolve) => {
     chrome.tabs.onUpdated.addListener(function listener(updatedTabId, changeInfo) {
@@ -15,7 +34,7 @@ function waitForTabLoad(tabId) {
   });
 }
 
-async function findOrCreateChatGPTTab(useTempChat) {
+async function findOrCreateChatGPTTab(useTempChat, keepSameChat = false) {
   const url = getChatGPTUrl(useTempChat);
   const existingTabs = await chrome.tabs.query({ url: CONFIG.CHATGPT.URL_PATTERN });
 
@@ -23,7 +42,15 @@ async function findOrCreateChatGPTTab(useTempChat) {
     const currentTab = existingTabs[0];
     const tab = await chrome.tabs.update(currentTab.id, { active: true });
 
-    if (currentTab.url !== url) {
+    let needsReload = false;
+
+    if (keepSameChat) {
+      needsReload = !canReuseExistingChat(currentTab.url);
+    } else if (currentTab.url !== url) {
+      needsReload = true;
+    }
+
+    if (needsReload) {
       await chrome.tabs.update(currentTab.id, { url, active: true });
       await waitForTabLoad(currentTab.id);
     } else if (currentTab.status !== "complete") {

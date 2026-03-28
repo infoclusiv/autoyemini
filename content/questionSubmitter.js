@@ -57,6 +57,14 @@
       await sleep(CONFIG.TIMING.INPUT_WAIT_MS);
 
       if (input.hasAttribute("contenteditable")) {
+        const range = document.createRange();
+        const selection = window.getSelection();
+
+        range.selectNodeContents(input);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        document.execCommand("delete", false, null);
+
         input.innerHTML = "";
         const paragraph = document.createElement("p");
         paragraph.appendChild(document.createTextNode(question));

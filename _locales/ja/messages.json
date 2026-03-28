@@ -39,6 +39,14 @@
       "description": "Web search hint text",
       "message": "有効にすると自動的にウェブ検索を有効化"
    },
+   "controlKeepSameChat": {
+      "description": "Keep same chat option",
+      "message": "同じチャットを維持"
+   },
+   "controlKeepSameChatHint": {
+      "description": "Keep same chat hint",
+      "message": "リロードせず同じセッションですべての質問を送信"
+   },
    "extDescription": {
       "description": "Extension description",
       "message": "ChatGPTに一括質問しJSON出力。ウェブ検索、引用、自動タスク対応。SEO/GEOコンテンツ作成に最適"

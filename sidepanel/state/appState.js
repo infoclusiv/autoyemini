@@ -5,6 +5,7 @@ const state = {
   currentIndex: 0,
   useTempChat: true,
   useWebSearch: true,
+  keepSameChat: false,
   lastProcessedMessageTimestamp: 0
 };
 

@@ -75,6 +75,14 @@
     "message": "啟用後會自動開啟網頁搜尋功能",
     "description": "聯網搜尋提示文字"
   },
+  "controlKeepSameChat": {
+    "message": "保持同一聊天",
+    "description": "保持同一聊天選項"
+  },
+  "controlKeepSameChatHint": {
+    "message": "在同一會話中傳送所有問題而不重新載入",
+    "description": "保持同一聊天提示文字"
+  },
   "statsTotal": {
     "message": "總數",
     "description": "總數標籤"

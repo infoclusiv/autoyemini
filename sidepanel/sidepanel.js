@@ -34,6 +34,7 @@ function getElements() {
     exportBtn: document.getElementById("exportBtn"),
     useTempChatCheckbox: document.getElementById("useTempChatCheckbox"),
     useWebSearchCheckbox: document.getElementById("useWebSearchCheckbox"),
+    keepSameChatCheckbox: document.getElementById("keepSameChatCheckbox"),
     clearAllBtn: document.getElementById("clearAllBtn"),
     progressText: document.getElementById("progressText"),
     progressPercent: document.getElementById("progressPercent"),
@@ -133,11 +134,12 @@ async function handleStart() {
   addLog(t("messages.openingChatGPT"), "info");
 
   try {
-    const { useTempChat, useWebSearch } = settingsPanel.getValues();
+    const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
     const response = await sendToBackground({
       type: "OPEN_CHATGPT",
       useTempChat,
-      useWebSearch
+      useWebSearch,
+      keepSameChat
     });
 
     if (!response?.success) {
@@ -224,13 +226,14 @@ async function processNextQuestion() {
   addLog(`[${nextIndex + 1}/${state.questions.length}]: ${nextQuestion.question.substring(0, 50)}...`, "info");
 
   try {
-    const { useTempChat, useWebSearch } = settingsPanel.getValues();
+    const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
     const response = await sendToBackground({
       type: "PROCESS_QUESTION",
       question: nextQuestion.question,
       questionId: nextQuestion.id,
       useTempChat,
-      useWebSearch
+      useWebSearch,
+      keepSameChat
     });
 
     if (!response?.success) {
@@ -328,6 +331,12 @@ async function handleWebSearchChange(event) {
   addLog(t(enabled ? "msgWebSearchEnabled" : "msgWebSearchDisabled"), "info");
 }
 
+async function handleKeepSameChatChange(event) {
+  const enabled = event.target.checked;
+  AppState.patch({ keepSameChat: enabled });
+  await saveSetting(StorageKeys.KEEP_SAME_CHAT, enabled);
+}
+
 function wireMessageListeners() {
   onRuntimeMessage((message, sendResponse) => {
     switch (message.type) {
@@ -411,6 +420,9 @@ function setupEventListeners(elements) {
   elements.useWebSearchCheckbox.addEventListener("change", (event) => {
     void handleWebSearchChange(event);
   });
+  elements.keepSameChatCheckbox.addEventListener("change", (event) => {
+    void handleKeepSameChatChange(event);
+  });
 }
 
 async function initialize() {
@@ -438,7 +450,8 @@ async function initialize() {
   });
   settingsPanel = new SettingsPanel({
     useTempChatCheckbox: elements.useTempChatCheckbox,
-    useWebSearchCheckbox: elements.useWebSearchCheckbox
+    useWebSearchCheckbox: elements.useWebSearchCheckbox,
+    keepSameChatCheckbox: elements.keepSameChatCheckbox
   });
 
   setupEventListeners(elements);
@@ -449,7 +462,8 @@ async function initialize() {
     AppState.setQuestions(stored.questions);
     AppState.patch({
       useTempChat: stored.useTempChat,
-      useWebSearch: stored.useWebSearch
+      useWebSearch: stored.useWebSearch,
+      keepSameChat: stored.keepSameChat
     });
     settingsPanel.setValues(stored);
 

@@ -39,6 +39,14 @@
       "description": "联网搜索提示文字",
       "message": "启用后会自动开启网页搜索功能"
    },
+   "controlKeepSameChat": {
+      "description": "保持同一聊天选项",
+      "message": "保持同一聊天"
+   },
+   "controlKeepSameChatHint": {
+      "description": "保持同一聊天提示文字",
+      "message": "在同一会话中发送所有问题而不重新加载"
+   },
    "extDescription": {
       "description": "插件描述",
       "message": "批量自动向ChatGPT提问并导出JSON结果。支持网页搜索、引用追踪。适用于SEO/GEO内容创作"

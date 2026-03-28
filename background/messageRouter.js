@@ -2,7 +2,8 @@ async function handleProcessQuestion(payload, sendResponse) {
   try {
     const useTempChat = payload.useTempChat !== false;
     const useWebSearch = payload.useWebSearch !== false;
-    const tab = await findOrCreateChatGPTTab(useTempChat);
+    const keepSameChat = payload.keepSameChat === true;
+    const tab = await findOrCreateChatGPTTab(useTempChat, keepSameChat);
 
     let ready = await waitForContentScript(tab.id);
     if (!ready) {
@@ -34,7 +35,10 @@ async function handleProcessQuestion(payload, sendResponse) {
 
 async function handleOpenChatGPT(payload, sendResponse) {
   try {
-    const tab = await findOrCreateChatGPTTab(payload.useTempChat !== false);
+    const tab = await findOrCreateChatGPTTab(
+      payload.useTempChat !== false,
+      payload.keepSameChat === true
+    );
     sendResponse({ success: true, tabId: tab.id });
   } catch (error) {
     sendResponse({ success: false, error: error.message });

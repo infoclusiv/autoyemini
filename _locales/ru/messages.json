@@ -39,6 +39,14 @@
       "description": "Web search hint text",
       "message": "Автоматически активирует веб-поиск"
    },
+   "controlKeepSameChat": {
+      "description": "Keep same chat option",
+      "message": "Сохранять тот же чат"
+   },
+   "controlKeepSameChatHint": {
+      "description": "Keep same chat hint",
+      "message": "Отправляет все вопросы в той же сессии без перезагрузки"
+   },
    "extDescription": {
       "description": "Extension description",
       "message": "Вопросы ChatGPT с JSON-экспортом. Поиск, цитаты, автоматизация для SEO/GEO"

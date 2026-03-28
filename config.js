@@ -26,6 +26,7 @@ const CONFIG = {
 		QUESTIONS: "questions",
 		USE_TEMP_CHAT: "useTempChat",
 		USE_WEB_SEARCH: "useWebSearch",
+		KEEP_SAME_CHAT: "keepSameChat",
 		PENDING_MESSAGE: "pendingMessage"
 	},
 

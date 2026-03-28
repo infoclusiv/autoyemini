@@ -39,6 +39,14 @@
       "description": "Web search hint text",
       "message": "Aktiviert automatisch Websuche"
    },
+   "controlKeepSameChat": {
+      "description": "Keep same chat option",
+      "message": "Gleichen Chat beibehalten"
+   },
+   "controlKeepSameChatHint": {
+      "description": "Keep same chat hint",
+      "message": "Sendet alle Fragen in derselben Sitzung ohne Neuladen"
+   },
    "extDescription": {
       "description": "Extension description",
       "message": "Massenfragen an ChatGPT mit JSON-Export. Websuche, Zitate, automatisierte Aufgaben für SEO/GEO-Inhaltserstellung"

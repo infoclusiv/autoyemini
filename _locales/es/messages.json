@@ -39,6 +39,14 @@
       "description": "Web search hint text",
       "message": "Activa automáticamente la búsqueda web"
    },
+   "controlKeepSameChat": {
+      "description": "Keep same chat option",
+      "message": "Mantener mismo chat"
+   },
+   "controlKeepSameChatHint": {
+      "description": "Keep same chat hint",
+      "message": "Envia todas las preguntas en la misma sesion sin recargar"
+   },
    "extDescription": {
       "description": "Extension description",
       "message": "Preguntas masivas a ChatGPT con exportación JSON. Búsqueda web, citas, tareas automatizadas para SEO/GEO"

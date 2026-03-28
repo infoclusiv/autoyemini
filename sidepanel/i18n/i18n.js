@@ -16,6 +16,8 @@ const KEY_MAP = {
   "control.useTempChatHint": "controlUseTempChatHint",
   "control.useWebSearch": "controlUseWebSearch",
   "control.useWebSearchHint": "controlUseWebSearchHint",
+  "control.keepSameChat": "controlKeepSameChat",
+  "control.keepSameChatHint": "controlKeepSameChatHint",
   "stats.total": "statsTotal",
   "stats.completed": "statsCompleted",
   "stats.success": "statsSuccess",
