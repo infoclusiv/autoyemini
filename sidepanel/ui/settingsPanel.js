@@ -3,6 +3,10 @@ export class SettingsPanel {
     useTempChatCheckbox,
     useWebSearchCheckbox,
     keepSameChatCheckbox,
+    useExtractionCheckbox,
+    extractionFields,
+    extractionRegexInput,
+    injectionPlaceholderInput,
     humanTypingCheckbox,
     randomDelaysCheckbox,
     biologicalPausesCheckbox,
@@ -14,6 +18,10 @@ export class SettingsPanel {
     this.useTempChatCheckbox = useTempChatCheckbox;
     this.useWebSearchCheckbox = useWebSearchCheckbox;
     this.keepSameChatCheckbox = keepSameChatCheckbox;
+    this.useExtractionCheckbox = useExtractionCheckbox;
+    this.extractionFields = extractionFields;
+    this.extractionRegexInput = extractionRegexInput;
+    this.injectionPlaceholderInput = injectionPlaceholderInput;
     this.humanTypingCheckbox = humanTypingCheckbox;
     this.randomDelaysCheckbox = randomDelaysCheckbox;
     this.biologicalPausesCheckbox = biologicalPausesCheckbox;
@@ -27,6 +35,9 @@ export class SettingsPanel {
     useTempChat,
     useWebSearch,
     keepSameChat,
+    useExtraction,
+    extractionRegex,
+    injectionPlaceholder,
     humanTyping,
     randomDelays,
     biologicalPauses,
@@ -37,6 +48,13 @@ export class SettingsPanel {
     this.useTempChatCheckbox.checked = useTempChat;
     this.useWebSearchCheckbox.checked = useWebSearch;
     this.keepSameChatCheckbox.checked = keepSameChat || false;
+    this.useExtractionCheckbox.checked = useExtraction === true;
+    this.extractionRegexInput.value =
+      extractionRegex || globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+    this.injectionPlaceholderInput.value =
+      injectionPlaceholder ||
+      globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER ||
+      "{{extract}}";
     this.humanTypingCheckbox.checked = humanTyping !== false;
     this.randomDelaysCheckbox.checked = randomDelays !== false;
     this.biologicalPausesCheckbox.checked = biologicalPauses === true;
@@ -45,7 +63,12 @@ export class SettingsPanel {
     this.fatigueMaxMinutesInput.value = String(
       Math.max(Number(this.fatigueMinMinutesInput.value), Number(fatigueMaxMinutes) || 1)
     );
+    this.setExtractionVisibility(this.useExtractionCheckbox.checked);
     this.setBiologicalPauseVisibility(this.biologicalPausesCheckbox.checked);
+  }
+
+  setExtractionVisibility(isVisible) {
+    this.extractionFields.classList.toggle("is-hidden", !isVisible);
   }
 
   setBiologicalPauseVisibility(isVisible) {
@@ -64,10 +87,25 @@ export class SettingsPanel {
     this.fatigueMinMinutesInput.value = String(fatigueMinMinutes);
     this.fatigueMaxMinutesInput.value = String(fatigueMaxMinutes);
 
+    const extractionRegex =
+      this.extractionRegexInput.value.trim() ||
+      globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX ||
+      "<extract>(.*?)</extract>";
+    const injectionPlaceholder =
+      this.injectionPlaceholderInput.value.trim() ||
+      globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER ||
+      "{{extract}}";
+
+    this.extractionRegexInput.value = extractionRegex;
+    this.injectionPlaceholderInput.value = injectionPlaceholder;
+
     return {
       useTempChat: this.useTempChatCheckbox.checked,
       useWebSearch: this.useWebSearchCheckbox.checked,
       keepSameChat: this.keepSameChatCheckbox.checked,
+      useExtraction: this.useExtractionCheckbox.checked,
+      extractionRegex,
+      injectionPlaceholder,
       humanTyping: this.humanTypingCheckbox.checked,
       randomDelays: this.randomDelaysCheckbox.checked,
       biologicalPauses: this.biologicalPausesCheckbox.checked,

@@ -11,6 +11,14 @@
   <div id="mainPanel" class="container">
     <section class="input-section">
       <h2 data-i18n="input.title">Question Input</h2>
+      <div class="template-controls">
+        <select id="templateSelect" class="template-select">
+          <option value="" data-i18n="template.selectDefault">Select a template</option>
+        </select>
+        <button id="loadTemplateBtn" class="btn btn-info btn-sm" data-i18n="template.loadBtn">Load</button>
+        <button id="saveTemplateBtn" class="btn btn-success btn-sm" data-i18n="template.saveBtn">Save</button>
+        <button id="deleteTemplateBtn" class="btn btn-danger btn-sm" data-i18n="template.deleteBtn">Delete</button>
+      </div>
       <textarea 
         id="questionsInput" 
         data-i18n-placeholder="input.placeholder"
@@ -110,6 +118,35 @@
                 <span class="setting-hint-inline" data-i18n="control.fatigueMaxMinutesHint">Upper bound for the fatigue pause window</span>
               </label>
               <input type="number" id="fatigueMaxMinutesInput" min="0.5" step="0.5" value="2">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group extraction-settings">
+          <div class="settings-group-title" data-i18n="control.extractionTitle">Prompt Chaining</div>
+
+          <div class="setting-item">
+            <label class="setting-label">
+              <span class="setting-icon">🔗</span>
+              <input type="checkbox" id="useExtractionCheckbox">
+              <span class="setting-text" data-i18n="control.useExtraction">Extract and Inject Text</span>
+            </label>
+            <span class="setting-hint" data-i18n="control.useExtractionHint">Capture text from one answer and inject it into the next prompt</span>
+          </div>
+
+          <div id="extractionFields" class="settings-subgroup is-hidden">
+            <div class="setting-item setting-item-stack">
+              <label class="text-setting-label" for="extractionRegexInput">
+                <span class="setting-text" data-i18n="control.extractionRegex">Extraction Regex</span>
+              </label>
+              <input type="text" id="extractionRegexInput" value="<extract>(.*?)</extract>">
+            </div>
+
+            <div class="setting-item setting-item-stack">
+              <label class="text-setting-label" for="injectionPlaceholderInput">
+                <span class="setting-text" data-i18n="control.injectionPlaceholder">Injection Placeholder</span>
+              </label>
+              <input type="text" id="injectionPlaceholderInput" value="{{extract}}">
             </div>
           </div>
         </div>

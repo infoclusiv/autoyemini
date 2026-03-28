@@ -47,6 +47,26 @@
       "description": "Keep same chat hint",
       "message": "Envia todas las preguntas en la misma sesion sin recargar"
    },
+   "controlExtractionTitle": {
+      "description": "Prompt chaining settings title",
+      "message": "Encadenado de prompts"
+   },
+   "controlUseExtraction": {
+      "description": "Use extraction option",
+      "message": "Extraer e inyectar texto"
+   },
+   "controlUseExtractionHint": {
+      "description": "Use extraction option hint",
+      "message": "Captura texto de una respuesta y lo inserta en el siguiente prompt"
+   },
+   "controlExtractionRegex": {
+      "description": "Extraction regex label",
+      "message": "Regex de extracción"
+   },
+   "controlInjectionPlaceholder": {
+      "description": "Injection placeholder label",
+      "message": "Marcador de inyección"
+   },
    "controlAntiBotTitle": {
       "description": "Anti-bot settings title",
       "message": "🤖 Opciones Anti-Bot"
@@ -154,6 +174,26 @@
    "inputTitle": {
       "description": "Input section title",
       "message": "Entrada de preguntas"
+   },
+   "templateDeleteBtn": {
+      "description": "Delete template button",
+      "message": "Eliminar"
+   },
+   "templateLoadBtn": {
+      "description": "Load template button",
+      "message": "Cargar"
+   },
+   "templateNamePrompt": {
+      "description": "Template name prompt",
+      "message": "Nombre de la plantilla"
+   },
+   "templateSaveBtn": {
+      "description": "Save template button",
+      "message": "Guardar"
+   },
+   "templateSelectDefault": {
+      "description": "Default template select option",
+      "message": "Seleccionar plantilla"
    },
    "logTitle": {
       "description": "Log section title",
@@ -319,6 +359,14 @@
       "description": "Opening ChatGPT message",
       "message": "Abriendo ChatGPT..."
    },
+   "msgConfirmTemplateDelete": {
+      "description": "Confirm template delete dialog",
+      "message": "¿Eliminar la plantilla seleccionada?"
+   },
+   "msgInvalidExtractionRegex": {
+      "description": "Invalid extraction regex message",
+      "message": "Regex de extracción inválida"
+   },
    "msgPleaseEnterQuestion": {
       "description": "Please enter question warning",
       "message": "Por favor ingrese una pregunta"
@@ -334,6 +382,34 @@
    "msgBiologicalPause": {
       "description": "Biological pause log message",
       "message": "Pausa biologica activada. Simulando un descanso humano..."
+   },
+   "msgTemplateDeleted": {
+      "description": "Template deleted message",
+      "message": "Plantilla eliminada"
+   },
+   "msgTemplateLoaded": {
+      "description": "Template loaded message",
+      "message": "Plantilla cargada en el editor"
+   },
+   "msgTemplateNameRequired": {
+      "description": "Template name required message",
+      "message": "El nombre de la plantilla no puede estar vacío"
+   },
+   "msgTemplateSaved": {
+      "description": "Template saved message",
+      "message": "Plantilla guardada"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "Template selection required message",
+      "message": "Seleccione una plantilla primero"
+   },
+   "msgTextExtracted": {
+      "description": "Text extracted log message",
+      "message": "Texto extraído desde la última respuesta"
+   },
+   "msgTextInjected": {
+      "description": "Text injected log message",
+      "message": "Texto extraído inyectado en el siguiente prompt"
    },
    "msgQuestionsAdded": {
       "description": "Questions added success message",

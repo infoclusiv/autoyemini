@@ -76,6 +76,32 @@ h2::before {
   background: white;
 }
 
+.template-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.template-select {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.template-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+}
+
 /* Buttons */
 .button-group {
   display: flex;
@@ -128,6 +154,14 @@ h2::before {
   opacity: 0.6;
   cursor: not-allowed;
   filter: grayscale(30%);
+}
+
+.btn-sm {
+  flex: 0 0 auto;
+  min-width: auto;
+  padding: 9px 12px;
+  font-size: 12px;
+  border-radius: 9px;
 }
 
 .btn-primary {
@@ -369,9 +403,21 @@ h2::before {
   gap: 12px;
 }
 
+.setting-item-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .number-setting-label {
   display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.text-setting-label {
+  display: flex;
   flex-direction: column;
   gap: 4px;
 }
@@ -395,6 +441,23 @@ h2::before {
 }
 
 .setting-item input[type="number"]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+}
+
+.setting-item input[type="text"] {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.setting-item input[type="text"]:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);

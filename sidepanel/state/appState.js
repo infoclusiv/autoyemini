@@ -1,11 +1,18 @@
 const state = {
   questions: [],
+  templates: [],
   isRunning: false,
   isPaused: false,
   currentIndex: 0,
   useTempChat: true,
   useWebSearch: true,
   keepSameChat: false,
+  useExtraction: false,
+  extractionRegex:
+    globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>",
+  injectionPlaceholder:
+    globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}",
+  lastExtractedText: "",
   humanTyping: true,
   randomDelays: true,
   biologicalPauses: false,

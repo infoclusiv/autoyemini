@@ -8,6 +8,7 @@ import { QuestionList } from "./ui/questionList.js";
 import { ControlPanel } from "./ui/controlPanel.js";
 import { StatsPanel } from "./ui/statsPanel.js";
 import { SettingsPanel } from "./ui/settingsPanel.js";
+import { TemplatePanel } from "./ui/templatePanel.js";
 
 const { generateUUID, sleep, randomSleep } = globalThis.SharedUtils;
 const AppConfig = globalThis.CONFIG;
@@ -17,14 +18,76 @@ let questionList;
 let controlPanel;
 let statsPanel;
 let settingsPanel;
+let templatePanel;
 
 let questionsInput;
+
+function normalizeExtractionSettings(settings) {
+  return {
+    useExtraction: settings.useExtraction === true,
+    extractionRegex:
+      settings.extractionRegex || AppConfig.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>",
+    injectionPlaceholder:
+      settings.injectionPlaceholder ||
+      AppConfig.EXTRACTION?.DEFAULT_PLACEHOLDER ||
+      "{{extract}}"
+  };
+}
+
+function replaceAllOccurrences(value, search, replacement) {
+  return value.split(search).join(replacement);
+}
+
+function getExtractionExpression(pattern) {
+  const normalizedPattern =
+    pattern?.trim() || AppConfig.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+  const regexLiteralMatch = normalizedPattern.match(/^\/([\s\S]*)\/([a-z]*)$/i);
+
+  if (regexLiteralMatch) {
+    const [, source, flags] = regexLiteralMatch;
+    const finalFlags = flags.includes("s") ? flags : `${flags}s`;
+    return new RegExp(source, finalFlags);
+  }
+
+  return new RegExp(normalizedPattern, "s");
+}
+
+function extractTextFromAnswer(answer, pattern) {
+  const match = getExtractionExpression(pattern).exec(answer || "");
+  if (!match) {
+    return "";
+  }
+
+  return String(match[1] ?? match[0] ?? "").trim();
+}
+
+function buildQuestionForSubmission(questionText, settings, lastExtractedText) {
+  const extractionSettings = normalizeExtractionSettings(settings);
+  if (!extractionSettings.useExtraction || !lastExtractedText) {
+    return questionText;
+  }
+
+  if (!questionText.includes(extractionSettings.injectionPlaceholder)) {
+    return questionText;
+  }
+
+  addLog(t("messages.textInjected"), "info");
+  return replaceAllOccurrences(
+    questionText,
+    extractionSettings.injectionPlaceholder,
+    lastExtractedText
+  );
+}
 
 function getElements() {
   return {
     questionsInput: document.getElementById("questionsInput"),
     addQuestionsBtn: document.getElementById("addQuestionsBtn"),
     clearInputBtn: document.getElementById("clearInputBtn"),
+    templateSelect: document.getElementById("templateSelect"),
+    loadTemplateBtn: document.getElementById("loadTemplateBtn"),
+    saveTemplateBtn: document.getElementById("saveTemplateBtn"),
+    deleteTemplateBtn: document.getElementById("deleteTemplateBtn"),
     startBtn: document.getElementById("startBtn"),
     pauseBtn: document.getElementById("pauseBtn"),
     resumeBtn: document.getElementById("resumeBtn"),
@@ -35,6 +98,10 @@ function getElements() {
     useTempChatCheckbox: document.getElementById("useTempChatCheckbox"),
     useWebSearchCheckbox: document.getElementById("useWebSearchCheckbox"),
     keepSameChatCheckbox: document.getElementById("keepSameChatCheckbox"),
+    useExtractionCheckbox: document.getElementById("useExtractionCheckbox"),
+    extractionFields: document.getElementById("extractionFields"),
+    extractionRegexInput: document.getElementById("extractionRegexInput"),
+    injectionPlaceholderInput: document.getElementById("injectionPlaceholderInput"),
     humanTypingCheckbox: document.getElementById("humanTypingCheckbox"),
     randomDelaysCheckbox: document.getElementById("randomDelaysCheckbox"),
     biologicalPausesCheckbox: document.getElementById("biologicalPausesCheckbox"),
@@ -112,6 +179,15 @@ function patchAntiBotState(settings) {
   });
 }
 
+function patchExtractionState(settings) {
+  const extractionSettings = normalizeExtractionSettings(settings);
+  AppState.patch({
+    useExtraction: extractionSettings.useExtraction,
+    extractionRegex: extractionSettings.extractionRegex,
+    injectionPlaceholder: extractionSettings.injectionPlaceholder
+  });
+}
+
 async function persistAntiBotSettings(settings) {
   patchAntiBotState(settings);
   await Promise.all([
@@ -122,6 +198,16 @@ async function persistAntiBotSettings(settings) {
     saveSetting(StorageKeys.FATIGUE_COUNT, settings.fatigueCount),
     saveSetting(StorageKeys.FATIGUE_MIN_PAUSE_MINUTES, settings.fatigueMinMinutes),
     saveSetting(StorageKeys.FATIGUE_MAX_PAUSE_MINUTES, settings.fatigueMaxMinutes)
+  ]);
+}
+
+async function persistExtractionSettings(settings) {
+  const extractionSettings = normalizeExtractionSettings(settings);
+  patchExtractionState(extractionSettings);
+  await Promise.all([
+    saveSetting(StorageKeys.USE_EXTRACTION, extractionSettings.useExtraction),
+    saveSetting(StorageKeys.EXTRACTION_REGEX, extractionSettings.extractionRegex),
+    saveSetting(StorageKeys.INJECTION_PLACEHOLDER, extractionSettings.injectionPlaceholder)
   ]);
 }
 
@@ -234,9 +320,18 @@ async function handleStart() {
   }
 
   const antiBotSettings = settingsPanel.getValues();
-  await persistAntiBotSettings(antiBotSettings);
+  await Promise.all([
+    persistAntiBotSettings(antiBotSettings),
+    persistExtractionSettings(antiBotSettings)
+  ]);
 
-  AppState.patch({ isRunning: true, isPaused: false, currentIndex: 0, processedSincePause: 0 });
+  AppState.patch({
+    isRunning: true,
+    isPaused: false,
+    currentIndex: 0,
+    processedSincePause: 0,
+    lastExtractedText: ""
+  });
   addLog(t("messages.startingBatch"), "info");
   addLog(t("messages.foundPending", { count: pendingQuestions.length }), "info");
   addLog(t("messages.waitingPage"), "info");
@@ -258,7 +353,12 @@ function handleResume() {
 }
 
 function handleStop() {
-  AppState.patch({ isRunning: false, isPaused: false, processedSincePause: 0 });
+  AppState.patch({
+    isRunning: false,
+    isPaused: false,
+    processedSincePause: 0,
+    lastExtractedText: ""
+  });
   addLog(t("messages.executionStopped"), "warning");
 }
 
@@ -307,12 +407,17 @@ async function processNextQuestion() {
   }
 
   if (nextIndex === -1) {
-    AppState.patch({ isRunning: false });
+    AppState.patch({ isRunning: false, lastExtractedText: "" });
     addLog(t("messages.allCompleted"), "success");
     return;
   }
 
   const nextQuestion = refreshedState.questions[nextIndex];
+  const submittedQuestion = buildQuestionForSubmission(
+    nextQuestion.question,
+    antiBotSettings,
+    refreshedState.lastExtractedText
+  );
   AppState.patch({ currentIndex: nextIndex });
   AppState.updateQuestion(nextQuestion.id, { status: "processing" });
   await persistQuestions();
@@ -322,7 +427,7 @@ async function processNextQuestion() {
     const { useTempChat, useWebSearch, keepSameChat } = antiBotSettings;
     const response = await sendToBackground({
       type: "PROCESS_QUESTION",
-      question: nextQuestion.question,
+      question: submittedQuestion,
       questionId: nextQuestion.id,
       useTempChat,
       useWebSearch,
@@ -363,6 +468,21 @@ async function handleQuestionComplete(result) {
       sources: result.sources || [],
       completedAt: Date.now()
     });
+
+    if (state.useExtraction) {
+      try {
+        const extractedText = extractTextFromAnswer(result.answer, state.extractionRegex);
+        AppState.patch({ lastExtractedText: extractedText });
+
+        if (extractedText) {
+          addLog(t("messages.textExtracted"), "success");
+        }
+      } catch (error) {
+        AppState.patch({ lastExtractedText: "" });
+        addLog(`${t("messages.invalidExtractionRegex")}: ${error.message}`, "warning");
+      }
+    }
+
     addLog(`${t("messages.completed")}: ${question.question.substring(0, 50)}...`, "success");
   } else {
     AppState.updateQuestion(result.questionId, {
@@ -370,6 +490,9 @@ async function handleQuestionComplete(result) {
       error: result.error,
       completedAt: Date.now()
     });
+    if (state.useExtraction) {
+      AppState.patch({ lastExtractedText: "" });
+    }
     addLog(`${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`, "error");
   }
 
@@ -441,6 +564,12 @@ async function handleAntiBotSettingsChange() {
   const settings = settingsPanel.getValues();
   settingsPanel.setBiologicalPauseVisibility(settings.biologicalPauses);
   await persistAntiBotSettings(settings);
+}
+
+async function handleExtractionSettingsChange() {
+  const settings = settingsPanel.getValues();
+  settingsPanel.setExtractionVisibility(settings.useExtraction);
+  await persistExtractionSettings(settings);
 }
 
 function wireMessageListeners() {
@@ -529,6 +658,15 @@ function setupEventListeners(elements) {
   elements.keepSameChatCheckbox.addEventListener("change", (event) => {
     void handleKeepSameChatChange(event);
   });
+  elements.useExtractionCheckbox.addEventListener("change", () => {
+    void handleExtractionSettingsChange();
+  });
+  elements.extractionRegexInput.addEventListener("change", () => {
+    void handleExtractionSettingsChange();
+  });
+  elements.injectionPlaceholderInput.addEventListener("change", () => {
+    void handleExtractionSettingsChange();
+  });
   elements.humanTypingCheckbox.addEventListener("change", () => {
     void handleAntiBotSettingsChange();
   });
@@ -576,6 +714,10 @@ async function initialize() {
     useTempChatCheckbox: elements.useTempChatCheckbox,
     useWebSearchCheckbox: elements.useWebSearchCheckbox,
     keepSameChatCheckbox: elements.keepSameChatCheckbox,
+    useExtractionCheckbox: elements.useExtractionCheckbox,
+    extractionFields: elements.extractionFields,
+    extractionRegexInput: elements.extractionRegexInput,
+    injectionPlaceholderInput: elements.injectionPlaceholderInput,
     humanTypingCheckbox: elements.humanTypingCheckbox,
     randomDelaysCheckbox: elements.randomDelaysCheckbox,
     biologicalPausesCheckbox: elements.biologicalPausesCheckbox,
@@ -583,6 +725,14 @@ async function initialize() {
     fatigueCountInput: elements.fatigueCountInput,
     fatigueMinMinutesInput: elements.fatigueMinMinutesInput,
     fatigueMaxMinutesInput: elements.fatigueMaxMinutesInput
+  });
+  templatePanel = new TemplatePanel({
+    selectElement: elements.templateSelect,
+    loadButton: elements.loadTemplateBtn,
+    saveButton: elements.saveTemplateBtn,
+    deleteButton: elements.deleteTemplateBtn,
+    questionsInput,
+    addLog
   });
 
   setupEventListeners(elements);
@@ -592,9 +742,13 @@ async function initialize() {
     const stored = await loadAll();
     AppState.setQuestions(stored.questions);
     AppState.patch({
+      templates: stored.templates,
       useTempChat: stored.useTempChat,
       useWebSearch: stored.useWebSearch,
       keepSameChat: stored.keepSameChat,
+      useExtraction: stored.useExtraction,
+      extractionRegex: stored.extractionRegex,
+      injectionPlaceholder: stored.injectionPlaceholder,
       humanTyping: stored.humanTyping,
       randomDelays: stored.randomDelays,
       biologicalPauses: stored.biologicalPauses,

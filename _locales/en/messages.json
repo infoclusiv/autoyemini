@@ -47,6 +47,26 @@
       "description": "Keep same chat hint",
       "message": "Sends all questions in the same session without reloading"
    },
+   "controlExtractionTitle": {
+      "description": "Prompt chaining settings title",
+      "message": "Prompt Chaining"
+   },
+   "controlUseExtraction": {
+      "description": "Use extraction option",
+      "message": "Extract and Inject Text"
+   },
+   "controlUseExtractionHint": {
+      "description": "Use extraction option hint",
+      "message": "Capture text from one answer and inject it into the next prompt"
+   },
+   "controlExtractionRegex": {
+      "description": "Extraction regex label",
+      "message": "Extraction Regex"
+   },
+   "controlInjectionPlaceholder": {
+      "description": "Injection placeholder label",
+      "message": "Injection Placeholder"
+   },
    "controlAntiBotTitle": {
       "description": "Anti-bot settings title",
       "message": "🤖 Anti-Bot Options"
@@ -154,6 +174,26 @@
    "inputTitle": {
       "description": "Input section title",
       "message": "Question Input"
+   },
+   "templateDeleteBtn": {
+      "description": "Delete template button",
+      "message": "Delete"
+   },
+   "templateLoadBtn": {
+      "description": "Load template button",
+      "message": "Load"
+   },
+   "templateNamePrompt": {
+      "description": "Template name prompt",
+      "message": "Template name"
+   },
+   "templateSaveBtn": {
+      "description": "Save template button",
+      "message": "Save"
+   },
+   "templateSelectDefault": {
+      "description": "Default template select option",
+      "message": "Select a template"
    },
    "logTitle": {
       "description": "Log section title",
@@ -319,6 +359,14 @@
       "description": "Opening ChatGPT message",
       "message": "Opening ChatGPT..."
    },
+   "msgConfirmTemplateDelete": {
+      "description": "Confirm template delete dialog",
+      "message": "Delete the selected template?"
+   },
+   "msgInvalidExtractionRegex": {
+      "description": "Invalid extraction regex message",
+      "message": "Invalid extraction regex"
+   },
    "msgPleaseEnterQuestion": {
       "description": "Please enter question warning",
       "message": "Please enter a question"
@@ -334,6 +382,34 @@
    "msgBiologicalPause": {
       "description": "Biological pause log message",
       "message": "Biological pause activated. Simulating a human rest..."
+   },
+   "msgTemplateDeleted": {
+      "description": "Template deleted message",
+      "message": "Template deleted"
+   },
+   "msgTemplateLoaded": {
+      "description": "Template loaded message",
+      "message": "Template loaded into the editor"
+   },
+   "msgTemplateNameRequired": {
+      "description": "Template name required message",
+      "message": "Template name cannot be empty"
+   },
+   "msgTemplateSaved": {
+      "description": "Template saved message",
+      "message": "Template saved"
+   },
+   "msgTemplateSelectRequired": {
+      "description": "Template selection required message",
+      "message": "Select a template first"
+   },
+   "msgTextExtracted": {
+      "description": "Text extracted log message",
+      "message": "Text extracted from the latest response"
+   },
+   "msgTextInjected": {
+      "description": "Text injected log message",
+      "message": "Extracted text injected into the next prompt"
    },
    "msgQuestionsAdded": {
       "description": "Questions added success message",

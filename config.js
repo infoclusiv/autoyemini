@@ -29,11 +29,20 @@ const CONFIG = {
 		FATIGUE_PAUSE_MS: [20000, 40000]
 	},
 
+	EXTRACTION: {
+		DEFAULT_REGEX: "<extract>(.*?)</extract>",
+		DEFAULT_PLACEHOLDER: "{{extract}}"
+	},
+
 	STORAGE_KEYS: {
 		QUESTIONS: "questions",
+		TEMPLATES: "savedTemplates",
 		USE_TEMP_CHAT: "useTempChat",
 		USE_WEB_SEARCH: "useWebSearch",
 		KEEP_SAME_CHAT: "keepSameChat",
+		USE_EXTRACTION: "useExtraction",
+		EXTRACTION_REGEX: "extractionRegex",
+		INJECTION_PLACEHOLDER: "injectionPlaceholder",
 		HUMAN_TYPING: "humanTyping",
 		RANDOM_DELAYS: "randomDelays",
 		BIOLOGICAL_PAUSES: "biologicalPauses",

@@ -1,8 +1,12 @@
 const storageKeys = globalThis.CONFIG?.STORAGE_KEYS || {
   QUESTIONS: "questions",
+  TEMPLATES: "savedTemplates",
   USE_TEMP_CHAT: "useTempChat",
   USE_WEB_SEARCH: "useWebSearch",
   KEEP_SAME_CHAT: "keepSameChat",
+  USE_EXTRACTION: "useExtraction",
+  EXTRACTION_REGEX: "extractionRegex",
+  INJECTION_PLACEHOLDER: "injectionPlaceholder",
   PENDING_MESSAGE: "pendingMessage",
   HUMAN_TYPING: "humanTyping",
   RANDOM_DELAYS: "randomDelays",
@@ -17,6 +21,11 @@ const antiBotDefaults = globalThis.CONFIG?.ANTI_BOT || {
   TYPING_SPEED_MS: [30, 100],
   FATIGUE_AFTER_QUESTIONS: 10,
   FATIGUE_PAUSE_MS: [20000, 40000]
+};
+
+const extractionDefaults = globalThis.CONFIG?.EXTRACTION || {
+  DEFAULT_REGEX: "<extract>(.*?)</extract>",
+  DEFAULT_PLACEHOLDER: "{{extract}}"
 };
 
 function normalizeRange(value, fallback) {
@@ -42,14 +51,37 @@ function msToMinutes(ms) {
   return Math.max(0.5, Math.round((Number(ms) / 60000) * 10) / 10);
 }
 
+function normalizeTemplates(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((template) => template && typeof template === "object")
+    .map((template, index) => ({
+      id: String(template.id || `template-${index + 1}`),
+      name: String(template.name || `Template ${index + 1}`).trim(),
+      content: String(template.content || "")
+    }));
+}
+
+function normalizeString(value, fallback) {
+  const normalizedValue = typeof value === "string" ? value.trim() : "";
+  return normalizedValue || fallback;
+}
+
 export const StorageKeys = storageKeys;
 
 export async function loadAll() {
   const stored = await chrome.storage.local.get([
     StorageKeys.QUESTIONS,
+    StorageKeys.TEMPLATES,
     StorageKeys.USE_TEMP_CHAT,
     StorageKeys.USE_WEB_SEARCH,
     StorageKeys.KEEP_SAME_CHAT,
+    StorageKeys.USE_EXTRACTION,
+    StorageKeys.EXTRACTION_REGEX,
+    StorageKeys.INJECTION_PLACEHOLDER,
     StorageKeys.HUMAN_TYPING,
     StorageKeys.RANDOM_DELAYS,
     StorageKeys.BIOLOGICAL_PAUSES,
@@ -74,9 +106,19 @@ export async function loadAll() {
 
   return {
     questions: stored[StorageKeys.QUESTIONS] || [],
+    templates: normalizeTemplates(stored[StorageKeys.TEMPLATES]),
     useTempChat: stored[StorageKeys.USE_TEMP_CHAT] !== false,
     useWebSearch: stored[StorageKeys.USE_WEB_SEARCH] !== false,
     keepSameChat: stored[StorageKeys.KEEP_SAME_CHAT] === true,
+    useExtraction: stored[StorageKeys.USE_EXTRACTION] === true,
+    extractionRegex: normalizeString(
+      stored[StorageKeys.EXTRACTION_REGEX],
+      extractionDefaults.DEFAULT_REGEX
+    ),
+    injectionPlaceholder: normalizeString(
+      stored[StorageKeys.INJECTION_PLACEHOLDER],
+      extractionDefaults.DEFAULT_PLACEHOLDER
+    ),
     humanTyping: stored[StorageKeys.HUMAN_TYPING] !== false,
     randomDelays: stored[StorageKeys.RANDOM_DELAYS] !== false,
     biologicalPauses: stored[StorageKeys.BIOLOGICAL_PAUSES] === true,
