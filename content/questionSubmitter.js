@@ -1,23 +1,6 @@
 (function registerQuestionSubmitterModule() {
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
-  const { sleep, randomInt, randomSleep } = SharedUtils;
-
-  function getFixedDelay(delayOrRange) {
-    if (Array.isArray(delayOrRange)) {
-      return Number(delayOrRange[0]) || 0;
-    }
-
-    return Number(delayOrRange) || 0;
-  }
-
-  async function waitForDelay(delayOrRange, antiBotConfig = {}) {
-    if (antiBotConfig.randomDelays !== false && Array.isArray(delayOrRange)) {
-      await randomSleep(delayOrRange);
-      return;
-    }
-
-    await sleep(getFixedDelay(delayOrRange));
-  }
+  const { randomInt } = SharedUtils;
 
   function getInputElement() {
     return (
@@ -129,7 +112,7 @@
     appendCharacter(input, character);
     input.dispatchEvent(createKeyboardEvent("keyup", character, code, keyCode || 0));
 
-    await waitForDelay(
+    await modules.waitForDelay(
       antiBotConfig.typingSpeed || CONFIG.ANTI_BOT.TYPING_SPEED_MS,
       antiBotConfig
     );
@@ -139,7 +122,7 @@
     input.dispatchEvent(createKeyboardEvent("keydown", "Backspace", "Backspace", 8));
     removeLastCharacter(input);
     input.dispatchEvent(createKeyboardEvent("keyup", "Backspace", "Backspace", 8));
-    await waitForDelay([60, 140], antiBotConfig);
+    await modules.waitForDelay([60, 140], antiBotConfig);
   }
 
   function getMistypedCharacter(character) {
@@ -163,14 +146,14 @@
     for (const character of question) {
       if (Math.random() < (antiBotConfig.errorProbability ?? CONFIG.ANTI_BOT.ERROR_PROBABILITY)) {
         await typeCharacter(input, getMistypedCharacter(character), antiBotConfig);
-        await waitForDelay([80, 180], antiBotConfig);
+        await modules.waitForDelay([80, 180], antiBotConfig);
         await pressBackspace(input, antiBotConfig);
       }
 
       await typeCharacter(input, character, antiBotConfig);
 
       if (Math.random() < 0.05) {
-        await waitForDelay([180, 420], antiBotConfig);
+        await modules.waitForDelay([180, 420], antiBotConfig);
       }
     }
   }
@@ -178,116 +161,6 @@
   function directInputQuestion(input, question) {
     clearInput(input);
     setInputValue(input, question, "insertText", question);
-  }
-
-  function basicClickElement(element) {
-    try {
-      element.click();
-      return true;
-    } catch {
-    }
-
-    try {
-      element.dispatchEvent(
-        new MouseEvent("mousedown", { bubbles: true, cancelable: true, view: window })
-      );
-      element.dispatchEvent(
-        new MouseEvent("mouseup", { bubbles: true, cancelable: true, view: window })
-      );
-      element.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true, view: window })
-      );
-      return true;
-    } catch {
-    }
-
-    try {
-      element.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true }));
-      element.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true }));
-      element.click();
-      return true;
-    } catch {
-    }
-
-    return false;
-  }
-
-  function getRandomPoint(rect) {
-    const horizontalPadding = Math.max(4, rect.width * 0.18);
-    const verticalPadding = Math.max(4, rect.height * 0.22);
-
-    return {
-      clientX: randomInt(rect.left + horizontalPadding, rect.right - horizontalPadding),
-      clientY: randomInt(rect.top + verticalPadding, rect.bottom - verticalPadding)
-    };
-  }
-
-  async function clickElement(element, antiBotConfig = {}) {
-    if (!element) {
-      return false;
-    }
-
-    try {
-      element.scrollIntoView({ behavior: "instant", block: "center" });
-    } catch {
-    }
-
-    if (!antiBotConfig.humanTyping && antiBotConfig.randomDelays === false) {
-      return basicClickElement(element);
-    }
-
-    try {
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
-        return basicClickElement(element);
-      }
-
-      const { clientX, clientY } = getRandomPoint(rect);
-      element.dispatchEvent(
-        new MouseEvent("mousemove", {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX,
-          clientY
-        })
-      );
-      await waitForDelay([50, 100], antiBotConfig);
-      element.dispatchEvent(
-        new MouseEvent("mousedown", {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX,
-          clientY,
-          button: 0
-        })
-      );
-      await waitForDelay([20, 80], antiBotConfig);
-      element.dispatchEvent(
-        new MouseEvent("mouseup", {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX,
-          clientY,
-          button: 0
-        })
-      );
-      element.dispatchEvent(
-        new MouseEvent("click", {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX,
-          clientY,
-          button: 0
-        })
-      );
-      return true;
-    } catch {
-      return basicClickElement(element);
-    }
   }
 
   async function inputQuestion(question, antiBotConfig = {}) {
@@ -298,7 +171,7 @@
       }
 
       input.focus();
-      await waitForDelay(CONFIG.TIMING.INPUT_WAIT_MS, antiBotConfig);
+      await modules.waitForDelay(CONFIG.TIMING.INPUT_WAIT_MS, antiBotConfig);
 
       if (antiBotConfig.humanTyping === true) {
         await humanTypeQuestion(input, question, antiBotConfig);
@@ -306,7 +179,7 @@
         directInputQuestion(input, question);
       }
 
-      await waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
+      await modules.waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
       return true;
     } catch {
       return false;
@@ -315,16 +188,16 @@
 
   async function submitQuestion(antiBotConfig = {}) {
     try {
-      await waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
+      await modules.waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
 
       const contentEditable = document.querySelector('div[contenteditable="true"]#prompt-textarea');
       if (contentEditable) {
         contentEditable.focus();
-        await waitForDelay([120, 260], antiBotConfig);
+        await modules.waitForDelay([120, 260], antiBotConfig);
         contentEditable.dispatchEvent(createKeyboardEvent("keydown", "Enter", "Enter", 13));
         contentEditable.dispatchEvent(createKeyboardEvent("keypress", "Enter", "Enter", 13));
         contentEditable.dispatchEvent(createKeyboardEvent("keyup", "Enter", "Enter", 13));
-        await waitForDelay([700, 1200], antiBotConfig);
+        await modules.waitForDelay([700, 1200], antiBotConfig);
         return true;
       }
 
@@ -341,15 +214,15 @@
 
       if (sendButton.disabled) {
         for (let attempt = 0; attempt < 10 && sendButton.disabled; attempt += 1) {
-          await waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
+          await modules.waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
         }
       }
 
       if (!sendButton.disabled) {
-        await clickElement(sendButton, antiBotConfig);
+        await modules.clickElement(sendButton, antiBotConfig);
       }
 
-      await waitForDelay([700, 1200], antiBotConfig);
+      await modules.waitForDelay([700, 1200], antiBotConfig);
       return true;
     } catch {
       return false;

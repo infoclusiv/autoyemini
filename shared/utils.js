@@ -44,13 +44,32 @@ function normalizeWhitespace(value) {
   return (value || "").replace(/\u00a0/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+function getFixedDelay(delayOrRange) {
+  if (Array.isArray(delayOrRange)) {
+    return Number(delayOrRange[0]) || 0;
+  }
+
+  return Number(delayOrRange) || 0;
+}
+
+async function waitForDelay(delayOrRange, useRandomDelays = true) {
+  if (useRandomDelays && Array.isArray(delayOrRange)) {
+    await randomSleep(delayOrRange);
+    return;
+  }
+
+  await sleep(getFixedDelay(delayOrRange));
+}
+
 const SharedUtils = {
   sleep,
   randomInt,
   randomSleep,
   generateUUID,
   escapeHtml,
-  normalizeWhitespace
+  normalizeWhitespace,
+  getFixedDelay,
+  waitForDelay
 };
 
 globalThis.SharedUtils = SharedUtils;

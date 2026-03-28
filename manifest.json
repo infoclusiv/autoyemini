@@ -9,6 +9,7 @@
       "js": [
          "config.js",
          "shared/utils.js",
+         "content/domInteraction.js",
          "content/domScraper.js",
          "content/webSearchEnabler.js",
          "content/questionSubmitter.js",

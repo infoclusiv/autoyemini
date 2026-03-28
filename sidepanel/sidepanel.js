@@ -9,6 +9,9 @@ import { ControlPanel } from "./ui/controlPanel.js";
 import { StatsPanel } from "./ui/statsPanel.js";
 import { SettingsPanel } from "./ui/settingsPanel.js";
 import { TemplatePanel } from "./ui/templatePanel.js";
+import { QuestionProcessor, parseQuestionsInput } from "./core/questionProcessor.js";
+import { waitForConfiguredDelay } from "./core/antiBotController.js";
+import { normalizeExtractionSettings } from "./core/extractionEngine.js";
 
 const { generateUUID, sleep, randomSleep } = globalThis.SharedUtils;
 const AppConfig = globalThis.CONFIG;
@@ -19,74 +22,9 @@ let controlPanel;
 let statsPanel;
 let settingsPanel;
 let templatePanel;
+let questionProcessor;
 
 let questionsInput;
-
-function normalizeExtractionSettings(settings) {
-  return {
-    useExtraction: settings.useExtraction === true,
-    extractionRegex:
-      settings.extractionRegex || AppConfig.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>",
-    injectionPlaceholder:
-      settings.injectionPlaceholder ||
-      AppConfig.EXTRACTION?.DEFAULT_PLACEHOLDER ||
-      "{{extract}}"
-  };
-}
-
-function replaceAllOccurrences(value, search, replacement) {
-  return value.split(search).join(replacement);
-}
-
-function getExtractionExpression(pattern) {
-  const normalizedPattern =
-    pattern?.trim() || AppConfig.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
-  const regexLiteralMatch = normalizedPattern.match(/^\/([\s\S]*)\/([a-z]*)$/i);
-
-  if (regexLiteralMatch) {
-    const [, source, flags] = regexLiteralMatch;
-    const finalFlags = flags.includes("s") ? flags : `${flags}s`;
-    return new RegExp(source, finalFlags);
-  }
-
-  return new RegExp(normalizedPattern, "s");
-}
-
-function extractTextFromAnswer(answer, pattern) {
-  const match = getExtractionExpression(pattern).exec(answer || "");
-  if (!match) {
-    return "";
-  }
-
-  return String(match[1] ?? match[0] ?? "").trim();
-}
-
-function buildQuestionForSubmission(questionText, settings, lastExtractedText) {
-  const extractionSettings = normalizeExtractionSettings(settings);
-  if (!extractionSettings.useExtraction || !lastExtractedText) {
-    return questionText;
-  }
-
-  if (!questionText.includes(extractionSettings.injectionPlaceholder)) {
-    return questionText;
-  }
-
-  addLog(t("messages.textInjected"), "info");
-  return replaceAllOccurrences(
-    questionText,
-    extractionSettings.injectionPlaceholder,
-    lastExtractedText
-  );
-}
-
-function parseQuestionsInput(rawValue, isSinglePrompt) {
-  if (isSinglePrompt) {
-    return [rawValue];
-  }
-
-  const segments = rawValue.includes("===") ? rawValue.split("===") : rawValue.split("\n");
-  return segments.map((segment) => segment.trim()).filter(Boolean);
-}
 
 function getElements() {
   return {
@@ -149,39 +87,6 @@ function persistQuestions() {
   return saveQuestions(AppState.getState().questions);
 }
 
-function getFixedDelay(delayOrRange) {
-  if (Array.isArray(delayOrRange)) {
-    return Number(delayOrRange[0]) || 0;
-  }
-
-  return Number(delayOrRange) || 0;
-}
-
-async function waitForConfiguredDelay(delayOrRange, useRandomDelays = true) {
-  if (useRandomDelays && Array.isArray(delayOrRange)) {
-    await randomSleep(delayOrRange);
-    return;
-  }
-
-  await sleep(getFixedDelay(delayOrRange));
-}
-
-function buildAntiBotConfig(settings) {
-  const safeSettings = settings || settingsPanel.getValues();
-  const minPauseMs = Math.round(safeSettings.fatigueMinMinutes * 60000);
-  const maxPauseMs = Math.round(safeSettings.fatigueMaxMinutes * 60000);
-
-  return {
-    humanTyping: safeSettings.humanTyping,
-    randomDelays: safeSettings.randomDelays,
-    biologicalPauses: safeSettings.biologicalPauses,
-    typingSpeed: [...safeSettings.typingSpeed],
-    errorProbability: AppConfig.ANTI_BOT.ERROR_PROBABILITY,
-    fatigueCount: safeSettings.fatigueCount,
-    fatiguePauseMs: [Math.min(minPauseMs, maxPauseMs), Math.max(minPauseMs, maxPauseMs)]
-  };
-}
-
 function patchGeneralSettings(settings) {
   AppState.patch({
     useTempChat: settings.useTempChat,
@@ -241,23 +146,6 @@ async function persistExtractionSettings(settings) {
     saveSetting(StorageKeys.EXTRACTION_REGEX, extractionSettings.extractionRegex),
     saveSetting(StorageKeys.INJECTION_PLACEHOLDER, extractionSettings.injectionPlaceholder)
   ]);
-}
-
-async function maybeTakeBiologicalPause(settings) {
-  const state = AppState.getState();
-  if (!settings.biologicalPauses || state.processedSincePause < settings.fatigueCount) {
-    return;
-  }
-
-  addLog(t("messages.biologicalPause"), "info");
-  await randomSleep(buildAntiBotConfig(settings).fatiguePauseMs);
-
-  const latestState = AppState.getState();
-  if (!latestState.isRunning || latestState.isPaused) {
-    return;
-  }
-
-  AppState.patch({ processedSincePause: 0 });
 }
 
 function handleAddQuestions() {
@@ -373,7 +261,7 @@ async function handleStart() {
 
   await waitForConfiguredDelay(AppConfig.TIMING.BETWEEN_QUESTIONS_MS, antiBotSettings.randomDelays);
   addLog(t("messages.startingFirst"), "info");
-  void processNextQuestion();
+  void questionProcessor.processNextQuestion();
 }
 
 function handlePause() {
@@ -384,7 +272,7 @@ function handlePause() {
 function handleResume() {
   AppState.patch({ isPaused: false });
   addLog(t("messages.executionResumed"), "info");
-  void processNextQuestion();
+  void questionProcessor.processNextQuestion();
 }
 
 function handleStop() {
@@ -417,138 +305,6 @@ async function handleRetryFailed() {
   AppState.setQuestions(nextQuestions);
   await persistQuestions();
   addLog(t("messages.resetFailed", { count: failedQuestions.length }), "success");
-}
-
-async function processNextQuestion() {
-  const state = AppState.getState();
-  if (!state.isRunning || state.isPaused) {
-    return;
-  }
-
-  const antiBotSettings = settingsPanel.getValues();
-  await maybeTakeBiologicalPause(antiBotSettings);
-
-  const refreshedState = AppState.getState();
-  if (!refreshedState.isRunning || refreshedState.isPaused) {
-    return;
-  }
-
-  let nextIndex = -1;
-  for (let index = refreshedState.currentIndex; index < refreshedState.questions.length; index += 1) {
-    if (refreshedState.questions[index].status === "pending") {
-      nextIndex = index;
-      break;
-    }
-  }
-
-  if (nextIndex === -1) {
-    AppState.patch({ isRunning: false, lastExtractedText: "" });
-    addLog(t("messages.allCompleted"), "success");
-    return;
-  }
-
-  const nextQuestion = refreshedState.questions[nextIndex];
-  const submittedQuestion = buildQuestionForSubmission(
-    nextQuestion.question,
-    nextQuestion.extractionConfig || antiBotSettings,
-    refreshedState.lastExtractedText
-  );
-  AppState.patch({ currentIndex: nextIndex });
-  AppState.updateQuestion(nextQuestion.id, { status: "processing" });
-  await persistQuestions();
-  addLog(`[${nextIndex + 1}/${refreshedState.questions.length}]: ${nextQuestion.question.substring(0, 50)}...`, "info");
-
-  try {
-    const { useTempChat, useWebSearch, keepSameChat } = antiBotSettings;
-    const response = await sendToBackground({
-      type: "PROCESS_QUESTION",
-      question: submittedQuestion,
-      questionId: nextQuestion.id,
-      useTempChat,
-      useWebSearch,
-      keepSameChat,
-      antiBotConfig: buildAntiBotConfig(antiBotSettings)
-    });
-
-    if (!response?.success) {
-      throw new Error(response?.error || "No response from background script");
-    }
-
-    addLog(t("messages.submittedWaiting"), "info");
-  } catch (error) {
-    AppState.updateQuestion(nextQuestion.id, { status: "failed", error: error.message });
-    await persistQuestions();
-    addLog(`${t("messages.processingFailed")}: ${error.message}`, "error");
-    AppState.patch({ currentIndex: nextIndex + 1 });
-
-    const latestState = AppState.getState();
-    if (latestState.isRunning && !latestState.isPaused) {
-      await sleep(2000);
-      void processNextQuestion();
-    }
-  }
-}
-
-async function handleQuestionComplete(result) {
-  const state = AppState.getState();
-  const question = state.questions.find((entry) => entry.id === result.questionId);
-  if (!question || question.status === "completed" || question.status === "failed") {
-    return;
-  }
-
-  if (result.success) {
-    AppState.updateQuestion(result.questionId, {
-      status: "completed",
-      answer: result.answer,
-      sources: result.sources || [],
-      completedAt: Date.now()
-    });
-
-    const extConfig = question.extractionConfig || state;
-
-    if (extConfig.useExtraction) {
-      try {
-        const extractedText = extractTextFromAnswer(result.answer, extConfig.extractionRegex);
-        AppState.patch({ lastExtractedText: extractedText });
-
-        if (extractedText) {
-          addLog(t("messages.textExtracted"), "success");
-        }
-      } catch (error) {
-        AppState.patch({ lastExtractedText: "" });
-        addLog(`${t("messages.invalidExtractionRegex")}: ${error.message}`, "warning");
-      }
-    }
-
-    addLog(`${t("messages.completed")}: ${question.question.substring(0, 50)}...`, "success");
-  } else {
-    AppState.updateQuestion(result.questionId, {
-      status: "failed",
-      error: result.error,
-      completedAt: Date.now()
-    });
-    const extConfig = question.extractionConfig || state;
-    if (extConfig.useExtraction) {
-      AppState.patch({ lastExtractedText: "" });
-    }
-    addLog(`${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`, "error");
-  }
-
-  await persistQuestions();
-  AppState.patch({
-    currentIndex: state.currentIndex + 1,
-    processedSincePause: state.processedSincePause + 1
-  });
-
-  const latestState = AppState.getState();
-  if (latestState.isRunning && !latestState.isPaused) {
-    addLog(t("messages.waitingNext"), "info");
-    await waitForConfiguredDelay(
-      AppConfig.TIMING.BETWEEN_QUESTIONS_MS,
-      latestState.randomDelays
-    );
-    void processNextQuestion();
-  }
 }
 
 function handleExport() {
@@ -621,7 +377,7 @@ function wireMessageListeners() {
   onRuntimeMessage((message, sendResponse) => {
     switch (message.type) {
       case "QUESTION_COMPLETE":
-        void handleQuestionComplete(message.result);
+        void questionProcessor.handleQuestionComplete(message.result);
         sendResponse({ received: true });
         break;
       case "UPDATE_PROGRESS":
@@ -661,7 +417,7 @@ function wireMessageListeners() {
 
     switch (pendingMessage.type) {
       case "QUESTION_COMPLETE":
-        void handleQuestionComplete(pendingMessage.result);
+        void questionProcessor.handleQuestionComplete(pendingMessage.result);
         void removePendingMessage();
         break;
       case "UPDATE_PROGRESS":
@@ -802,6 +558,11 @@ async function initialize() {
         persistExtractionSettings(resolvedSettings)
       ]);
     }
+  });
+
+  questionProcessor = new QuestionProcessor({
+    getSettings: () => settingsPanel.getValues(),
+    addLog
   });
 
   setupEventListeners(elements);

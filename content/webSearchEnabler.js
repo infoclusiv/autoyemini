@@ -1,23 +1,5 @@
 (function registerWebSearchModule() {
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
-  const { sleep, randomInt, randomSleep } = SharedUtils;
-
-  function getFixedDelay(delayOrRange) {
-    if (Array.isArray(delayOrRange)) {
-      return Number(delayOrRange[0]) || 0;
-    }
-
-    return Number(delayOrRange) || 0;
-  }
-
-  async function waitForDelay(delayOrRange, antiBotConfig = {}) {
-    if (antiBotConfig.randomDelays !== false && Array.isArray(delayOrRange)) {
-      await randomSleep(delayOrRange);
-      return;
-    }
-
-    await sleep(getFixedDelay(delayOrRange));
-  }
 
   function findSearchMenuItem(menu) {
     const menuItems = Array.from(menu.querySelectorAll(".__menu-item"));
@@ -89,66 +71,6 @@
     );
   }
 
-  function getRandomPoint(rect) {
-    const horizontalPadding = Math.max(4, rect.width * 0.18);
-    const verticalPadding = Math.max(4, rect.height * 0.22);
-
-    return {
-      clientX: randomInt(rect.left + horizontalPadding, rect.right - horizontalPadding),
-      clientY: randomInt(rect.top + verticalPadding, rect.bottom - verticalPadding)
-    };
-  }
-
-  async function clickWithEvents(element, antiBotConfig = {}) {
-    const rect = element.getBoundingClientRect();
-    const { clientX, clientY } = getRandomPoint(rect);
-
-    try {
-      element.scrollIntoView({ behavior: "instant", block: "center" });
-    } catch {
-    }
-
-    element.dispatchEvent(
-      new MouseEvent("mouseover", { bubbles: true, cancelable: true, view: window, clientX, clientY })
-    );
-    element.dispatchEvent(
-      new MouseEvent("mousemove", { bubbles: true, cancelable: true, view: window, clientX, clientY })
-    );
-    await waitForDelay([50, 100], antiBotConfig);
-    element.dispatchEvent(
-      new MouseEvent("mousedown", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX,
-        clientY,
-        button: 0
-      })
-    );
-    await waitForDelay([20, 80], antiBotConfig);
-    element.dispatchEvent(
-      new MouseEvent("mouseup", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX,
-        clientY,
-        button: 0
-      })
-    );
-    await waitForDelay([20, 60], antiBotConfig);
-    element.dispatchEvent(
-      new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX,
-        clientY,
-        button: 0
-      })
-    );
-  }
-
   function setSlashValue(input) {
     if (input.hasAttribute("contenteditable")) {
       input.innerHTML = "/";
@@ -189,7 +111,7 @@
       }
 
       input.focus();
-      await waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
+      await modules.waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
       clearSlashValue(input);
       input.dispatchEvent(
         new KeyboardEvent("keydown", {
@@ -221,7 +143,7 @@
         })
       );
 
-      await waitForDelay(CONFIG.TIMING.MENU_APPEAR_WAIT_MS, antiBotConfig);
+      await modules.waitForDelay(CONFIG.TIMING.MENU_APPEAR_WAIT_MS, antiBotConfig);
 
       const overlays = document.querySelectorAll('div[style*="position: absolute"], div[style*="position: fixed"]');
       let menu = null;
@@ -262,8 +184,8 @@
         return false;
       }
 
-      await clickWithEvents(menuItem, antiBotConfig);
-      await waitForDelay(CONFIG.TIMING.INPUT_WAIT_MS, antiBotConfig);
+      await modules.clickElement(menuItem, antiBotConfig);
+      await modules.waitForDelay(CONFIG.TIMING.INPUT_WAIT_MS, antiBotConfig);
       clearSlashValue(input);
       return true;
     } catch {
