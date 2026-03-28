@@ -245,9 +245,15 @@ function handleAddQuestions() {
     return;
   }
 
-  const isSinglePrompt = AppState.getState().singlePromptMode === true;
-  const nextQuestions = [...AppState.getState().questions];
+  const state = AppState.getState();
+  const isSinglePrompt = state.singlePromptMode === true;
+  const nextQuestions = [...state.questions];
   const questionsToAdd = parseQuestionsInput(rawValue, isSinglePrompt);
+  const extractionConfig = {
+    useExtraction: state.useExtraction,
+    extractionRegex: state.extractionRegex,
+    injectionPlaceholder: state.injectionPlaceholder
+  };
 
   questionsToAdd.forEach((question) => {
     nextQuestions.push({
@@ -257,7 +263,8 @@ function handleAddQuestions() {
       answer: "",
       sources: [],
       timestamp: Date.now(),
-      error: null
+      error: null,
+      extractionConfig
     });
   });
 
@@ -421,7 +428,7 @@ async function processNextQuestion() {
   const nextQuestion = refreshedState.questions[nextIndex];
   const submittedQuestion = buildQuestionForSubmission(
     nextQuestion.question,
-    antiBotSettings,
+    nextQuestion.extractionConfig || antiBotSettings,
     refreshedState.lastExtractedText
   );
   AppState.patch({ currentIndex: nextIndex });
@@ -475,9 +482,11 @@ async function handleQuestionComplete(result) {
       completedAt: Date.now()
     });
 
-    if (state.useExtraction) {
+    const extConfig = question.extractionConfig || state;
+
+    if (extConfig.useExtraction) {
       try {
-        const extractedText = extractTextFromAnswer(result.answer, state.extractionRegex);
+        const extractedText = extractTextFromAnswer(result.answer, extConfig.extractionRegex);
         AppState.patch({ lastExtractedText: extractedText });
 
         if (extractedText) {
@@ -496,7 +505,8 @@ async function handleQuestionComplete(result) {
       error: result.error,
       completedAt: Date.now()
     });
-    if (state.useExtraction) {
+    const extConfig = question.extractionConfig || state;
+    if (extConfig.useExtraction) {
       AppState.patch({ lastExtractedText: "" });
     }
     addLog(`${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`, "error");
@@ -747,7 +757,17 @@ async function initialize() {
     saveButton: elements.saveTemplateBtn,
     deleteButton: elements.deleteTemplateBtn,
     questionsInput,
-    addLog
+    addLog,
+    onLoadTemplate: (template) => {
+      if (template.useExtraction !== undefined) {
+        elements.useExtractionCheckbox.checked = template.useExtraction;
+        elements.extractionRegexInput.value =
+          template.extractionRegex || AppConfig.EXTRACTION.DEFAULT_REGEX;
+        elements.injectionPlaceholderInput.value =
+          template.injectionPlaceholder || AppConfig.EXTRACTION.DEFAULT_PLACEHOLDER;
+        void handleExtractionSettingsChange();
+      }
+    }
   });
 
   setupEventListeners(elements);

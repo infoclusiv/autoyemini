@@ -5,13 +5,22 @@ import { t } from "../i18n/i18n.js";
 const { generateUUID } = globalThis.SharedUtils;
 
 export class TemplatePanel {
-  constructor({ selectElement, loadButton, saveButton, deleteButton, questionsInput, addLog }) {
+  constructor({
+    selectElement,
+    loadButton,
+    saveButton,
+    deleteButton,
+    questionsInput,
+    addLog,
+    onLoadTemplate
+  }) {
     this.selectElement = selectElement;
     this.loadButton = loadButton;
     this.saveButton = saveButton;
     this.deleteButton = deleteButton;
     this.questionsInput = questionsInput;
     this.addLog = addLog;
+    this.onLoadTemplate = onLoadTemplate;
     this.pendingSelectedTemplateId = "";
 
     this.loadButton.addEventListener("click", () => {
@@ -83,10 +92,14 @@ export class TemplatePanel {
       return;
     }
 
+    const state = AppState.getState();
     const template = {
       id: generateUUID(),
       name: trimmedName,
-      content: this.questionsInput.value
+      content: this.questionsInput.value,
+      useExtraction: state.useExtraction,
+      extractionRegex: state.extractionRegex,
+      injectionPlaceholder: state.injectionPlaceholder
     };
     const nextTemplates = [...AppState.getState().templates, template];
 
@@ -104,6 +117,9 @@ export class TemplatePanel {
     }
 
     this.questionsInput.value = selectedTemplate.content;
+    if (this.onLoadTemplate) {
+      this.onLoadTemplate(selectedTemplate);
+    }
     this.addLog(t("messages.templateLoaded"), "info");
   }
 
