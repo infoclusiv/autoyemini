@@ -267,16 +267,25 @@ async function handleStart() {
   void questionProcessor.processNextQuestion();
 }
 
-function loadWorkflowStepQuestions(template) {
+function loadWorkflowStepQuestions(template, chainedText) {
   const state = AppState.getState();
   const isSinglePrompt = state.singlePromptMode === true;
-  const questionsToAdd = parseQuestionsInput(template.content, isSinglePrompt);
 
   const extractionConfig = {
     useExtraction: state.useExtraction,
     extractionRegex: state.extractionRegex,
     injectionPlaceholder: state.injectionPlaceholder
   };
+
+  // Resolve the template content: replace {{extract}} with chainedText
+  let resolvedContent = template.content;
+  if (chainedText && extractionConfig.injectionPlaceholder) {
+    resolvedContent = resolvedContent
+      .split(extractionConfig.injectionPlaceholder)
+      .join(chainedText);
+  }
+
+  const questionsToAdd = parseQuestionsInput(resolvedContent, isSinglePrompt);
 
   const nextQuestions = [...state.questions];
   questionsToAdd.forEach((question) => {
@@ -345,11 +354,19 @@ async function handleStartWorkflow() {
     addLog(t("workflow.invalidSteps"), "warning");
   }
 
+  // Clear existing questions before starting the workflow
+  AppState.setQuestions([]);
+  await persistQuestions();
+
   addLog(t("messages.workflowStarting", { name: workflow.name }), "info");
 
   AppState.patch({
     activeWorkflow: { ...workflow, steps: validSteps },
-    activeWorkflowStepIndex: 0
+    activeWorkflowStepIndex: 0,
+    workflowContext: {
+      chainedText: "",
+      stepResults: []
+    }
   });
 
   await executeWorkflowStep(0);
@@ -361,7 +378,7 @@ async function executeWorkflowStep(stepIndex) {
 
   if (!workflow || stepIndex >= workflow.steps.length) {
     addLog(t("messages.workflowComplete"), "success");
-    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1 });
+    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1, workflowContext: null });
     return;
   }
 
@@ -378,7 +395,18 @@ async function executeWorkflowStep(stepIndex) {
   addLog(t("messages.workflowStepStarting", [stepIndex + 1, template.name]), "info");
 
   applyTemplateSettings(template);
-  const addedCount = loadWorkflowStepQuestions(template);
+
+  // Get the chainedText from the workflow context
+  const chainedText = state.workflowContext?.chainedText || "";
+  if (chainedText && stepIndex > 0) {
+    addLog(`Chained data available (${chainedText.length} chars)`, "info");
+  }
+
+  // Clear questions from previous step before loading new ones
+  AppState.setQuestions([]);
+  await persistQuestions();
+
+  const addedCount = loadWorkflowStepQuestions(template, chainedText);
   addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
 
   addLog(t("messages.openingChatGPT"), "info");
@@ -394,12 +422,12 @@ async function executeWorkflowStep(stepIndex) {
 
     if (!response?.success) {
       addLog(`${t("messages.cannotOpenChatGPT")}: ${response?.error || "Unknown error"}`, "error");
-      AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1 });
+      abortWorkflow();
       return;
     }
   } catch (error) {
     addLog(`${t("messages.error")}: ${error.message}`, "error");
-    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1 });
+    abortWorkflow();
     return;
   }
 
@@ -413,12 +441,13 @@ async function executeWorkflowStep(stepIndex) {
     (q) => q.status === "pending"
   );
 
+  // Preserve lastExtractedText from workflow context instead of resetting
   AppState.patch({
     isRunning: true,
     isPaused: false,
     currentIndex: 0,
     processedSincePause: 0,
-    lastExtractedText: ""
+    lastExtractedText: chainedText
   });
 
   addLog(t("messages.startingBatch"), "info");
@@ -441,11 +470,24 @@ async function advanceWorkflowStep() {
 
   if (nextStepIndex >= state.activeWorkflow.steps.length) {
     addLog(t("messages.workflowComplete"), "success");
-    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1 });
+    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1, workflowContext: null });
     return;
   }
 
   await executeWorkflowStep(nextStepIndex);
+}
+
+function abortWorkflow() {
+  addLog("Workflow aborted.", "error");
+  AppState.patch({
+    isRunning: false,
+    isPaused: false,
+    processedSincePause: 0,
+    lastExtractedText: "",
+    activeWorkflow: null,
+    activeWorkflowStepIndex: -1,
+    workflowContext: null
+  });
 }
 
 function handlePause() {
@@ -466,7 +508,8 @@ function handleStop() {
     processedSincePause: 0,
     lastExtractedText: "",
     activeWorkflow: null,
-    activeWorkflowStepIndex: -1
+    activeWorkflowStepIndex: -1,
+    workflowContext: null
   });
   addLog(t("messages.executionStopped"), "warning");
 }
@@ -759,6 +802,9 @@ async function initialize() {
     addLog,
     onAllCompleted: () => {
       void advanceWorkflowStep();
+    },
+    onWorkflowAbort: () => {
+      abortWorkflow();
     }
   });
 

@@ -141,7 +141,9 @@ const KEY_MAP = {
   "messages.workflowSelectRequired": "msgWorkflowSelectRequired",
   "messages.workflowNameRequired": "msgWorkflowNameRequired",
   "messages.workflowNoSteps": "msgWorkflowNoSteps",
-  "messages.confirmWorkflowDelete": "msgConfirmWorkflowDelete"
+  "messages.confirmWorkflowDelete": "msgConfirmWorkflowDelete",
+  "messages.workflowExtractionFailed": "msgWorkflowExtractionFailed",
+  "messages.workflowAborted": "msgWorkflowAborted"
 };
 
 export function t(key, substitutions) {

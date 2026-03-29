@@ -23,10 +23,11 @@ export function parseQuestionsInput(rawValue, isSinglePrompt) {
 }
 
 export class QuestionProcessor {
-  constructor({ getSettings, addLog, onAllCompleted }) {
+  constructor({ getSettings, addLog, onAllCompleted, onWorkflowAbort }) {
     this.getSettings = getSettings;
     this.addLog = addLog;
     this.onAllCompleted = onAllCompleted || null;
+    this.onWorkflowAbort = onWorkflowAbort || null;
   }
 
   persistQuestions() {
@@ -131,6 +132,80 @@ export class QuestionProcessor {
     }
   }
 
+  _getCurrentStepChainConfig() {
+    const state = AppState.getState();
+    if (!state.activeWorkflow || !state.workflowContext) {
+      return null;
+    }
+
+    const stepIndex = state.activeWorkflowStepIndex;
+    const step = state.activeWorkflow.steps[stepIndex];
+    return step?.chainConfig || null;
+  }
+
+  _handleWorkflowChaining(result, question) {
+    const state = AppState.getState();
+    const chainConfig = this._getCurrentStepChainConfig();
+
+    if (!chainConfig || !state.workflowContext) {
+      return true;
+    }
+
+    const { responseAction } = chainConfig;
+
+    if (responseAction === "extract") {
+      const extConfig = question.extractionConfig || state;
+
+      if (!extConfig.useExtraction) {
+        this.addLog("Workflow step set to 'extract' but extraction is not enabled in template settings. Aborting.", "error");
+        return false;
+      }
+
+      try {
+        const extractedText = extractTextFromAnswer(result.answer, extConfig.extractionRegex);
+
+        if (!extractedText) {
+          this.addLog(
+            `Extraction failed: pattern not found in response. Workflow aborted.`,
+            "error"
+          );
+          return false;
+        }
+
+        const ctx = { ...state.workflowContext };
+        ctx.chainedText = extractedText;
+        ctx.stepResults = [
+          ...ctx.stepResults,
+          { stepIndex: state.activeWorkflowStepIndex, action: "extract", text: extractedText, success: true }
+        ];
+        AppState.patch({ workflowContext: ctx, lastExtractedText: extractedText });
+        this.addLog(t("messages.textExtracted"), "success");
+      } catch (error) {
+        this.addLog(`Extraction regex error: ${error.message}. Workflow aborted.`, "error");
+        return false;
+      }
+    } else if (responseAction === "store_full") {
+      const fullResponse = result.answer || "";
+      const ctx = { ...state.workflowContext };
+      ctx.chainedText = fullResponse;
+      ctx.stepResults = [
+        ...ctx.stepResults,
+        { stepIndex: state.activeWorkflowStepIndex, action: "store_full", text: fullResponse.substring(0, 200), success: true }
+      ];
+      AppState.patch({ workflowContext: ctx, lastExtractedText: fullResponse });
+      this.addLog("Full response stored for next step.", "success");
+    } else {
+      const ctx = { ...state.workflowContext };
+      ctx.stepResults = [
+        ...ctx.stepResults,
+        { stepIndex: state.activeWorkflowStepIndex, action: "none", text: "", success: true }
+      ];
+      AppState.patch({ workflowContext: ctx });
+    }
+
+    return true;
+  }
+
   async handleQuestionComplete(result) {
     const state = AppState.getState();
     const question = state.questions.find((entry) => entry.id === result.questionId);
@@ -146,19 +221,20 @@ export class QuestionProcessor {
         completedAt: Date.now()
       });
 
-      const extConfig = question.extractionConfig || state;
-
-      if (extConfig.useExtraction) {
-        try {
-          const extractedText = extractTextFromAnswer(result.answer, extConfig.extractionRegex);
-          AppState.patch({ lastExtractedText: extractedText });
-
-          if (extractedText) {
-            this.addLog(t("messages.textExtracted"), "success");
+      // Handle non-workflow extraction (legacy individual template execution)
+      if (!state.activeWorkflow) {
+        const extConfig = question.extractionConfig || state;
+        if (extConfig.useExtraction) {
+          try {
+            const extractedText = extractTextFromAnswer(result.answer, extConfig.extractionRegex);
+            AppState.patch({ lastExtractedText: extractedText });
+            if (extractedText) {
+              this.addLog(t("messages.textExtracted"), "success");
+            }
+          } catch (error) {
+            AppState.patch({ lastExtractedText: "" });
+            this.addLog(`${t("messages.invalidExtractionRegex")}: ${error.message}`, "warning");
           }
-        } catch (error) {
-          AppState.patch({ lastExtractedText: "" });
-          this.addLog(`${t("messages.invalidExtractionRegex")}: ${error.message}`, "warning");
         }
       }
 
@@ -169,6 +245,19 @@ export class QuestionProcessor {
         error: result.error,
         completedAt: Date.now()
       });
+
+      if (state.activeWorkflow) {
+        this.addLog(
+          `${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`,
+          "error"
+        );
+        this.addLog("Step failed. Workflow aborted.", "error");
+        if (this.onWorkflowAbort) {
+          this.onWorkflowAbort();
+        }
+        return;
+      }
+
       const extConfig = question.extractionConfig || state;
       if (extConfig.useExtraction) {
         AppState.patch({ lastExtractedText: "" });
@@ -187,6 +276,22 @@ export class QuestionProcessor {
 
     const latestState = AppState.getState();
     if (latestState.isRunning && !latestState.isPaused) {
+      // Check if there are more pending questions in this step
+      const hasMorePending = latestState.questions.some(
+        (q, i) => i >= latestState.currentIndex && q.status === "pending"
+      );
+
+      if (!hasMorePending && latestState.activeWorkflow && result.success) {
+        // All questions in this step are done - handle workflow chaining before advancing
+        const chainSuccess = this._handleWorkflowChaining(result, question);
+        if (!chainSuccess) {
+          if (this.onWorkflowAbort) {
+            this.onWorkflowAbort();
+          }
+          return;
+        }
+      }
+
       this.addLog(t("messages.waitingNext"), "info");
       await waitForConfiguredDelay(
         AppConfig.TIMING.BETWEEN_QUESTIONS_MS,
@@ -196,3 +301,4 @@ export class QuestionProcessor {
     }
   }
 }
+

@@ -764,5 +764,19 @@
    "msgConfirmWorkflowDelete": {
       "description": "Confirm workflow delete dialog",
       "message": "Delete the selected workflow?"
+   },
+   "msgWorkflowExtractionFailed": {
+      "description": "Workflow extraction failed message",
+      "message": "Extraction failed at step $NUM$. Workflow aborted.",
+      "placeholders": {
+         "num": {
+            "content": "$1",
+            "example": "2"
+         }
+      }
+   },
+   "msgWorkflowAborted": {
+      "description": "Workflow aborted message",
+      "message": "Workflow aborted due to an error."
    }
 }

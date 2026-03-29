@@ -19,10 +19,17 @@ export function normalizeWorkflows(value, existingTemplates) {
                 typeof step.templateId === "string" &&
                 templateIds.has(step.templateId)
             )
-            .map((step, stepIndex) => ({
-              templateId: step.templateId,
-              order: typeof step.order === "number" ? step.order : stepIndex
-            }))
+            .map((step, stepIndex) => {
+              const validActions = ["extract", "store_full", "none"];
+              const rawAction = step.chainConfig?.responseAction;
+              const responseAction = validActions.includes(rawAction) ? rawAction : "none";
+
+              return {
+                templateId: step.templateId,
+                order: typeof step.order === "number" ? step.order : stepIndex,
+                chainConfig: { responseAction }
+              };
+            })
             .sort((a, b) => a.order - b.order)
             .map((step, sortedIndex) => ({
               ...step,

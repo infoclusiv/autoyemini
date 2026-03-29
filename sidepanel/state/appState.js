@@ -4,6 +4,7 @@ const state = {
   workflows: [],
   activeWorkflow: null,
   activeWorkflowStepIndex: -1,
+  workflowContext: null,
   isRunning: false,
   isPaused: false,
   currentIndex: 0,

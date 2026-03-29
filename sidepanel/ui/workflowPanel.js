@@ -124,6 +124,24 @@ export class WorkflowPanel {
 
     workflow.steps.forEach((step, index) => {
       const template = templates.find((tpl) => tpl.id === step.templateId);
+
+      // Connector arrow between steps
+      if (index > 0) {
+        const connector = document.createElement("div");
+        connector.className = "workflow-step-connector";
+
+        const prevStep = workflow.steps[index - 1];
+        const prevAction = prevStep.chainConfig?.responseAction || "none";
+        if (prevAction === "extract" || prevAction === "store_full") {
+          connector.classList.add("workflow-step-connector-active");
+          connector.innerHTML = '<span class="connector-icon">🔗</span>';
+        } else {
+          connector.innerHTML = '<span class="connector-icon">↓</span>';
+        }
+
+        this.stepsListElement.appendChild(connector);
+      }
+
       const stepEl = document.createElement("div");
       stepEl.className = "workflow-step";
 
@@ -136,6 +154,10 @@ export class WorkflowPanel {
       if (!template) {
         stepEl.classList.add("workflow-step-invalid");
       }
+
+      // Step header row
+      const stepHeader = document.createElement("div");
+      stepHeader.className = "workflow-step-header";
 
       const stepLabel = document.createElement("span");
       stepLabel.className = "workflow-step-label";
@@ -179,9 +201,71 @@ export class WorkflowPanel {
       });
       actions.appendChild(removeBtn);
 
-      stepEl.appendChild(stepLabel);
-      stepEl.appendChild(stepName);
-      stepEl.appendChild(actions);
+      stepHeader.appendChild(stepLabel);
+      stepHeader.appendChild(stepName);
+      stepHeader.appendChild(actions);
+
+      // Chain config row
+      const chainRow = document.createElement("div");
+      chainRow.className = "workflow-step-chain-row";
+
+      const actionLabel = document.createElement("span");
+      actionLabel.className = "workflow-step-chain-label";
+      actionLabel.textContent = "Response:";
+
+      const actionSelect = document.createElement("select");
+      actionSelect.className = "workflow-step-action-select";
+
+      const actionOptions = [
+        { value: "none", label: "⏭️ Skip", cls: "action-none" },
+        { value: "extract", label: "🔍 Extract (regex)", cls: "action-extract" },
+        { value: "store_full", label: "📋 Store Full", cls: "action-store" }
+      ];
+
+      actionOptions.forEach((opt) => {
+        const option = document.createElement("option");
+        option.value = opt.value;
+        option.textContent = opt.label;
+        actionSelect.appendChild(option);
+      });
+
+      const currentAction = step.chainConfig?.responseAction || "none";
+      actionSelect.value = currentAction;
+
+      actionSelect.addEventListener("change", () => {
+        void this.updateStepChainConfig(workflow.id, index, actionSelect.value);
+      });
+
+      // Action badge
+      const actionBadge = document.createElement("span");
+      actionBadge.className = `workflow-step-action-badge action-badge-${currentAction}`;
+      if (currentAction === "extract") {
+        actionBadge.textContent = "🔍 Extracts data";
+      } else if (currentAction === "store_full") {
+        actionBadge.textContent = "📋 Stores response";
+      } else {
+        actionBadge.textContent = "⏭️ Passes through";
+      }
+
+      // Input indicator (if template content contains the injection placeholder)
+      const injectionPlaceholder = state.injectionPlaceholder || "{{extract}}";
+      const hasInjection = template && template.content && template.content.includes(injectionPlaceholder);
+
+      chainRow.appendChild(actionLabel);
+      chainRow.appendChild(actionSelect);
+
+      stepEl.appendChild(stepHeader);
+      stepEl.appendChild(chainRow);
+
+      if (hasInjection) {
+        const inputIndicator = document.createElement("div");
+        inputIndicator.className = "workflow-step-input-indicator";
+        inputIndicator.textContent = `📥 Receives data via ${injectionPlaceholder}`;
+        stepEl.appendChild(inputIndicator);
+      }
+
+      stepEl.appendChild(actionBadge);
+
       this.stepsListElement.appendChild(stepEl);
     });
   }
@@ -274,7 +358,8 @@ export class WorkflowPanel {
 
     const newStep = {
       templateId,
-      order: workflow.steps.length
+      order: workflow.steps.length,
+      chainConfig: { responseAction: "none" }
     };
 
     const nextWorkflows = AppState.getState().workflows.map((wf) => {
@@ -314,6 +399,26 @@ export class WorkflowPanel {
         ...wf,
         steps: nextSteps.map((step, i) => ({ ...step, order: i }))
       };
+    });
+
+    await this.persistWorkflows(nextWorkflows, workflowId);
+  }
+
+  async updateStepChainConfig(workflowId, stepIndex, responseAction) {
+    const nextWorkflows = AppState.getState().workflows.map((wf) => {
+      if (wf.id !== workflowId) {
+        return wf;
+      }
+      const nextSteps = wf.steps.map((step, i) => {
+        if (i !== stepIndex) {
+          return step;
+        }
+        return {
+          ...step,
+          chainConfig: { responseAction }
+        };
+      });
+      return { ...wf, steps: nextSteps };
     });
 
     await this.persistWorkflows(nextWorkflows, workflowId);
