@@ -12,11 +12,6 @@ const state = {
   useWebSearch: true,
   keepSameChat: false,
   singlePromptMode: false,
-  useExtraction: false,
-  extractionRegex:
-    globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>",
-  injectionPlaceholder:
-    globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}",
   lastExtractedText: "",
   humanTyping: true,
   randomDelays: true,

@@ -1,6 +1,5 @@
 import { GeneralSettingsPanel } from "./generalSettingsPanel.js";
 import { AntiBotSettingsPanel } from "./antiBotSettingsPanel.js";
-import { ExtractionSettingsPanel } from "./extractionSettingsPanel.js";
 
 export class SettingsPanel {
   constructor(elements) {
@@ -22,13 +21,6 @@ export class SettingsPanel {
       fatigueMinMinutesInput: elements.fatigueMinMinutesInput,
       fatigueMaxMinutesInput: elements.fatigueMaxMinutesInput
     });
-
-    this.extraction = new ExtractionSettingsPanel({
-      useExtractionCheckbox: elements.useExtractionCheckbox,
-      extractionFields: elements.extractionFields,
-      extractionRegexInput: elements.extractionRegexInput,
-      injectionPlaceholderInput: elements.injectionPlaceholderInput
-    });
   }
 
   setValues(settings) {
@@ -38,18 +30,12 @@ export class SettingsPanel {
 
     this.general.setValues(settings);
     this.antiBot.setValues(settings);
-    this.extraction.setValues(settings);
   }
 
   setValuesFromTemplate(settings) {
     const safeSettings = settings || {};
     this.general.setValuesFromTemplate(safeSettings);
     this.antiBot.setValuesFromTemplate(safeSettings);
-    this.extraction.setValuesFromTemplate(safeSettings);
-  }
-
-  setExtractionVisibility(isVisible) {
-    this.extraction.setExtractionVisibility(isVisible);
   }
 
   setBiologicalPauseVisibility(isVisible) {
@@ -63,8 +49,7 @@ export class SettingsPanel {
   getValues() {
     return {
       ...this.general.getValues(),
-      ...this.antiBot.getValues(),
-      ...this.extraction.getValues()
+      ...this.antiBot.getValues()
     };
   }
 }

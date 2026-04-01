@@ -247,9 +247,16 @@ export class WorkflowPanel {
         actionBadge.textContent = "⏭️ Passes through";
       }
 
-      // Input indicator (if template content contains the injection placeholder)
-      const injectionPlaceholder = state.injectionPlaceholder || "{{extract}}";
-      const hasInjection = template && template.content && template.content.includes(injectionPlaceholder);
+      // Input indicator (if template content contains the step's injection placeholder)
+      const stepPlaceholder =
+        step.chainConfig?.injectionPlaceholder ||
+        globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER ||
+        "{{extract}}";
+      const hasInjection =
+        index > 0 &&
+        template &&
+        template.content &&
+        template.content.includes(stepPlaceholder);
 
       chainRow.appendChild(actionLabel);
       chainRow.appendChild(actionSelect);
@@ -260,7 +267,7 @@ export class WorkflowPanel {
       if (hasInjection) {
         const inputIndicator = document.createElement("div");
         inputIndicator.className = "workflow-step-input-indicator";
-        inputIndicator.textContent = `📥 Receives data via ${injectionPlaceholder}`;
+        inputIndicator.textContent = `📥 Receives data via ${stepPlaceholder}`;
         stepEl.appendChild(inputIndicator);
       }
 
@@ -356,10 +363,19 @@ export class WorkflowPanel {
       return;
     }
 
-    const newStep = {
-      templateId,
-      order: workflow.steps.length,
-      chainConfig: { responseAction: "none" }
+const defaultRegex =
+        globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+      const defaultPlaceholder =
+        globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+
+      const newStep = {
+        templateId,
+        order: workflow.steps.length,
+        chainConfig: {
+          responseAction: "none",
+          extractionRegex: defaultRegex,
+          injectionPlaceholder: defaultPlaceholder
+        }
     };
 
     const nextWorkflows = AppState.getState().workflows.map((wf) => {
@@ -415,7 +431,7 @@ export class WorkflowPanel {
         }
         return {
           ...step,
-          chainConfig: { responseAction }
+          chainConfig: { ...step.chainConfig, responseAction }
         };
       });
       return { ...wf, steps: nextSteps };

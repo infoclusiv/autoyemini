@@ -1,4 +1,4 @@
-import { normalizeRange, normalizeNumber, normalizeString } from "./normalizers.js";
+import { normalizeRange, normalizeNumber } from "./normalizers.js";
 import { normalizeTemplates } from "./templateService.js";
 import { normalizeWorkflows } from "./workflowService.js";
 
@@ -9,9 +9,6 @@ const storageKeys = globalThis.CONFIG?.STORAGE_KEYS || {
   USE_WEB_SEARCH: "useWebSearch",
   KEEP_SAME_CHAT: "keepSameChat",
   SINGLE_PROMPT_MODE: "singlePromptMode",
-  USE_EXTRACTION: "useExtraction",
-  EXTRACTION_REGEX: "extractionRegex",
-  INJECTION_PLACEHOLDER: "injectionPlaceholder",
   PENDING_MESSAGE: "pendingMessage",
   HUMAN_TYPING: "humanTyping",
   RANDOM_DELAYS: "randomDelays",
@@ -28,11 +25,6 @@ const antiBotDefaults = globalThis.CONFIG?.ANTI_BOT || {
   FATIGUE_PAUSE_MS: [20000, 40000]
 };
 
-const extractionDefaults = globalThis.CONFIG?.EXTRACTION || {
-  DEFAULT_REGEX: "<extract>(.*?)</extract>",
-  DEFAULT_PLACEHOLDER: "{{extract}}"
-};
-
 function msToMinutes(ms) {
   return Math.max(0.5, Math.round((Number(ms) / 60000) * 10) / 10);
 }
@@ -47,9 +39,6 @@ export async function loadAll() {
     StorageKeys.USE_WEB_SEARCH,
     StorageKeys.KEEP_SAME_CHAT,
     StorageKeys.SINGLE_PROMPT_MODE,
-    StorageKeys.USE_EXTRACTION,
-    StorageKeys.EXTRACTION_REGEX,
-    StorageKeys.INJECTION_PLACEHOLDER,
     StorageKeys.HUMAN_TYPING,
     StorageKeys.RANDOM_DELAYS,
     StorageKeys.BIOLOGICAL_PAUSES,
@@ -83,15 +72,6 @@ export async function loadAll() {
     useWebSearch: stored[StorageKeys.USE_WEB_SEARCH] !== false,
     keepSameChat: stored[StorageKeys.KEEP_SAME_CHAT] === true,
     singlePromptMode: stored[StorageKeys.SINGLE_PROMPT_MODE] === true,
-    useExtraction: stored[StorageKeys.USE_EXTRACTION] === true,
-    extractionRegex: normalizeString(
-      stored[StorageKeys.EXTRACTION_REGEX],
-      extractionDefaults.DEFAULT_REGEX
-    ),
-    injectionPlaceholder: normalizeString(
-      stored[StorageKeys.INJECTION_PLACEHOLDER],
-      extractionDefaults.DEFAULT_PLACEHOLDER
-    ),
     humanTyping: stored[StorageKeys.HUMAN_TYPING] !== false,
     randomDelays: stored[StorageKeys.RANDOM_DELAYS] !== false,
     biologicalPauses: stored[StorageKeys.BIOLOGICAL_PAUSES] === true,

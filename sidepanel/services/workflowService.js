@@ -24,10 +24,27 @@ export function normalizeWorkflows(value, existingTemplates) {
               const rawAction = step.chainConfig?.responseAction;
               const responseAction = validActions.includes(rawAction) ? rawAction : "none";
 
+              const defaultRegex =
+                globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+              const defaultPlaceholder =
+                globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+
+              const extractionRegex =
+                typeof step.chainConfig?.extractionRegex === "string" &&
+                step.chainConfig.extractionRegex.trim()
+                  ? step.chainConfig.extractionRegex
+                  : defaultRegex;
+
+              const injectionPlaceholder =
+                typeof step.chainConfig?.injectionPlaceholder === "string" &&
+                step.chainConfig.injectionPlaceholder.trim()
+                  ? step.chainConfig.injectionPlaceholder
+                  : defaultPlaceholder;
+
               return {
                 templateId: step.templateId,
                 order: typeof step.order === "number" ? step.order : stepIndex,
-                chainConfig: { responseAction }
+                chainConfig: { responseAction, extractionRegex, injectionPlaceholder }
               };
             })
             .sort((a, b) => a.order - b.order)

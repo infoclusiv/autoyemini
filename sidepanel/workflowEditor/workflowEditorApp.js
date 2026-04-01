@@ -101,8 +101,6 @@ const ACTION_OPTIONS = [
   { value: "store_full", label: "📋 Store full response" }
 ];
 
-const INJECTION_PLACEHOLDER = "{{extract}}";
-
 function renderCanvas() {
   const canvas = document.getElementById("editorCanvas");
   const emptyState = document.getElementById("editorEmptyState");
@@ -133,7 +131,6 @@ function renderCanvas() {
   workflow.steps.forEach((step, index) => {
     const tpl = templates.find((t) => t.id === step.templateId);
     const action = step.chainConfig?.responseAction || "none";
-    const hasInjection = tpl && tpl.content && tpl.content.includes(INJECTION_PLACEHOLDER);
 
     // ── Connector arrow (before each step except the first) ──
     if (index > 0) {
@@ -242,19 +239,89 @@ function renderCanvas() {
     else if (action === "store_full") badge.textContent = "📋 Stores full response";
     else badge.textContent = "⏭️ Passes through";
 
-    // Injection indicator
-    const injectionEl = hasInjection ? (() => {
-      const el = document.createElement("div");
-      el.className = "editor-node-injection";
-      el.textContent = `📥 receives via ${INJECTION_PLACEHOLDER}`;
-      return el;
-    })() : null;
+    // ── Extraction config row (shown when responseAction === "extract") ──
+    const regexRow = document.createElement("div");
+    regexRow.className = "editor-node-regex-row" + (action !== "extract" ? " is-hidden" : "");
+
+    const regexLabel = document.createElement("label");
+    regexLabel.className = "editor-node-field-label";
+    regexLabel.textContent = "🔍 Regex pattern:";
+
+    const regexInput = document.createElement("input");
+    regexInput.type = "text";
+    regexInput.className = "editor-node-field-input";
+    regexInput.placeholder = globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+    regexInput.value = step.chainConfig?.extractionRegex || globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+    regexInput.title = "Regex pattern to extract text from the response (must have one capture group)";
+    regexInput.addEventListener("change", () => {
+      void updateStepChainField(workflow.id, index, "extractionRegex", regexInput.value.trim() || regexInput.placeholder);
+    });
+
+    regexRow.appendChild(regexLabel);
+    regexRow.appendChild(regexInput);
+
+    // Show/hide regexRow when responseAction changes
+    actionSel.addEventListener("change", () => {
+      regexRow.classList.toggle("is-hidden", actionSel.value !== "extract");
+    });
+
+    // ── Injection config row (placeholder input) ──
+    const isFirstStep = index === 0;
+    const prevStep = index > 0 ? workflow.steps[index - 1] : null;
+    const prevHasOutput = prevStep && prevStep.chainConfig?.responseAction !== "none";
+
+    const injectionRow = document.createElement("div");
+    let injectionRowClass = "editor-node-injection-row";
+    if (isFirstStep) {
+      injectionRowClass += " is-disabled";
+    } else if (!prevHasOutput) {
+      injectionRowClass += " is-inactive";
+    }
+    injectionRow.className = injectionRowClass;
+
+    const injectionLabel = document.createElement("label");
+    injectionLabel.className = "editor-node-field-label";
+    if (isFirstStep) {
+      injectionLabel.textContent = "📥 Injection placeholder: (no prior step)";
+    } else if (!prevHasOutput) {
+      injectionLabel.textContent = "📥 Injection placeholder: (prior step has no output)";
+    } else {
+      injectionLabel.textContent = "📥 Injection placeholder:";
+    }
+
+    const injectionInput = document.createElement("input");
+    injectionInput.type = "text";
+    injectionInput.className = "editor-node-field-input";
+    injectionInput.placeholder = globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+    injectionInput.value = step.chainConfig?.injectionPlaceholder || globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+    injectionInput.title = "Placeholder text in this template that will be replaced by the previous step's output";
+    injectionInput.disabled = isFirstStep;
+    injectionInput.addEventListener("change", () => {
+      void updateStepChainField(workflow.id, index, "injectionPlaceholder", injectionInput.value.trim() || injectionInput.placeholder);
+    });
+
+    injectionRow.appendChild(injectionLabel);
+    injectionRow.appendChild(injectionInput);
+
+    // ── Last-step extraction warning ──
+    const isLastStep = index === workflow.steps.length - 1;
+    const lastStepWarning =
+      isLastStep && action !== "none"
+        ? (() => {
+            const el = document.createElement("div");
+            el.className = "editor-node-last-step-warning";
+            el.textContent = "⚠️ Last step — extracted/stored data won't be passed further";
+            return el;
+          })()
+        : null;
 
     node.appendChild(header);
     node.appendChild(tplName);
     node.appendChild(responseRow);
     node.appendChild(badge);
-    if (injectionEl) node.appendChild(injectionEl);
+    node.appendChild(regexRow);
+    node.appendChild(injectionRow);
+    if (lastStepWarning) node.appendChild(lastStepWarning);
 
     canvas.appendChild(node);
   });
@@ -341,10 +408,19 @@ async function handleAddStep(templateId) {
   const wf = getSelectedWorkflow();
   if (!wf) return;
 
+  const defaultRegex =
+    globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+  const defaultPlaceholder =
+    globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+
   const newStep = {
     templateId,
     order: wf.steps.length,
-    chainConfig: { responseAction: "none" }
+    chainConfig: {
+      responseAction: "none",
+      extractionRegex: defaultRegex,
+      injectionPlaceholder: defaultPlaceholder
+    }
   };
 
   workflows = workflows.map((w) => {
@@ -390,13 +466,26 @@ async function updateStepAction(workflowId, stepIndex, responseAction) {
     if (w.id !== workflowId) return w;
     const steps = w.steps.map((s, i) => {
       if (i !== stepIndex) return s;
-      return { ...s, chainConfig: { responseAction } };
+      return { ...s, chainConfig: { ...s.chainConfig, responseAction } };
     });
     return { ...w, steps };
   });
 
   await persist();
   renderCanvas();
+}
+
+async function updateStepChainField(workflowId, stepIndex, field, value) {
+  workflows = workflows.map((w) => {
+    if (w.id !== workflowId) return w;
+    const steps = w.steps.map((s, i) => {
+      if (i !== stepIndex) return s;
+      return { ...s, chainConfig: { ...s.chainConfig, [field]: value } };
+    });
+    return { ...w, steps };
+  });
+
+  await persist();
 }
 
 // ─── Event listeners ──────────────────────────────────────

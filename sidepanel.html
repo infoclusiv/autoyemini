@@ -163,34 +163,6 @@
           </div>
         </div>
 
-        <div class="settings-group extraction-settings">
-          <div class="settings-group-title" data-i18n="control.extractionTitle">Prompt Chaining</div>
-
-          <div class="setting-item">
-            <label class="setting-label">
-              <span class="setting-icon">🔗</span>
-              <input type="checkbox" id="useExtractionCheckbox">
-              <span class="setting-text" data-i18n="control.useExtraction">Extract and Inject Text</span>
-            </label>
-            <span class="setting-hint" data-i18n="control.useExtractionHint">Capture text from one answer and inject it into the next prompt</span>
-          </div>
-
-          <div id="extractionFields" class="settings-subgroup is-hidden">
-            <div class="setting-item setting-item-stack">
-              <label class="text-setting-label" for="extractionRegexInput">
-                <span class="setting-text" data-i18n="control.extractionRegex">Extraction Regex</span>
-              </label>
-              <input type="text" id="extractionRegexInput" value="<extract>(.*?)</extract>">
-            </div>
-
-            <div class="setting-item setting-item-stack">
-              <label class="text-setting-label" for="injectionPlaceholderInput">
-                <span class="setting-text" data-i18n="control.injectionPlaceholder">Injection Placeholder</span>
-              </label>
-              <input type="text" id="injectionPlaceholderInput" value="{{extract}}">
-            </div>
-          </div>
-        </div>
       </div>
       
       <!-- Divider -->

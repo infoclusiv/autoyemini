@@ -13,7 +13,6 @@ import { WorkflowRunner } from "./ui/workflowRunner.js";
 import { normalizeWorkflows } from "./services/workflowService.js";
 import { QuestionProcessor, parseQuestionsInput } from "./core/questionProcessor.js";
 import { waitForConfiguredDelay } from "./core/antiBotController.js";
-import { normalizeExtractionSettings } from "./core/extractionEngine.js";
 
 const { generateUUID, sleep, randomSleep } = globalThis.SharedUtils;
 const AppConfig = globalThis.CONFIG;
@@ -51,10 +50,6 @@ function getElements() {
     useTempChatCheckbox: document.getElementById("useTempChatCheckbox"),
     useWebSearchCheckbox: document.getElementById("useWebSearchCheckbox"),
     keepSameChatCheckbox: document.getElementById("keepSameChatCheckbox"),
-    useExtractionCheckbox: document.getElementById("useExtractionCheckbox"),
-    extractionFields: document.getElementById("extractionFields"),
-    extractionRegexInput: document.getElementById("extractionRegexInput"),
-    injectionPlaceholderInput: document.getElementById("injectionPlaceholderInput"),
     humanTypingCheckbox: document.getElementById("humanTypingCheckbox"),
     humanTypingFields: document.getElementById("humanTypingFields"),
     typingSpeedMinInput: document.getElementById("typingSpeedMinInput"),
@@ -111,15 +106,6 @@ function patchAntiBotState(settings) {
   });
 }
 
-function patchExtractionState(settings) {
-  const extractionSettings = normalizeExtractionSettings(settings);
-  AppState.patch({
-    useExtraction: extractionSettings.useExtraction,
-    extractionRegex: extractionSettings.extractionRegex,
-    injectionPlaceholder: extractionSettings.injectionPlaceholder
-  });
-}
-
 async function persistGeneralSettings(settings) {
   patchGeneralSettings(settings);
   await Promise.all([
@@ -142,16 +128,6 @@ async function persistAntiBotSettings(settings) {
   ]);
 }
 
-async function persistExtractionSettings(settings) {
-  const extractionSettings = normalizeExtractionSettings(settings);
-  patchExtractionState(extractionSettings);
-  await Promise.all([
-    saveSetting(StorageKeys.USE_EXTRACTION, extractionSettings.useExtraction),
-    saveSetting(StorageKeys.EXTRACTION_REGEX, extractionSettings.extractionRegex),
-    saveSetting(StorageKeys.INJECTION_PLACEHOLDER, extractionSettings.injectionPlaceholder)
-  ]);
-}
-
 function handleAddQuestions() {
   const rawValue = questionsInput.value.trim();
   if (!rawValue) {
@@ -163,11 +139,6 @@ function handleAddQuestions() {
   const isSinglePrompt = state.singlePromptMode === true;
   const nextQuestions = [...state.questions];
   const questionsToAdd = parseQuestionsInput(rawValue, isSinglePrompt);
-  const extractionConfig = {
-    useExtraction: state.useExtraction,
-    extractionRegex: state.extractionRegex,
-    injectionPlaceholder: state.injectionPlaceholder
-  };
 
   questionsToAdd.forEach((question) => {
     nextQuestions.push({
@@ -177,8 +148,7 @@ function handleAddQuestions() {
       answer: "",
       sources: [],
       timestamp: Date.now(),
-      error: null,
-      extractionConfig
+      error: null
     });
   });
 
@@ -247,10 +217,7 @@ async function handleStart() {
   }
 
   const antiBotSettings = settingsPanel.getValues();
-  await Promise.all([
-    persistAntiBotSettings(antiBotSettings),
-    persistExtractionSettings(antiBotSettings)
-  ]);
+  await persistAntiBotSettings(antiBotSettings);
 
   AppState.patch({
     isRunning: true,
@@ -268,21 +235,31 @@ async function handleStart() {
   void questionProcessor.processNextQuestion();
 }
 
-function loadWorkflowStepQuestions(template, chainedText) {
+function loadWorkflowStepQuestions(template, chainedText, step) {
   const state = AppState.getState();
   const isSinglePrompt = state.singlePromptMode === true;
 
+  const defaultRegex =
+    globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+  const defaultPlaceholder =
+    globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+
+  const stepChainConfig = step?.chainConfig || {};
+  const responseAction = stepChainConfig.responseAction || "none";
+  const extractionRegex = stepChainConfig.extractionRegex || defaultRegex;
+  const injectionPlaceholder = stepChainConfig.injectionPlaceholder || defaultPlaceholder;
+
   const extractionConfig = {
-    useExtraction: state.useExtraction,
-    extractionRegex: state.extractionRegex,
-    injectionPlaceholder: state.injectionPlaceholder
+    useExtraction: responseAction === "extract",
+    extractionRegex,
+    injectionPlaceholder
   };
 
-  // Resolve the template content: replace {{extract}} with chainedText
+  // Resolve the template content: replace the placeholder with chainedText
   let resolvedContent = template.content;
-  if (chainedText && extractionConfig.injectionPlaceholder) {
+  if (chainedText && injectionPlaceholder) {
     resolvedContent = resolvedContent
-      .split(extractionConfig.injectionPlaceholder)
+      .split(injectionPlaceholder)
       .join(chainedText);
   }
 
@@ -315,11 +292,9 @@ function applyTemplateSettings(template) {
   const resolvedSettings = settingsPanel.getValues();
   patchGeneralSettings(resolvedSettings);
   patchAntiBotState(resolvedSettings);
-  patchExtractionState(resolvedSettings);
   void Promise.all([
     persistGeneralSettings(resolvedSettings),
-    persistAntiBotSettings(resolvedSettings),
-    persistExtractionSettings(resolvedSettings)
+    persistAntiBotSettings(resolvedSettings)
   ]);
 }
 
@@ -407,7 +382,7 @@ async function executeWorkflowStep(stepIndex) {
   AppState.setQuestions([]);
   await persistQuestions();
 
-  const addedCount = loadWorkflowStepQuestions(template, chainedText);
+  const addedCount = loadWorkflowStepQuestions(template, chainedText, step);
   addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
 
   addLog(t("messages.openingChatGPT"), "info");
@@ -433,10 +408,7 @@ async function executeWorkflowStep(stepIndex) {
   }
 
   const antiBotSettings = settingsPanel.getValues();
-  await Promise.all([
-    persistAntiBotSettings(antiBotSettings),
-    persistExtractionSettings(antiBotSettings)
-  ]);
+  await persistAntiBotSettings(antiBotSettings);
 
   const pendingQuestions = AppState.getState().questions.filter(
     (q) => q.status === "pending"
@@ -597,12 +569,6 @@ async function handleAntiBotSettingsChange() {
   await persistAntiBotSettings(settings);
 }
 
-async function handleExtractionSettingsChange() {
-  const settings = settingsPanel.getValues();
-  settingsPanel.setExtractionVisibility(settings.useExtraction);
-  await persistExtractionSettings(settings);
-}
-
 function wireMessageListeners() {
   onRuntimeMessage((message, sendResponse) => {
     switch (message.type) {
@@ -698,15 +664,6 @@ function setupEventListeners(elements) {
   elements.singlePromptModeCheckbox.addEventListener("change", (event) => {
     void handleSinglePromptModeChange(event);
   });
-  elements.useExtractionCheckbox.addEventListener("change", () => {
-    void handleExtractionSettingsChange();
-  });
-  elements.extractionRegexInput.addEventListener("change", () => {
-    void handleExtractionSettingsChange();
-  });
-  elements.injectionPlaceholderInput.addEventListener("change", () => {
-    void handleExtractionSettingsChange();
-  });
   elements.humanTypingCheckbox.addEventListener("change", () => {
     void handleAntiBotSettingsChange();
   });
@@ -760,10 +717,6 @@ async function initialize() {
     useTempChatCheckbox: elements.useTempChatCheckbox,
     useWebSearchCheckbox: elements.useWebSearchCheckbox,
     keepSameChatCheckbox: elements.keepSameChatCheckbox,
-    useExtractionCheckbox: elements.useExtractionCheckbox,
-    extractionFields: elements.extractionFields,
-    extractionRegexInput: elements.extractionRegexInput,
-    injectionPlaceholderInput: elements.injectionPlaceholderInput,
     humanTypingCheckbox: elements.humanTypingCheckbox,
     humanTypingFields: elements.humanTypingFields,
     typingSpeedMinInput: elements.typingSpeedMinInput,
@@ -790,8 +743,7 @@ async function initialize() {
       const resolvedSettings = settingsPanel.getValues();
       void Promise.all([
         persistGeneralSettings(resolvedSettings),
-        persistAntiBotSettings(resolvedSettings),
-        persistExtractionSettings(resolvedSettings)
+        persistAntiBotSettings(resolvedSettings)
       ]);
     }
   });
@@ -828,9 +780,6 @@ async function initialize() {
       useWebSearch: stored.useWebSearch,
       keepSameChat: stored.keepSameChat,
       singlePromptMode: stored.singlePromptMode,
-      useExtraction: stored.useExtraction,
-      extractionRegex: stored.extractionRegex,
-      injectionPlaceholder: stored.injectionPlaceholder,
       humanTyping: stored.humanTyping,
       randomDelays: stored.randomDelays,
       biologicalPauses: stored.biologicalPauses,

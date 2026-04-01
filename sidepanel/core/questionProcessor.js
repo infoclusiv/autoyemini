@@ -154,15 +154,15 @@ export class QuestionProcessor {
     const { responseAction } = chainConfig;
 
     if (responseAction === "extract") {
-      const extConfig = question.extractionConfig || state;
-
-      if (!extConfig.useExtraction) {
-        this.addLog("Workflow step set to 'extract' but extraction is not enabled in template settings. Aborting.", "error");
-        return false;
-      }
+      const defaultRegex =
+        AppConfig?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+      const stepRegex =
+        chainConfig.extractionRegex ||
+        question.extractionConfig?.extractionRegex ||
+        defaultRegex;
 
       try {
-        const extractedText = extractTextFromAnswer(result.answer, extConfig.extractionRegex);
+        const extractedText = extractTextFromAnswer(result.answer, stepRegex);
 
         if (!extractedText) {
           this.addLog(
@@ -221,22 +221,8 @@ export class QuestionProcessor {
         completedAt: Date.now()
       });
 
-      // Handle non-workflow extraction (legacy individual template execution)
-      if (!state.activeWorkflow) {
-        const extConfig = question.extractionConfig || state;
-        if (extConfig.useExtraction) {
-          try {
-            const extractedText = extractTextFromAnswer(result.answer, extConfig.extractionRegex);
-            AppState.patch({ lastExtractedText: extractedText });
-            if (extractedText) {
-              this.addLog(t("messages.textExtracted"), "success");
-            }
-          } catch (error) {
-            AppState.patch({ lastExtractedText: "" });
-            this.addLog(`${t("messages.invalidExtractionRegex")}: ${error.message}`, "warning");
-          }
-        }
-      }
+      // Handle non-workflow extraction has been removed;
+      // extraction is now configured per workflow step in chainConfig.
 
       this.addLog(`${t("messages.completed")}: ${question.question.substring(0, 50)}...`, "success");
     } else {
@@ -258,10 +244,6 @@ export class QuestionProcessor {
         return;
       }
 
-      const extConfig = question.extractionConfig || state;
-      if (extConfig.useExtraction) {
-        AppState.patch({ lastExtractedText: "" });
-      }
       this.addLog(
         `${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`,
         "error"
