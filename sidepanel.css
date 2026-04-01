@@ -1123,6 +1123,10 @@ h2::before {
   margin-bottom: 12px;
 }
 
+#workflowBackupList[hidden] {
+  display: none !important;
+}
+
 .backup-entry {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border: 1.5px solid #e2e8f0;
