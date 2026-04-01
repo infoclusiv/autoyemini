@@ -41,10 +41,55 @@ export function normalizeWorkflows(value, existingTemplates) {
                   ? step.chainConfig.injectionPlaceholder
                   : defaultPlaceholder;
 
+              // ── antiBotConfig per step ──────────────────────────────
+              const abDefaults = globalThis.CONFIG?.ANTI_BOT || {};
+              const defaultTypingSpeed = Array.isArray(abDefaults.TYPING_SPEED_MS) ? abDefaults.TYPING_SPEED_MS : [30, 100];
+              const defaultFatiguePauseMs = Array.isArray(abDefaults.FATIGUE_PAUSE_MS) ? abDefaults.FATIGUE_PAUSE_MS : [20000, 40000];
+              const defaultFatigueCount = typeof abDefaults.FATIGUE_AFTER_QUESTIONS === "number" ? abDefaults.FATIGUE_AFTER_QUESTIONS : 10;
+
+              function msToMin(ms) {
+                return Math.max(0.5, Math.round((Number(ms) / 60000) * 10) / 10);
+              }
+
+              const rawAb = step.antiBotConfig && typeof step.antiBotConfig === "object" ? step.antiBotConfig : {};
+
+              const humanTyping = rawAb.humanTyping !== false;
+              const randomDelays = rawAb.randomDelays !== false;
+              const biologicalPauses = rawAb.biologicalPauses === true;
+
+              const rawTypingSpeed = Array.isArray(rawAb.typingSpeed) && rawAb.typingSpeed.length === 2
+                ? rawAb.typingSpeed
+                : defaultTypingSpeed;
+              const tsMin = Math.max(0, Number(rawTypingSpeed[0]) || defaultTypingSpeed[0]);
+              const tsMax = Math.max(tsMin, Number(rawTypingSpeed[1]) || defaultTypingSpeed[1]);
+
+              const fatigueCount = typeof rawAb.fatigueCount === "number" && rawAb.fatigueCount >= 1
+                ? rawAb.fatigueCount
+                : defaultFatigueCount;
+
+              const fatigueMinMinutes = typeof rawAb.fatigueMinMinutes === "number" && rawAb.fatigueMinMinutes >= 0.5
+                ? rawAb.fatigueMinMinutes
+                : msToMin(defaultFatiguePauseMs[0]);
+
+              const fatigueMaxMinutes = typeof rawAb.fatigueMaxMinutes === "number" && rawAb.fatigueMaxMinutes >= fatigueMinMinutes
+                ? rawAb.fatigueMaxMinutes
+                : Math.max(fatigueMinMinutes, msToMin(defaultFatiguePauseMs[1]));
+
+              const antiBotConfig = {
+                humanTyping,
+                randomDelays,
+                biologicalPauses,
+                typingSpeed: [tsMin, tsMax],
+                fatigueCount,
+                fatigueMinMinutes,
+                fatigueMaxMinutes
+              };
+
               return {
                 templateId: step.templateId,
                 order: typeof step.order === "number" ? step.order : stepIndex,
-                chainConfig: { responseAction, extractionRegex, injectionPlaceholder }
+                chainConfig: { responseAction, extractionRegex, injectionPlaceholder },
+                antiBotConfig
               };
             })
             .sort((a, b) => a.order - b.order)

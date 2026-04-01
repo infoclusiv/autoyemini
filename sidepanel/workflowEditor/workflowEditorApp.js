@@ -303,6 +303,198 @@ function renderCanvas() {
     injectionRow.appendChild(injectionLabel);
     injectionRow.appendChild(injectionInput);
 
+    // ── Anti-Bot Options (collapsible) ────────────────────
+    const ab = step.antiBotConfig || {};
+    const abHumanTyping = ab.humanTyping !== false;
+    const abRandomDelays = ab.randomDelays !== false;
+    const abBiologicalPauses = ab.biologicalPauses === true;
+    const abTypingSpeed = Array.isArray(ab.typingSpeed) ? ab.typingSpeed : [30, 100];
+    const abFatigueCount = ab.fatigueCount ?? 10;
+    const abFatigueMin = ab.fatigueMinMinutes ?? 0.5;
+    const abFatigueMax = ab.fatigueMaxMinutes ?? 1;
+
+    // Summary label for the toggle button
+    const abSummaryParts = [];
+    if (abHumanTyping) abSummaryParts.push("typing");
+    if (abRandomDelays) abSummaryParts.push("delays");
+    if (abBiologicalPauses) abSummaryParts.push("pauses");
+    const abSummary = abSummaryParts.length > 0 ? abSummaryParts.join(", ") : "all off";
+
+    // Toggle row
+    const antiBotToggle = document.createElement("div");
+    antiBotToggle.className = "editor-node-antibot-toggle";
+
+    const antiBotToggleBtn = document.createElement("button");
+    antiBotToggleBtn.className = "editor-node-antibot-btn";
+    antiBotToggleBtn.textContent = `🤖 Anti-Bot Options ▾`;
+    antiBotToggleBtn.title = "Toggle Anti-Bot settings for this step";
+
+    const antiBotSummary = document.createElement("span");
+    antiBotSummary.className = "editor-node-antibot-summary";
+    antiBotSummary.textContent = abSummary;
+
+    antiBotToggle.appendChild(antiBotToggleBtn);
+    antiBotToggle.appendChild(antiBotSummary);
+
+    // Collapsible section
+    const antiBotSection = document.createElement("div");
+    antiBotSection.className = "editor-node-antibot-section is-hidden";
+
+    // ── Human Typing row ──
+    const htRow = document.createElement("div");
+    htRow.className = "editor-antibot-row";
+    const htLabel = document.createElement("label");
+    htLabel.className = "editor-antibot-label";
+    const htCb = document.createElement("input");
+    htCb.type = "checkbox";
+    htCb.checked = abHumanTyping;
+    htLabel.appendChild(htCb);
+    htLabel.append(" Human Typing");
+    htRow.appendChild(htLabel);
+
+    // Typing speed sub-row
+    const tsRow = document.createElement("div");
+    tsRow.className = "editor-antibot-subrow" + (abHumanTyping ? "" : " is-hidden");
+
+    const tsMinLabel = document.createElement("label");
+    tsMinLabel.className = "editor-antibot-field-label";
+    tsMinLabel.textContent = "Min (ms):";
+    const tsMinInput = document.createElement("input");
+    tsMinInput.type = "number";
+    tsMinInput.className = "editor-antibot-field-input";
+    tsMinInput.min = "0";
+    tsMinInput.step = "10";
+    tsMinInput.value = String(abTypingSpeed[0]);
+
+    const tsMaxLabel = document.createElement("label");
+    tsMaxLabel.className = "editor-antibot-field-label";
+    tsMaxLabel.textContent = "Max (ms):";
+    const tsMaxInput = document.createElement("input");
+    tsMaxInput.type = "number";
+    tsMaxInput.className = "editor-antibot-field-input";
+    tsMaxInput.min = "0";
+    tsMaxInput.step = "10";
+    tsMaxInput.value = String(abTypingSpeed[1]);
+
+    function saveTypingSpeed() {
+      const min = Math.max(0, parseInt(tsMinInput.value || "30", 10) || 30);
+      const max = Math.max(min, parseInt(tsMaxInput.value || "100", 10) || 100);
+      tsMinInput.value = String(min);
+      tsMaxInput.value = String(max);
+      void updateStepAntiBotField(workflow.id, index, "typingSpeed", [min, max]);
+    }
+    tsMinInput.addEventListener("change", saveTypingSpeed);
+    tsMaxInput.addEventListener("change", saveTypingSpeed);
+
+    tsRow.appendChild(tsMinLabel);
+    tsRow.appendChild(tsMinInput);
+    tsRow.appendChild(tsMaxLabel);
+    tsRow.appendChild(tsMaxInput);
+
+    htCb.addEventListener("change", () => {
+      tsRow.classList.toggle("is-hidden", !htCb.checked);
+      void updateStepAntiBotField(workflow.id, index, "humanTyping", htCb.checked);
+    });
+
+    // ── Random Delays row ──
+    const rdRow = document.createElement("div");
+    rdRow.className = "editor-antibot-row";
+    const rdLabel = document.createElement("label");
+    rdLabel.className = "editor-antibot-label";
+    const rdCb = document.createElement("input");
+    rdCb.type = "checkbox";
+    rdCb.checked = abRandomDelays;
+    rdLabel.appendChild(rdCb);
+    rdLabel.append(" Random Delays");
+    rdRow.appendChild(rdLabel);
+    rdCb.addEventListener("change", () => {
+      void updateStepAntiBotField(workflow.id, index, "randomDelays", rdCb.checked);
+    });
+
+    // ── Biological Pauses row ──
+    const bpRow = document.createElement("div");
+    bpRow.className = "editor-antibot-row";
+    const bpLabel = document.createElement("label");
+    bpLabel.className = "editor-antibot-label";
+    const bpCb = document.createElement("input");
+    bpCb.type = "checkbox";
+    bpCb.checked = abBiologicalPauses;
+    bpLabel.appendChild(bpCb);
+    bpLabel.append(" Biological Pauses");
+    bpRow.appendChild(bpLabel);
+
+    // Fatigue sub-row
+    const fatigueRow = document.createElement("div");
+    fatigueRow.className = "editor-antibot-subrow" + (abBiologicalPauses ? "" : " is-hidden");
+
+    const fcLabel = document.createElement("label");
+    fcLabel.className = "editor-antibot-field-label";
+    fcLabel.textContent = "After N questions:";
+    const fcInput = document.createElement("input");
+    fcInput.type = "number";
+    fcInput.className = "editor-antibot-field-input";
+    fcInput.min = "1";
+    fcInput.step = "1";
+    fcInput.value = String(abFatigueCount);
+
+    const fMinLabel = document.createElement("label");
+    fMinLabel.className = "editor-antibot-field-label";
+    fMinLabel.textContent = "Pause min (min):";
+    const fMinInput = document.createElement("input");
+    fMinInput.type = "number";
+    fMinInput.className = "editor-antibot-field-input";
+    fMinInput.min = "0.5";
+    fMinInput.step = "0.5";
+    fMinInput.value = String(abFatigueMin);
+
+    const fMaxLabel = document.createElement("label");
+    fMaxLabel.className = "editor-antibot-field-label";
+    fMaxLabel.textContent = "Pause max (min):";
+    const fMaxInput = document.createElement("input");
+    fMaxInput.type = "number";
+    fMaxInput.className = "editor-antibot-field-input";
+    fMaxInput.min = "0.5";
+    fMaxInput.step = "0.5";
+    fMaxInput.value = String(abFatigueMax);
+
+    function saveFatigue() {
+      const count = Math.max(1, parseInt(fcInput.value || "10", 10) || 10);
+      const fMin = Math.max(0.5, Number(fMinInput.value) || 0.5);
+      const fMax = Math.max(fMin, Number(fMaxInput.value) || fMin);
+      fcInput.value = String(count);
+      fMinInput.value = String(fMin);
+      fMaxInput.value = String(fMax);
+      void updateStepAntiBotField(workflow.id, index, "fatigueCount", count);
+      void updateStepAntiBotField(workflow.id, index, "fatigueMinMinutes", fMin);
+      void updateStepAntiBotField(workflow.id, index, "fatigueMaxMinutes", fMax);
+    }
+    fcInput.addEventListener("change", saveFatigue);
+    fMinInput.addEventListener("change", saveFatigue);
+    fMaxInput.addEventListener("change", saveFatigue);
+
+    fatigueRow.appendChild(fcLabel);
+    fatigueRow.appendChild(fcInput);
+    fatigueRow.appendChild(fMinLabel);
+    fatigueRow.appendChild(fMinInput);
+    fatigueRow.appendChild(fMaxLabel);
+    fatigueRow.appendChild(fMaxInput);
+
+    bpCb.addEventListener("change", () => {
+      fatigueRow.classList.toggle("is-hidden", !bpCb.checked);
+      void updateStepAntiBotField(workflow.id, index, "biologicalPauses", bpCb.checked);
+    });
+
+    antiBotSection.appendChild(htRow);
+    antiBotSection.appendChild(tsRow);
+    antiBotSection.appendChild(rdRow);
+    antiBotSection.appendChild(bpRow);
+    antiBotSection.appendChild(fatigueRow);
+
+    antiBotToggleBtn.addEventListener("click", () => {
+      const collapsed = antiBotSection.classList.toggle("is-hidden");
+      antiBotToggleBtn.textContent = collapsed ? "🤖 Anti-Bot Options ▾" : "🤖 Anti-Bot Options ▴";
+    });
+
     // ── Last-step extraction warning ──
     const isLastStep = index === workflow.steps.length - 1;
     const lastStepWarning =
@@ -321,6 +513,8 @@ function renderCanvas() {
     node.appendChild(badge);
     node.appendChild(regexRow);
     node.appendChild(injectionRow);
+    node.appendChild(antiBotToggle);
+    node.appendChild(antiBotSection);
     if (lastStepWarning) node.appendChild(lastStepWarning);
 
     canvas.appendChild(node);
@@ -413,6 +607,11 @@ async function handleAddStep(templateId) {
   const defaultPlaceholder =
     globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
 
+  const ab = globalThis.CONFIG?.ANTI_BOT || {};
+  const defaultTypingSpeed = Array.isArray(ab.TYPING_SPEED_MS) ? ab.TYPING_SPEED_MS : [30, 100];
+  const defaultFatiguePauseMs = Array.isArray(ab.FATIGUE_PAUSE_MS) ? ab.FATIGUE_PAUSE_MS : [20000, 40000];
+  const msToMin = (ms) => Math.max(0.5, Math.round((Number(ms) / 60000) * 10) / 10);
+
   const newStep = {
     templateId,
     order: wf.steps.length,
@@ -420,6 +619,15 @@ async function handleAddStep(templateId) {
       responseAction: "none",
       extractionRegex: defaultRegex,
       injectionPlaceholder: defaultPlaceholder
+    },
+    antiBotConfig: {
+      humanTyping: true,
+      randomDelays: true,
+      biologicalPauses: false,
+      typingSpeed: [...defaultTypingSpeed],
+      fatigueCount: typeof ab.FATIGUE_AFTER_QUESTIONS === "number" ? ab.FATIGUE_AFTER_QUESTIONS : 10,
+      fatigueMinMinutes: msToMin(defaultFatiguePauseMs[0]),
+      fatigueMaxMinutes: msToMin(defaultFatiguePauseMs[1])
     }
   };
 
@@ -481,6 +689,19 @@ async function updateStepChainField(workflowId, stepIndex, field, value) {
     const steps = w.steps.map((s, i) => {
       if (i !== stepIndex) return s;
       return { ...s, chainConfig: { ...s.chainConfig, [field]: value } };
+    });
+    return { ...w, steps };
+  });
+
+  await persist();
+}
+
+async function updateStepAntiBotField(workflowId, stepIndex, field, value) {
+  workflows = workflows.map((w) => {
+    if (w.id !== workflowId) return w;
+    const steps = w.steps.map((s, i) => {
+      if (i !== stepIndex) return s;
+      return { ...s, antiBotConfig: { ...s.antiBotConfig, [field]: value } };
     });
     return { ...w, steps };
   });

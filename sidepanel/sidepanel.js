@@ -50,16 +50,6 @@ function getElements() {
     useTempChatCheckbox: document.getElementById("useTempChatCheckbox"),
     useWebSearchCheckbox: document.getElementById("useWebSearchCheckbox"),
     keepSameChatCheckbox: document.getElementById("keepSameChatCheckbox"),
-    humanTypingCheckbox: document.getElementById("humanTypingCheckbox"),
-    humanTypingFields: document.getElementById("humanTypingFields"),
-    typingSpeedMinInput: document.getElementById("typingSpeedMinInput"),
-    typingSpeedMaxInput: document.getElementById("typingSpeedMaxInput"),
-    randomDelaysCheckbox: document.getElementById("randomDelaysCheckbox"),
-    biologicalPausesCheckbox: document.getElementById("biologicalPausesCheckbox"),
-    biologicalPauseFields: document.getElementById("biologicalPauseFields"),
-    fatigueCountInput: document.getElementById("fatigueCountInput"),
-    fatigueMinMinutesInput: document.getElementById("fatigueMinMinutesInput"),
-    fatigueMaxMinutesInput: document.getElementById("fatigueMaxMinutesInput"),
     clearAllBtn: document.getElementById("clearAllBtn"),
     progressText: document.getElementById("progressText"),
     progressPercent: document.getElementById("progressPercent"),
@@ -94,37 +84,12 @@ function patchGeneralSettings(settings) {
   });
 }
 
-function patchAntiBotState(settings) {
-  AppState.patch({
-    humanTyping: settings.humanTyping,
-    randomDelays: settings.randomDelays,
-    biologicalPauses: settings.biologicalPauses,
-    typingSpeed: [...settings.typingSpeed],
-    fatigueCount: settings.fatigueCount,
-    fatigueMinMinutes: settings.fatigueMinMinutes,
-    fatigueMaxMinutes: settings.fatigueMaxMinutes
-  });
-}
-
 async function persistGeneralSettings(settings) {
   patchGeneralSettings(settings);
   await Promise.all([
     saveSetting(StorageKeys.USE_TEMP_CHAT, settings.useTempChat),
     saveSetting(StorageKeys.USE_WEB_SEARCH, settings.useWebSearch),
     saveSetting(StorageKeys.KEEP_SAME_CHAT, settings.keepSameChat)
-  ]);
-}
-
-async function persistAntiBotSettings(settings) {
-  patchAntiBotState(settings);
-  await Promise.all([
-    saveSetting(StorageKeys.HUMAN_TYPING, settings.humanTyping),
-    saveSetting(StorageKeys.RANDOM_DELAYS, settings.randomDelays),
-    saveSetting(StorageKeys.BIOLOGICAL_PAUSES, settings.biologicalPauses),
-    saveSetting(StorageKeys.TYPING_SPEED, settings.typingSpeed),
-    saveSetting(StorageKeys.FATIGUE_COUNT, settings.fatigueCount),
-    saveSetting(StorageKeys.FATIGUE_MIN_PAUSE_MINUTES, settings.fatigueMinMinutes),
-    saveSetting(StorageKeys.FATIGUE_MAX_PAUSE_MINUTES, settings.fatigueMaxMinutes)
   ]);
 }
 
@@ -216,8 +181,7 @@ async function handleStart() {
     return;
   }
 
-  const antiBotSettings = settingsPanel.getValues();
-  await persistAntiBotSettings(antiBotSettings);
+  const antiBotSettings = AppState.getState();
 
   AppState.patch({
     isRunning: true,
@@ -291,11 +255,7 @@ function applyTemplateSettings(template) {
   settingsPanel.setValuesFromTemplate(template.settings);
   const resolvedSettings = settingsPanel.getValues();
   patchGeneralSettings(resolvedSettings);
-  patchAntiBotState(resolvedSettings);
-  void Promise.all([
-    persistGeneralSettings(resolvedSettings),
-    persistAntiBotSettings(resolvedSettings)
-  ]);
+  void persistGeneralSettings(resolvedSettings);
 }
 
 async function handleStartWorkflow() {
@@ -407,8 +367,17 @@ async function executeWorkflowStep(stepIndex) {
     return;
   }
 
-  const antiBotSettings = settingsPanel.getValues();
-  await persistAntiBotSettings(antiBotSettings);
+  // Apply this step's anti-bot config to AppState so QuestionProcessor picks it up
+  const stepAntiBotConfig = step.antiBotConfig || {};
+  AppState.patch({
+    humanTyping: stepAntiBotConfig.humanTyping !== false,
+    randomDelays: stepAntiBotConfig.randomDelays !== false,
+    biologicalPauses: stepAntiBotConfig.biologicalPauses === true,
+    typingSpeed: Array.isArray(stepAntiBotConfig.typingSpeed) ? [...stepAntiBotConfig.typingSpeed] : [30, 100],
+    fatigueCount: stepAntiBotConfig.fatigueCount ?? 10,
+    fatigueMinMinutes: stepAntiBotConfig.fatigueMinMinutes ?? 0.5,
+    fatigueMaxMinutes: stepAntiBotConfig.fatigueMaxMinutes ?? 1
+  });
 
   const pendingQuestions = AppState.getState().questions.filter(
     (q) => q.status === "pending"
@@ -427,6 +396,7 @@ async function executeWorkflowStep(stepIndex) {
   addLog(t("messages.foundPending", { count: pendingQuestions.length }), "info");
   addLog(t("messages.waitingPage"), "info");
 
+  const antiBotSettings = AppState.getState();
   await waitForConfiguredDelay(AppConfig.TIMING.BETWEEN_QUESTIONS_MS, antiBotSettings.randomDelays);
   addLog(t("messages.startingFirst"), "info");
   void questionProcessor.processNextQuestion();
@@ -562,13 +532,6 @@ async function handleSinglePromptModeChange(event) {
   await saveSetting(StorageKeys.SINGLE_PROMPT_MODE, enabled);
 }
 
-async function handleAntiBotSettingsChange() {
-  const settings = settingsPanel.getValues();
-  settingsPanel.setBiologicalPauseVisibility(settings.biologicalPauses);
-  settingsPanel.setHumanTypingVisibility(settings.humanTyping);
-  await persistAntiBotSettings(settings);
-}
-
 function wireMessageListeners() {
   onRuntimeMessage((message, sendResponse) => {
     switch (message.type) {
@@ -664,30 +627,6 @@ function setupEventListeners(elements) {
   elements.singlePromptModeCheckbox.addEventListener("change", (event) => {
     void handleSinglePromptModeChange(event);
   });
-  elements.humanTypingCheckbox.addEventListener("change", () => {
-    void handleAntiBotSettingsChange();
-  });
-  elements.randomDelaysCheckbox.addEventListener("change", () => {
-    void handleAntiBotSettingsChange();
-  });
-  elements.biologicalPausesCheckbox.addEventListener("change", () => {
-    void handleAntiBotSettingsChange();
-  });
-  elements.fatigueCountInput.addEventListener("change", () => {
-    void handleAntiBotSettingsChange();
-  });
-  elements.fatigueMinMinutesInput.addEventListener("change", () => {
-    void handleAntiBotSettingsChange();
-  });
-  elements.fatigueMaxMinutesInput.addEventListener("change", () => {
-    void handleAntiBotSettingsChange();
-  });
-  elements.typingSpeedMinInput.addEventListener("change", () => {
-    void handleAntiBotSettingsChange();
-  });
-  elements.typingSpeedMaxInput.addEventListener("change", () => {
-    void handleAntiBotSettingsChange();
-  });
 }
 
 async function initialize() {
@@ -716,17 +655,7 @@ async function initialize() {
   settingsPanel = new SettingsPanel({
     useTempChatCheckbox: elements.useTempChatCheckbox,
     useWebSearchCheckbox: elements.useWebSearchCheckbox,
-    keepSameChatCheckbox: elements.keepSameChatCheckbox,
-    humanTypingCheckbox: elements.humanTypingCheckbox,
-    humanTypingFields: elements.humanTypingFields,
-    typingSpeedMinInput: elements.typingSpeedMinInput,
-    typingSpeedMaxInput: elements.typingSpeedMaxInput,
-    randomDelaysCheckbox: elements.randomDelaysCheckbox,
-    biologicalPausesCheckbox: elements.biologicalPausesCheckbox,
-    biologicalPauseFields: elements.biologicalPauseFields,
-    fatigueCountInput: elements.fatigueCountInput,
-    fatigueMinMinutesInput: elements.fatigueMinMinutesInput,
-    fatigueMaxMinutesInput: elements.fatigueMaxMinutesInput
+    keepSameChatCheckbox: elements.keepSameChatCheckbox
   });
   templatePanel = new TemplatePanel({
     selectElement: elements.templateSelect,
@@ -741,10 +670,7 @@ async function initialize() {
     onLoadTemplate: (template) => {
       settingsPanel.setValuesFromTemplate(template.settings);
       const resolvedSettings = settingsPanel.getValues();
-      void Promise.all([
-        persistGeneralSettings(resolvedSettings),
-        persistAntiBotSettings(resolvedSettings)
-      ]);
+      void persistGeneralSettings(resolvedSettings);
     }
   });
 
@@ -757,7 +683,7 @@ async function initialize() {
   });
 
   questionProcessor = new QuestionProcessor({
-    getSettings: () => settingsPanel.getValues(),
+    getSettings: () => ({ ...settingsPanel.getValues(), ...AppState.getState() }),
     addLog,
     onAllCompleted: () => {
       void advanceWorkflowStep();
@@ -779,14 +705,7 @@ async function initialize() {
       useTempChat: stored.useTempChat,
       useWebSearch: stored.useWebSearch,
       keepSameChat: stored.keepSameChat,
-      singlePromptMode: stored.singlePromptMode,
-      humanTyping: stored.humanTyping,
-      randomDelays: stored.randomDelays,
-      biologicalPauses: stored.biologicalPauses,
-      typingSpeed: stored.typingSpeed,
-      fatigueCount: stored.fatigueCount,
-      fatigueMinMinutes: stored.fatigueMinMinutes,
-      fatigueMaxMinutes: stored.fatigueMaxMinutes
+      singlePromptMode: stored.singlePromptMode
     });
     elements.singlePromptModeCheckbox.checked = stored.singlePromptMode;
     settingsPanel.setValues(stored);
