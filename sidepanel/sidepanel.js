@@ -1,6 +1,6 @@
 import { AppState } from "./state/appState.js";
-import { loadAll, removePendingMessage, saveQuestions, saveSetting, StorageKeys } from "./services/storageService.js";
-import { exportQuestionsToJSON } from "./services/exportService.js";
+import { loadAll, removePendingMessage, saveQuestions, saveSetting, saveWorkflows, saveWorkflowBackup, loadWorkflowBackups, StorageKeys } from "./services/storageService.js";
+import { exportQuestionsToJSON, exportSingleWorkflow } from "./services/exportService.js";
 import { onRuntimeMessage, onStorageChange, sendToBackground } from "./services/messagingService.js";
 import { applyTranslations, t } from "./i18n/i18n.js";
 import { LogPanel } from "./ui/logPanel.js";
@@ -212,6 +212,9 @@ async function handleStartWorkflow() {
     addLog(t("messages.workflowNoSteps"), "warning");
     return;
   }
+
+  // Auto-backup the workflow snapshot before execution (fire-and-forget)
+  void saveWorkflowBackup(workflow);
 
   // Clear existing questions before starting the workflow
   AppState.setQuestions([]);
@@ -506,6 +509,97 @@ function wireMessageListeners() {
   });
 }
 
+async function toggleWorkflowBackupList() {
+  const list = document.getElementById("workflowBackupList");
+  const btn = document.getElementById("workflowBackupHistoryBtn");
+  const isHidden = list.hidden;
+  list.hidden = !isHidden;
+  btn.textContent = isHidden ? "🕐 Ocultar Historial" : "🕐 Historial de Backups";
+  if (isHidden) {
+    await renderWorkflowBackupList();
+  }
+}
+
+async function renderWorkflowBackupList() {
+  const list = document.getElementById("workflowBackupList");
+  const backups = await loadWorkflowBackups();
+  list.innerHTML = "";
+
+  if (backups.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "backup-empty";
+    empty.textContent = "No hay backups todavía. Ejecuta un workflow para crear uno.";
+    list.appendChild(empty);
+    return;
+  }
+
+  backups.forEach((entry) => {
+    const card = document.createElement("div");
+    card.className = "backup-entry";
+
+    const header = document.createElement("div");
+    header.className = "backup-entry-header";
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "backup-entry-name";
+    nameEl.textContent = entry.workflowName;
+
+    const timeEl = document.createElement("span");
+    timeEl.className = "backup-entry-time";
+    timeEl.textContent = new Date(entry.timestamp).toLocaleString();
+
+    header.appendChild(nameEl);
+    header.appendChild(timeEl);
+
+    const meta = document.createElement("div");
+    meta.className = "backup-entry-meta";
+    meta.textContent = `${entry.stepCount} step${entry.stepCount !== 1 ? "s" : ""}`;
+
+    const actions = document.createElement("div");
+    actions.className = "backup-entry-actions";
+
+    const exportBtn = document.createElement("button");
+    exportBtn.className = "btn btn-sm btn-info";
+    exportBtn.textContent = "⬇ Exportar";
+    exportBtn.addEventListener("click", () => {
+      exportSingleWorkflow(entry.snapshot);
+    });
+
+    const restoreBtn = document.createElement("button");
+    restoreBtn.className = "btn btn-sm btn-success";
+    restoreBtn.textContent = "↩ Restaurar";
+    restoreBtn.addEventListener("click", () => {
+      void restoreWorkflowFromBackup(entry);
+    });
+
+    actions.appendChild(exportBtn);
+    actions.appendChild(restoreBtn);
+
+    card.appendChild(header);
+    card.appendChild(meta);
+    card.appendChild(actions);
+    list.appendChild(card);
+  });
+}
+
+async function restoreWorkflowFromBackup(entry) {
+  const confirmed = window.confirm(
+    `¿Restaurar el workflow "${entry.workflowName}" (${entry.stepCount} steps) desde el backup del ${new Date(entry.timestamp).toLocaleString()}?`
+  );
+  if (!confirmed) return;
+
+  const state = AppState.getState();
+  const existing = state.workflows;
+  const idx = existing.findIndex((wf) => wf.id === entry.snapshot.id);
+  const updated = idx >= 0
+    ? existing.map((wf, i) => (i === idx ? entry.snapshot : wf))
+    : [...existing, entry.snapshot];
+
+  await saveWorkflows(updated);
+  AppState.patch({ workflows: updated });
+  addLog(`Workflow "${entry.workflowName}" restaurado desde backup.`, "success");
+}
+
 function setupEventListeners(elements) {
   elements.startBtn.addEventListener("click", () => {
     void handleStart();
@@ -529,6 +623,10 @@ function setupEventListeners(elements) {
   });
   elements.keepSameChatCheckbox.addEventListener("change", (event) => {
     void handleKeepSameChatChange(event);
+  });
+
+  document.getElementById("workflowBackupHistoryBtn").addEventListener("click", () => {
+    void toggleWorkflowBackupList();
   });
 }
 

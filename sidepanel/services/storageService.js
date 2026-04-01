@@ -52,3 +52,30 @@ export function removePendingMessage() {
 export function saveWorkflows(workflows) {
   return chrome.storage.local.set({ [StorageKeys.WORKFLOWS]: workflows });
 }
+
+const WORKFLOWS_BACKUP_KEY = "workflowBackups";
+const MAX_WORKFLOW_BACKUPS = 5;
+
+export async function saveWorkflowBackup(workflow) {
+  const stored = await chrome.storage.local.get([WORKFLOWS_BACKUP_KEY]);
+  const backups = stored[WORKFLOWS_BACKUP_KEY] || [];
+  const entry = {
+    backupId: globalThis.SharedUtils.generateUUID(),
+    timestamp: new Date().toISOString(),
+    workflowId: workflow.id,
+    workflowName: workflow.name,
+    stepCount: workflow.steps.length,
+    snapshot: JSON.parse(JSON.stringify(workflow))
+  };
+  const updated = [entry, ...backups].slice(0, MAX_WORKFLOW_BACKUPS);
+  return chrome.storage.local.set({ [WORKFLOWS_BACKUP_KEY]: updated });
+}
+
+export async function loadWorkflowBackups() {
+  const stored = await chrome.storage.local.get([WORKFLOWS_BACKUP_KEY]);
+  return stored[WORKFLOWS_BACKUP_KEY] || [];
+}
+
+export function deleteAllWorkflowBackups() {
+  return chrome.storage.local.remove(WORKFLOWS_BACKUP_KEY);
+}

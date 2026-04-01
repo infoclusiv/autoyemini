@@ -24,3 +24,21 @@ export function exportQuestionsToJSON(questions) {
   document.body.removeChild(downloadLink);
   URL.revokeObjectURL(url);
 }
+
+export function exportSingleWorkflow(snapshot) {
+  const safeName = snapshot.name.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+  const exportPayload = {
+    version: 1,
+    exportTime: new Date().toISOString(),
+    workflow: snapshot
+  };
+  const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const downloadLink = document.createElement("a");
+  downloadLink.href = url;
+  downloadLink.download = `workflow-backup-${safeName}-${Date.now()}.json`;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+  URL.revokeObjectURL(url);
+}
