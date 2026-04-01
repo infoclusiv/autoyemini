@@ -39,23 +39,15 @@
       </div>
     </section>
 
-    <section class="workflow-section" id="workflowSection">
+    <section class="workflow-runner-section" id="workflowSection">
       <h2 data-i18n="workflow.title">Workflows</h2>
-      <div class="workflow-controls">
+      <div class="workflow-runner-controls">
         <select id="workflowSelect" class="template-select">
           <option value="" data-i18n="workflow.selectDefault">Select a workflow</option>
         </select>
-        <button id="saveWorkflowBtn" class="btn btn-success btn-sm" data-i18n="workflow.saveBtn">New</button>
-        <button id="renameWorkflowBtn" class="btn btn-secondary btn-sm" data-i18n="workflow.renameBtn">Rename</button>
-        <button id="deleteWorkflowBtn" class="btn btn-danger btn-sm" data-i18n="workflow.deleteBtn">Delete</button>
+        <button id="openWorkflowEditorBtn" class="btn btn-secondary btn-sm" title="Open the visual workflow editor in a new tab">✏️ Edit Workflows</button>
       </div>
-      <div class="workflow-add-step-row">
-        <select id="stepTemplateSelect" class="template-select">
-          <option value="" data-i18n="workflow.selectTemplate">Select a template</option>
-        </select>
-        <button id="addWorkflowStepBtn" class="btn btn-info btn-sm" data-i18n="workflow.addStepBtn">Add Step</button>
-      </div>
-      <div id="workflowStepsList" class="workflow-steps"></div>
+      <div id="workflowProgressList" class="workflow-progress-strip"></div>
       <button id="startWorkflowBtn" class="btn btn-primary btn-large workflow-start-btn">
         <span class="btn-icon">⚡</span>
         <span data-i18n="workflow.startBtn">Run Workflow</span>

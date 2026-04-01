@@ -9,7 +9,8 @@ import { ControlPanel } from "./ui/controlPanel.js";
 import { StatsPanel } from "./ui/statsPanel.js";
 import { SettingsPanel } from "./ui/settingsPanel.js";
 import { TemplatePanel } from "./ui/templatePanel.js";
-import { WorkflowPanel } from "./ui/workflowPanel.js";
+import { WorkflowRunner } from "./ui/workflowRunner.js";
+import { normalizeWorkflows } from "./services/workflowService.js";
 import { QuestionProcessor, parseQuestionsInput } from "./core/questionProcessor.js";
 import { waitForConfiguredDelay } from "./core/antiBotController.js";
 import { normalizeExtractionSettings } from "./core/extractionEngine.js";
@@ -23,7 +24,7 @@ let controlPanel;
 let statsPanel;
 let settingsPanel;
 let templatePanel;
-let workflowPanel;
+let workflowRunner;
 let questionProcessor;
 
 let questionsInput;
@@ -329,7 +330,7 @@ async function handleStartWorkflow() {
     return;
   }
 
-  const workflow = workflowPanel.getSelectedWorkflow();
+  const workflow = workflowRunner.getSelectedWorkflow();
   if (!workflow) {
     addLog(t("messages.workflowSelectRequired"), "warning");
     return;
@@ -622,7 +623,13 @@ function wireMessageListeners() {
     }
   });
 
+  // Reload workflows when the external workflow editor modifies them
   onStorageChange((changes) => {
+    if (changes.savedWorkflows) {
+      const rawWorkflows = changes.savedWorkflows.newValue;
+      const normalized = normalizeWorkflows(rawWorkflows, AppState.getState().templates);
+      AppState.patch({ workflows: normalized });
+    }
     if (!changes.pendingMessage) {
       return;
     }
@@ -789,7 +796,7 @@ async function initialize() {
     }
   });
 
-  workflowPanel = new WorkflowPanel({
+  workflowRunner = new WorkflowRunner({
     containerElement: elements.workflowSection,
     addLog,
     onStartWorkflow: () => {

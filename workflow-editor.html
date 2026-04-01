@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Editor</title>
+  <link rel="stylesheet" href="workflow-editor.css">
+</head>
+<body>
+  <div id="editorApp">
+
+    <header class="editor-header">
+      <div class="editor-logo">
+        <span class="editor-logo-icon">⚡</span>
+        <span class="editor-logo-text">Workflow Editor</span>
+      </div>
+
+      <div class="editor-toolbar">
+        <!-- Workflow management -->
+        <div class="editor-wf-group">
+          <select id="editorWorkflowSelect" class="editor-select"></select>
+          <button id="editorNewBtn" class="editor-btn editor-btn-success" title="New Workflow">+ New</button>
+          <button id="editorRenameBtn" class="editor-btn editor-btn-secondary" title="Rename selected workflow">Rename</button>
+          <button id="editorDeleteBtn" class="editor-btn editor-btn-danger" title="Delete selected workflow">Delete</button>
+        </div>
+
+        <div class="editor-divider"></div>
+
+        <!-- Step addition -->
+        <div class="editor-step-group">
+          <select id="editorTemplateSelect" class="editor-select editor-select-template"></select>
+          <button id="editorAddStepBtn" class="editor-btn editor-btn-primary" title="Add selected template as last step">+ Add Step</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="editor-canvas-wrapper">
+      <div id="editorEmptyState" class="editor-empty-state" style="display:none;">
+        <div class="editor-empty-icon">📋</div>
+        <div class="editor-empty-title">No workflow selected</div>
+        <div class="editor-empty-text">Select an existing workflow or create a new one using the toolbar above.</div>
+      </div>
+
+      <div id="editorNoSteps" class="editor-empty-state" style="display:none;">
+        <div class="editor-empty-icon">➕</div>
+        <div class="editor-empty-title">No steps yet</div>
+        <div class="editor-empty-text">Select a template in the toolbar and click <strong>+ Add Step</strong> to begin building this workflow.</div>
+      </div>
+
+      <div id="editorCanvas" class="editor-canvas"></div>
+    </main>
+
+  </div>
+
+  <script src="config.js"></script>
+  <script src="shared/utils.js"></script>
+  <script type="module" src="sidepanel/workflowEditor/workflowEditorApp.js"></script>
+</body>
+</html>
