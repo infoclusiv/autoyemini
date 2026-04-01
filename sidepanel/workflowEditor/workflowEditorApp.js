@@ -1,31 +1,21 @@
 import { normalizeWorkflows } from "../services/workflowService.js";
 
 const WORKFLOWS_KEY = "savedWorkflows";
-const TEMPLATES_KEY = "savedTemplates";
 
 const { generateUUID } = globalThis.SharedUtils;
 
 // ─── State ────────────────────────────────────────────────
 let workflows = [];
-let templates = [];
 let selectedWorkflowId = "";
 
-// ─── Storage helpers ──────────────────────────────────────
-function normalizeTemplatesSimple(raw) {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter((t) => t && typeof t === "object" && t.id && t.name)
-    .map((t) => ({
-      id: String(t.id),
-      name: String(t.name),
-      content: String(t.content || "")
-    }));
-}
+// ─── Modal state ──────────────────────────────────────────
+let modalWorkflowId = null;
+let modalStepIndex = -1;   // -1 = new step being created
 
+// ─── Storage helpers ──────────────────────────────────────
 async function load() {
-  const stored = await chrome.storage.local.get([WORKFLOWS_KEY, TEMPLATES_KEY]);
-  templates = normalizeTemplatesSimple(stored[TEMPLATES_KEY]);
-  workflows = normalizeWorkflows(stored[WORKFLOWS_KEY], templates);
+  const stored = await chrome.storage.local.get([WORKFLOWS_KEY]);
+  workflows = normalizeWorkflows(stored[WORKFLOWS_KEY]);
   // Keep selected ID valid after reload
   if (selectedWorkflowId && !workflows.some((wf) => wf.id === selectedWorkflowId)) {
     selectedWorkflowId = workflows.length > 0 ? workflows[0].id : "";
@@ -70,24 +60,6 @@ function renderWorkflowSelect() {
   }
 }
 
-// ─── Render: template select ─────────────────────────────
-function renderTemplateSelect() {
-  const sel = document.getElementById("editorTemplateSelect");
-  sel.innerHTML = "";
-
-  const def = document.createElement("option");
-  def.value = "";
-  def.textContent = "— Select template to add —";
-  sel.appendChild(def);
-
-  templates.forEach((tpl) => {
-    const opt = document.createElement("option");
-    opt.value = tpl.id;
-    opt.textContent = tpl.name;
-    sel.appendChild(opt);
-  });
-}
-
 // ─── Render: canvas ───────────────────────────────────────
 const ACTION_LABELS = {
   extract: "extract",
@@ -129,7 +101,6 @@ function renderCanvas() {
   canvas.style.display = "flex";
 
   workflow.steps.forEach((step, index) => {
-    const tpl = templates.find((t) => t.id === step.templateId);
     const action = step.chainConfig?.responseAction || "none";
 
     // ── Connector arrow (before each step except the first) ──
@@ -161,7 +132,7 @@ function renderCanvas() {
 
     // ── Node card ─────────────────────────────────────────
     const node = document.createElement("div");
-    node.className = "editor-node" + (!tpl ? " editor-node-invalid" : "");
+    node.className = "editor-node";
 
     // Header
     const header = document.createElement("div");
@@ -173,6 +144,14 @@ function renderCanvas() {
 
     const btns = document.createElement("div");
     btns.className = "editor-node-btns";
+
+    // Edit button (opens modal)
+    const editBtn = document.createElement("button");
+    editBtn.className = "editor-node-btn";
+    editBtn.title = "Edit step title and prompt";
+    editBtn.textContent = "✏️";
+    editBtn.addEventListener("click", () => void openStepModal(workflow.id, index));
+    btns.appendChild(editBtn);
 
     if (index > 0) {
       const leftBtn = document.createElement("button");
@@ -202,11 +181,19 @@ function renderCanvas() {
     header.appendChild(stepNum);
     header.appendChild(btns);
 
-    // Template name
+    // Step title
     const tplName = document.createElement("div");
     tplName.className = "editor-node-tpl-name";
-    tplName.textContent = tpl ? tpl.name : "⚠️ Template not found";
-    tplName.title = tpl ? tpl.name : "Template is missing";
+    tplName.textContent = step.title || `Step ${index + 1}`;
+    tplName.title = step.title || "";
+
+    // Content preview
+    const contentPreview = document.createElement("div");
+    contentPreview.className = "editor-node-content-preview";
+    const previewText = step.content
+      ? step.content.replace(/\n/g, " ").substring(0, 80) + (step.content.length > 80 ? "…" : "")
+      : "(no prompt — click ✏️ to add)";
+    contentPreview.textContent = previewText;
 
     // Response action row
     const responseRow = document.createElement("div");
@@ -509,6 +496,7 @@ function renderCanvas() {
 
     node.appendChild(header);
     node.appendChild(tplName);
+    node.appendChild(contentPreview);
     node.appendChild(responseRow);
     node.appendChild(badge);
     node.appendChild(regexRow);
@@ -534,14 +522,9 @@ function renderCanvas() {
 
   addNode.appendChild(addIcon);
   addNode.appendChild(addText);
-  addNode.title = "Select a template in the toolbar, then click here";
+  addNode.title = "Add a new step to this workflow";
   addNode.addEventListener("click", () => {
-    const tplSel = document.getElementById("editorTemplateSelect");
-    if (!tplSel.value) {
-      alert("Select a template in the toolbar first, then click Add Step.");
-      return;
-    }
-    void handleAddStep(tplSel.value);
+    void handleAddStep();
   });
 
   canvas.appendChild(addNode);
@@ -598,48 +581,112 @@ async function handleDeleteWorkflow() {
 }
 
 // ─── CRUD: steps ──────────────────────────────────────────
-async function handleAddStep(templateId) {
+async function handleAddStep() {
   const wf = getSelectedWorkflow();
+  if (!wf) {
+    alert("No workflow selected.");
+    return;
+  }
+
+  // Open the modal for a new step; the step is only persisted on Save
+  modalWorkflowId = wf.id;
+  modalStepIndex = -1; // signals "new step"
+  document.getElementById("stepModalTitle").textContent = `Add Step ${wf.steps.length + 1}`;
+  document.getElementById("stepModalTitleInput").value = "";
+  document.getElementById("stepModalContentInput").value = "";
+  document.getElementById("stepModal").style.display = "flex";
+  document.getElementById("stepModalTitleInput").focus();
+}
+
+// ─── Modal: open for existing step ────────────────────────
+function openStepModal(workflowId, stepIndex) {
+  const wf = workflows.find((w) => w.id === workflowId);
   if (!wf) return;
+  const step = wf.steps[stepIndex];
+  if (!step) return;
 
-  const defaultRegex =
-    globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
-  const defaultPlaceholder =
-    globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+  modalWorkflowId = workflowId;
+  modalStepIndex = stepIndex;
+  document.getElementById("stepModalTitle").textContent = `Edit Step ${stepIndex + 1}`;
+  document.getElementById("stepModalTitleInput").value = step.title || "";
+  document.getElementById("stepModalContentInput").value = step.content || "";
+  document.getElementById("stepModal").style.display = "flex";
+  document.getElementById("stepModalTitleInput").focus();
+}
 
-  const ab = globalThis.CONFIG?.ANTI_BOT || {};
-  const defaultTypingSpeed = Array.isArray(ab.TYPING_SPEED_MS) ? ab.TYPING_SPEED_MS : [30, 100];
-  const defaultFatiguePauseMs = Array.isArray(ab.FATIGUE_PAUSE_MS) ? ab.FATIGUE_PAUSE_MS : [20000, 40000];
-  const msToMin = (ms) => Math.max(0.5, Math.round((Number(ms) / 60000) * 10) / 10);
+// ─── Modal: close ─────────────────────────────────────────
+function closeStepModal() {
+  document.getElementById("stepModal").style.display = "none";
+  modalWorkflowId = null;
+  modalStepIndex = -1;
+}
 
-  const newStep = {
-    templateId,
-    order: wf.steps.length,
-    chainConfig: {
-      responseAction: "none",
-      extractionRegex: defaultRegex,
-      injectionPlaceholder: defaultPlaceholder
-    },
-    antiBotConfig: {
-      humanTyping: true,
-      randomDelays: true,
-      biologicalPauses: false,
-      typingSpeed: [...defaultTypingSpeed],
-      fatigueCount: typeof ab.FATIGUE_AFTER_QUESTIONS === "number" ? ab.FATIGUE_AFTER_QUESTIONS : 10,
-      fatigueMinMinutes: msToMin(defaultFatiguePauseMs[0]),
-      fatigueMaxMinutes: msToMin(defaultFatiguePauseMs[1])
-    }
-  };
+// ─── Modal: save ──────────────────────────────────────────
+async function saveStepModal() {
+  const title = document.getElementById("stepModalTitleInput").value.trim();
+  const content = document.getElementById("stepModalContentInput").value;
 
-  workflows = workflows.map((w) => {
-    if (w.id !== wf.id) return w;
-    return { ...w, steps: [...w.steps, newStep] };
-  });
+  if (!title) {
+    document.getElementById("stepModalTitleInput").focus();
+    document.getElementById("stepModalTitleInput").style.borderColor = "var(--accent-red)";
+    setTimeout(() => {
+      document.getElementById("stepModalTitleInput").style.borderColor = "";
+    }, 1500);
+    return;
+  }
+
+  if (modalStepIndex === -1) {
+    // New step — build defaults and add to workflow
+    const defaultRegex =
+      globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
+    const defaultPlaceholder =
+      globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+    const ab = globalThis.CONFIG?.ANTI_BOT || {};
+    const defaultTypingSpeed = Array.isArray(ab.TYPING_SPEED_MS) ? ab.TYPING_SPEED_MS : [30, 100];
+    const defaultFatiguePauseMs = Array.isArray(ab.FATIGUE_PAUSE_MS) ? ab.FATIGUE_PAUSE_MS : [20000, 40000];
+    const msToMin = (ms) => Math.max(0.5, Math.round((Number(ms) / 60000) * 10) / 10);
+
+    const newStep = {
+      id: generateUUID(),
+      title,
+      content,
+      order: (workflows.find((w) => w.id === modalWorkflowId)?.steps.length || 0),
+      chainConfig: {
+        responseAction: "none",
+        extractionRegex: defaultRegex,
+        injectionPlaceholder: defaultPlaceholder
+      },
+      antiBotConfig: {
+        humanTyping: true,
+        randomDelays: true,
+        biologicalPauses: false,
+        typingSpeed: [...defaultTypingSpeed],
+        fatigueCount: typeof ab.FATIGUE_AFTER_QUESTIONS === "number" ? ab.FATIGUE_AFTER_QUESTIONS : 10,
+        fatigueMinMinutes: msToMin(defaultFatiguePauseMs[0]),
+        fatigueMaxMinutes: msToMin(defaultFatiguePauseMs[1])
+      }
+    };
+
+    workflows = workflows.map((w) => {
+      if (w.id !== modalWorkflowId) return w;
+      return { ...w, steps: [...w.steps, newStep] };
+    });
+  } else {
+    // Edit existing step
+    workflows = workflows.map((w) => {
+      if (w.id !== modalWorkflowId) return w;
+      const steps = w.steps.map((s, i) => {
+        if (i !== modalStepIndex) return s;
+        return { ...s, title, content };
+      });
+      return { ...w, steps };
+    });
+  }
 
   await persist();
+  closeStepModal();
   renderWorkflowSelect();
   renderCanvas();
-  document.getElementById("editorTemplateSelect").value = "";
 }
 
 async function removeStep(workflowId, stepIndex) {
@@ -720,13 +767,24 @@ function setupEventListeners() {
   document.getElementById("editorRenameBtn").addEventListener("click", () => void handleRenameWorkflow());
   document.getElementById("editorDeleteBtn").addEventListener("click", () => void handleDeleteWorkflow());
 
-  document.getElementById("editorAddStepBtn").addEventListener("click", () => {
-    const tplSel = document.getElementById("editorTemplateSelect");
-    if (!tplSel.value) {
-      alert("Select a template first.");
-      return;
+  document.getElementById("editorAddStepBtn").addEventListener("click", () => void handleAddStep());
+
+  // Modal buttons
+  document.getElementById("stepModalSaveBtn").addEventListener("click", () => void saveStepModal());
+  document.getElementById("stepModalCancelBtn").addEventListener("click", closeStepModal);
+  document.getElementById("stepModalCloseBtn").addEventListener("click", closeStepModal);
+
+  // Close modal on overlay click (outside the box)
+  document.getElementById("stepModal").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeStepModal();
+  });
+
+  // Save on Ctrl+Enter / Cmd+Enter inside modal
+  document.getElementById("stepModalContentInput").addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      void saveStepModal();
     }
-    void handleAddStep(tplSel.value);
   });
 }
 
@@ -734,18 +792,15 @@ function setupEventListeners() {
 async function init() {
   await load();
   renderWorkflowSelect();
-  renderTemplateSelect();
   renderCanvas();
   setupEventListeners();
 
   // Reflect changes made from the sidepanel while this tab is open
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
-    if (!changes[WORKFLOWS_KEY] && !changes[TEMPLATES_KEY]) return;
-    // Re-load but keep user's current selection
+    if (!changes[WORKFLOWS_KEY]) return;
     load().then(() => {
       renderWorkflowSelect();
-      renderTemplateSelect();
       renderCanvas();
     });
   });

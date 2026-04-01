@@ -8,7 +8,6 @@ import { QuestionList } from "./ui/questionList.js";
 import { ControlPanel } from "./ui/controlPanel.js";
 import { StatsPanel } from "./ui/statsPanel.js";
 import { SettingsPanel } from "./ui/settingsPanel.js";
-import { TemplatePanel } from "./ui/templatePanel.js";
 import { WorkflowRunner } from "./ui/workflowRunner.js";
 import { normalizeWorkflows } from "./services/workflowService.js";
 import { QuestionProcessor, parseQuestionsInput } from "./core/questionProcessor.js";
@@ -22,24 +21,11 @@ let questionList;
 let controlPanel;
 let statsPanel;
 let settingsPanel;
-let templatePanel;
 let workflowRunner;
 let questionProcessor;
 
-let questionsInput;
-
 function getElements() {
   return {
-    questionsInput: document.getElementById("questionsInput"),
-    singlePromptModeCheckbox: document.getElementById("singlePromptModeCheckbox"),
-    addQuestionsBtn: document.getElementById("addQuestionsBtn"),
-    clearInputBtn: document.getElementById("clearInputBtn"),
-    templateSelect: document.getElementById("templateSelect"),
-    loadTemplateBtn: document.getElementById("loadTemplateBtn"),
-    saveTemplateBtn: document.getElementById("saveTemplateBtn"),
-    updateTemplateBtn: document.getElementById("updateTemplateBtn"),
-    renameTemplateBtn: document.getElementById("renameTemplateBtn"),
-    deleteTemplateBtn: document.getElementById("deleteTemplateBtn"),
     startBtn: document.getElementById("startBtn"),
     pauseBtn: document.getElementById("pauseBtn"),
     resumeBtn: document.getElementById("resumeBtn"),
@@ -91,45 +77,6 @@ async function persistGeneralSettings(settings) {
     saveSetting(StorageKeys.USE_WEB_SEARCH, settings.useWebSearch),
     saveSetting(StorageKeys.KEEP_SAME_CHAT, settings.keepSameChat)
   ]);
-}
-
-function handleAddQuestions() {
-  const rawValue = questionsInput.value.trim();
-  if (!rawValue) {
-    addLog(t("messages.pleaseEnterQuestion"), "warning");
-    return;
-  }
-
-  const state = AppState.getState();
-  const isSinglePrompt = state.singlePromptMode === true;
-  const nextQuestions = [...state.questions];
-  const questionsToAdd = parseQuestionsInput(rawValue, isSinglePrompt);
-
-  questionsToAdd.forEach((question) => {
-    nextQuestions.push({
-      id: generateUUID(),
-      question,
-      status: "pending",
-      answer: "",
-      sources: [],
-      timestamp: Date.now(),
-      error: null
-    });
-  });
-
-  if (questionsToAdd.length === 0) {
-    return;
-  }
-
-  questionsInput.value = "";
-  AppState.setQuestions(nextQuestions);
-  void persistQuestions();
-  addLog(`${questionsToAdd.length} ${t("messages.questionsAdded")}`, "success");
-}
-
-function handleClearInput() {
-  questionsInput.value = "";
-  addLog(t("messages.inputCleared"), "info");
 }
 
 async function handleStart() {
@@ -199,9 +146,8 @@ async function handleStart() {
   void questionProcessor.processNextQuestion();
 }
 
-function loadWorkflowStepQuestions(template, chainedText, step) {
+function loadWorkflowStepQuestions(step, chainedText) {
   const state = AppState.getState();
-  const isSinglePrompt = state.singlePromptMode === true;
 
   const defaultRegex =
     globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
@@ -219,15 +165,16 @@ function loadWorkflowStepQuestions(template, chainedText, step) {
     injectionPlaceholder
   };
 
-  // Resolve the template content: replace the placeholder with chainedText
-  let resolvedContent = template.content;
+  // Resolve the step content: replace the placeholder with chainedText
+  let resolvedContent = step.content || "";
   if (chainedText && injectionPlaceholder) {
     resolvedContent = resolvedContent
       .split(injectionPlaceholder)
       .join(chainedText);
   }
 
-  const questionsToAdd = parseQuestionsInput(resolvedContent, isSinglePrompt);
+  // Always treat the step content as a single multi-line prompt
+  const questionsToAdd = parseQuestionsInput(resolvedContent, true);
 
   const nextQuestions = [...state.questions];
   questionsToAdd.forEach((question) => {
@@ -248,16 +195,6 @@ function loadWorkflowStepQuestions(template, chainedText, step) {
   return questionsToAdd.length;
 }
 
-function applyTemplateSettings(template) {
-  if (!template.settings) {
-    return;
-  }
-  settingsPanel.setValuesFromTemplate(template.settings);
-  const resolvedSettings = settingsPanel.getValues();
-  patchGeneralSettings(resolvedSettings);
-  void persistGeneralSettings(resolvedSettings);
-}
-
 async function handleStartWorkflow() {
   const state = AppState.getState();
   if (state.isRunning) {
@@ -276,20 +213,6 @@ async function handleStartWorkflow() {
     return;
   }
 
-  const templates = state.templates;
-  const validSteps = workflow.steps.filter((step) =>
-    templates.some((tpl) => tpl.id === step.templateId)
-  );
-
-  if (validSteps.length === 0) {
-    addLog(t("messages.workflowNoSteps"), "warning");
-    return;
-  }
-
-  if (validSteps.length < workflow.steps.length) {
-    addLog(t("workflow.invalidSteps"), "warning");
-  }
-
   // Clear existing questions before starting the workflow
   AppState.setQuestions([]);
   await persistQuestions();
@@ -297,7 +220,7 @@ async function handleStartWorkflow() {
   addLog(t("messages.workflowStarting", { name: workflow.name }), "info");
 
   AppState.patch({
-    activeWorkflow: { ...workflow, steps: validSteps },
+    activeWorkflow: { ...workflow },
     activeWorkflowStepIndex: 0,
     workflowContext: {
       chainedText: "",
@@ -319,18 +242,9 @@ async function executeWorkflowStep(stepIndex) {
   }
 
   const step = workflow.steps[stepIndex];
-  const template = state.templates.find((tpl) => tpl.id === step.templateId);
-
-  if (!template) {
-    AppState.patch({ activeWorkflowStepIndex: stepIndex + 1 });
-    await executeWorkflowStep(stepIndex + 1);
-    return;
-  }
 
   AppState.patch({ activeWorkflowStepIndex: stepIndex });
-  addLog(t("messages.workflowStepStarting", [stepIndex + 1, template.name]), "info");
-
-  applyTemplateSettings(template);
+  addLog(t("messages.workflowStepStarting", [stepIndex + 1, step.title || `Step ${stepIndex + 1}`]), "info");
 
   // Get the chainedText from the workflow context
   const chainedText = state.workflowContext?.chainedText || "";
@@ -342,7 +256,7 @@ async function executeWorkflowStep(stepIndex) {
   AppState.setQuestions([]);
   await persistQuestions();
 
-  const addedCount = loadWorkflowStepQuestions(template, chainedText, step);
+  const addedCount = loadWorkflowStepQuestions(step, chainedText);
   addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
 
   addLog(t("messages.openingChatGPT"), "info");
@@ -526,12 +440,6 @@ async function handleKeepSameChatChange(event) {
   await saveSetting(StorageKeys.KEEP_SAME_CHAT, enabled);
 }
 
-async function handleSinglePromptModeChange(event) {
-  const enabled = event.target.checked;
-  AppState.patch({ singlePromptMode: enabled });
-  await saveSetting(StorageKeys.SINGLE_PROMPT_MODE, enabled);
-}
-
 function wireMessageListeners() {
   onRuntimeMessage((message, sendResponse) => {
     switch (message.type) {
@@ -556,7 +464,7 @@ function wireMessageListeners() {
   onStorageChange((changes) => {
     if (changes.savedWorkflows) {
       const rawWorkflows = changes.savedWorkflows.newValue;
-      const normalized = normalizeWorkflows(rawWorkflows, AppState.getState().templates);
+      const normalized = normalizeWorkflows(rawWorkflows);
       AppState.patch({ workflows: normalized });
     }
     if (!changes.pendingMessage) {
@@ -599,8 +507,6 @@ function wireMessageListeners() {
 }
 
 function setupEventListeners(elements) {
-  elements.addQuestionsBtn.addEventListener("click", handleAddQuestions);
-  elements.clearInputBtn.addEventListener("click", handleClearInput);
   elements.startBtn.addEventListener("click", () => {
     void handleStart();
   });
@@ -624,16 +530,12 @@ function setupEventListeners(elements) {
   elements.keepSameChatCheckbox.addEventListener("change", (event) => {
     void handleKeepSameChatChange(event);
   });
-  elements.singlePromptModeCheckbox.addEventListener("change", (event) => {
-    void handleSinglePromptModeChange(event);
-  });
 }
 
 async function initialize() {
   applyTranslations();
 
   const elements = getElements();
-  questionsInput = elements.questionsInput;
 
   logPanel = new LogPanel(elements.logContainer);
   questionList = new QuestionList(elements.questionsList);
@@ -656,22 +558,6 @@ async function initialize() {
     useTempChatCheckbox: elements.useTempChatCheckbox,
     useWebSearchCheckbox: elements.useWebSearchCheckbox,
     keepSameChatCheckbox: elements.keepSameChatCheckbox
-  });
-  templatePanel = new TemplatePanel({
-    selectElement: elements.templateSelect,
-    loadButton: elements.loadTemplateBtn,
-    saveButton: elements.saveTemplateBtn,
-    updateButton: elements.updateTemplateBtn,
-    renameButton: elements.renameTemplateBtn,
-    deleteButton: elements.deleteTemplateBtn,
-    questionsInput,
-    addLog,
-    getSettings: () => settingsPanel.getValues(),
-    onLoadTemplate: (template) => {
-      settingsPanel.setValuesFromTemplate(template.settings);
-      const resolvedSettings = settingsPanel.getValues();
-      void persistGeneralSettings(resolvedSettings);
-    }
   });
 
   workflowRunner = new WorkflowRunner({
@@ -704,10 +590,8 @@ async function initialize() {
       workflows: stored.workflows,
       useTempChat: stored.useTempChat,
       useWebSearch: stored.useWebSearch,
-      keepSameChat: stored.keepSameChat,
-      singlePromptMode: stored.singlePromptMode
+      keepSameChat: stored.keepSameChat
     });
-    elements.singlePromptModeCheckbox.checked = stored.singlePromptMode;
     settingsPanel.setValues(stored);
 
     if (stored.questions.length > 0) {

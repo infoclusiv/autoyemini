@@ -3,22 +3,14 @@ export function normalizeWorkflows(value, existingTemplates) {
     return [];
   }
 
-  const templateIds = new Set(
-    (existingTemplates || []).map((t) => t.id)
-  );
+  // existingTemplates kept for signature compatibility; no longer used internally
 
   return value
     .filter((wf) => wf && typeof wf === "object")
     .map((wf, index) => {
       const steps = Array.isArray(wf.steps)
         ? wf.steps
-            .filter(
-              (step) =>
-                step &&
-                typeof step === "object" &&
-                typeof step.templateId === "string" &&
-                templateIds.has(step.templateId)
-            )
+            .filter((step) => step && typeof step === "object")
             .map((step, stepIndex) => {
               const validActions = ["extract", "store_full", "none"];
               const rawAction = step.chainConfig?.responseAction;
@@ -85,8 +77,23 @@ export function normalizeWorkflows(value, existingTemplates) {
                 fatigueMaxMinutes
               };
 
+              // Step id / title / content — new self-contained step model
+              const stepId =
+                typeof step.id === "string" && step.id.trim()
+                  ? step.id
+                  : (globalThis.SharedUtils?.generateUUID?.() || `step-${Date.now()}-${stepIndex}`);
+
+              const stepTitle =
+                typeof step.title === "string" && step.title.trim()
+                  ? step.title.trim()
+                  : `Step ${stepIndex + 1}`;
+
+              const stepContent = typeof step.content === "string" ? step.content : "";
+
               return {
-                templateId: step.templateId,
+                id: stepId,
+                title: stepTitle,
+                content: stepContent,
                 order: typeof step.order === "number" ? step.order : stepIndex,
                 chainConfig: { responseAction, extractionRegex, injectionPlaceholder },
                 antiBotConfig

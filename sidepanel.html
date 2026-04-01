@@ -9,36 +9,6 @@
 <body>
   <!-- Main Panel -->
   <div id="mainPanel" class="container">
-    <section class="input-section">
-      <h2 data-i18n="input.title">Question Input</h2>
-      <div class="template-controls">
-        <select id="templateSelect" class="template-select">
-          <option value="" data-i18n="template.selectDefault">Select a template</option>
-        </select>
-        <button id="loadTemplateBtn" class="btn btn-info btn-sm" data-i18n="template.loadBtn">Load</button>
-        <button id="updateTemplateBtn" class="btn btn-warning btn-sm" data-i18n="template.updateBtn">Update</button>
-        <button id="saveTemplateBtn" class="btn btn-success btn-sm" data-i18n="template.saveBtn">New</button>
-        <button id="renameTemplateBtn" class="btn btn-secondary btn-sm" data-i18n="template.renameBtn">Rename</button>
-        <button id="deleteTemplateBtn" class="btn btn-danger btn-sm" data-i18n="template.deleteBtn">Delete</button>
-      </div>
-      <textarea 
-        id="questionsInput" 
-        data-i18n-placeholder="input.placeholder"
-        placeholder="Enter one question per line, batch input supported..."
-        rows="8"
-      ></textarea>
-      <div class="setting-item" style="margin-bottom: 12px; background: transparent; border: none; padding: 0;">
-        <label class="setting-label">
-          <input type="checkbox" id="singlePromptModeCheckbox">
-          <span class="setting-text" data-i18n="input.singlePrompt">Treat all text as a single multi-line prompt</span>
-        </label>
-      </div>
-      <div class="button-group">
-        <button id="addQuestionsBtn" class="btn btn-primary" data-i18n="input.addBtn">Add Questions</button>
-        <button id="clearInputBtn" class="btn btn-secondary" data-i18n="input.clearBtn">Clear Input</button>
-      </div>
-    </section>
-
     <section class="workflow-runner-section" id="workflowSection">
       <h2 data-i18n="workflow.title">Workflows</h2>
       <div class="workflow-runner-controls">

@@ -28,8 +28,7 @@
 
         <!-- Step addition -->
         <div class="editor-step-group">
-          <select id="editorTemplateSelect" class="editor-select editor-select-template"></select>
-          <button id="editorAddStepBtn" class="editor-btn editor-btn-primary" title="Add selected template as last step">+ Add Step</button>
+          <button id="editorAddStepBtn" class="editor-btn editor-btn-primary" title="Add a new step to this workflow">+ New Step</button>
         </div>
       </div>
     </header>
@@ -44,12 +43,43 @@
       <div id="editorNoSteps" class="editor-empty-state" style="display:none;">
         <div class="editor-empty-icon">➕</div>
         <div class="editor-empty-title">No steps yet</div>
-        <div class="editor-empty-text">Select a template in the toolbar and click <strong>+ Add Step</strong> to begin building this workflow.</div>
+        <div class="editor-empty-text">Click <strong>+ New Step</strong> in the toolbar to begin building this workflow.</div>
       </div>
 
       <div id="editorCanvas" class="editor-canvas"></div>
     </main>
 
+  </div>
+
+  <!-- Step Config Modal -->
+  <div id="stepModal" class="step-modal-overlay" style="display:none;">
+    <div class="step-modal-box">
+      <div class="step-modal-header">
+        <span id="stepModalTitle" class="step-modal-heading">Configure Step</span>
+        <button id="stepModalCloseBtn" class="step-modal-close" title="Cancel">✕</button>
+      </div>
+      <div class="step-modal-body">
+        <label class="step-modal-label" for="stepModalTitleInput">Step Title</label>
+        <input
+          id="stepModalTitleInput"
+          class="step-modal-input"
+          type="text"
+          placeholder="e.g. Research phase"
+          autocomplete="off"
+        />
+        <label class="step-modal-label" for="stepModalContentInput">Prompt Text</label>
+        <textarea
+          id="stepModalContentInput"
+          class="step-modal-textarea"
+          placeholder="Enter the full prompt to send in this step…"
+          rows="14"
+        ></textarea>
+      </div>
+      <div class="step-modal-footer">
+        <button id="stepModalCancelBtn" class="editor-btn editor-btn-secondary">Cancel</button>
+        <button id="stepModalSaveBtn" class="editor-btn editor-btn-primary">Save Step</button>
+      </div>
+    </div>
   </div>
 
   <script src="config.js"></script>

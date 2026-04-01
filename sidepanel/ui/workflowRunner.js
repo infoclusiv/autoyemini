@@ -32,8 +32,7 @@ export class WorkflowRunner {
       }
       if (
         changedKeys.includes("activeWorkflow") ||
-        changedKeys.includes("activeWorkflowStepIndex") ||
-        changedKeys.includes("templates")
+        changedKeys.includes("activeWorkflowStepIndex")
       ) {
         this.renderProgress();
       }
@@ -80,11 +79,8 @@ export class WorkflowRunner {
     if (!workflow || workflow.steps.length === 0) return;
 
     const isActive = state.activeWorkflow && state.activeWorkflow.id === workflow.id;
-    const templates = state.templates;
 
     workflow.steps.forEach((step, index) => {
-      const tpl = templates.find((t) => t.id === step.templateId);
-
       // Arrow connector between steps
       if (index > 0) {
         const prevAction = workflow.steps[index - 1].chainConfig?.responseAction || "none";
@@ -103,9 +99,6 @@ export class WorkflowRunner {
       } else if (isActive && index < state.activeWorkflowStepIndex) {
         node.classList.add("wpr-node-done");
       }
-      if (!tpl) {
-        node.classList.add("wpr-node-invalid");
-      }
 
       const label = document.createElement("div");
       label.className = "wpr-node-label";
@@ -113,8 +106,8 @@ export class WorkflowRunner {
 
       const name = document.createElement("div");
       name.className = "wpr-node-name";
-      name.textContent = tpl ? tpl.name : "⚠️";
-      name.title = tpl ? tpl.name : "Missing template";
+      name.textContent = step.title || `Step ${index + 1}`;
+      name.title = step.title || "";
 
       node.appendChild(label);
       node.appendChild(name);

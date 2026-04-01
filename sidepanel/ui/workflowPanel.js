@@ -15,8 +15,6 @@ export class WorkflowPanel {
     this.saveButton = this.container.querySelector("#saveWorkflowBtn");
     this.renameButton = this.container.querySelector("#renameWorkflowBtn");
     this.deleteButton = this.container.querySelector("#deleteWorkflowBtn");
-    this.addStepButton = this.container.querySelector("#addWorkflowStepBtn");
-    this.stepTemplateSelect = this.container.querySelector("#stepTemplateSelect");
     this.stepsListElement = this.container.querySelector("#workflowStepsList");
     this.startWorkflowButton = this.container.querySelector("#startWorkflowBtn");
 
@@ -28,9 +26,6 @@ export class WorkflowPanel {
     });
     this.deleteButton.addEventListener("click", () => {
       void this.handleDelete();
-    });
-    this.addStepButton.addEventListener("click", () => {
-      void this.handleAddStep();
     });
     this.startWorkflowButton.addEventListener("click", () => {
       if (this.onStartWorkflow) {
@@ -45,17 +40,12 @@ export class WorkflowPanel {
       if (changedKeys.includes("workflows")) {
         this.renderSelect(state.workflows);
       }
-      if (changedKeys.includes("templates")) {
-        this.renderStepTemplateSelect(state.templates);
-        this.renderSteps();
-      }
       if (changedKeys.includes("activeWorkflow") || changedKeys.includes("activeWorkflowStepIndex")) {
         this.renderSteps();
       }
     });
 
     this.renderSelect(AppState.getState().workflows);
-    this.renderStepTemplateSelect(AppState.getState().templates);
   }
 
   getSelectedWorkflow() {
@@ -90,22 +80,6 @@ export class WorkflowPanel {
     this.renderSteps();
   }
 
-  renderStepTemplateSelect(templates = AppState.getState().templates) {
-    this.stepTemplateSelect.innerHTML = "";
-
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = t("workflow.selectTemplate");
-    this.stepTemplateSelect.appendChild(defaultOption);
-
-    templates.forEach((tpl) => {
-      const option = document.createElement("option");
-      option.value = tpl.id;
-      option.textContent = tpl.name;
-      this.stepTemplateSelect.appendChild(option);
-    });
-  }
-
   renderSteps() {
     const workflow = this.getSelectedWorkflow();
     this.stepsListElement.innerHTML = "";
@@ -119,12 +93,9 @@ export class WorkflowPanel {
     }
 
     const state = AppState.getState();
-    const templates = state.templates;
     const isActiveWorkflow = state.activeWorkflow && state.activeWorkflow.id === workflow.id;
 
     workflow.steps.forEach((step, index) => {
-      const template = templates.find((tpl) => tpl.id === step.templateId);
-
       // Connector arrow between steps
       if (index > 0) {
         const connector = document.createElement("div");
@@ -151,9 +122,6 @@ export class WorkflowPanel {
       if (isActiveWorkflow && index < state.activeWorkflowStepIndex) {
         stepEl.classList.add("workflow-step-done");
       }
-      if (!template) {
-        stepEl.classList.add("workflow-step-invalid");
-      }
 
       // Step header row
       const stepHeader = document.createElement("div");
@@ -165,7 +133,7 @@ export class WorkflowPanel {
 
       const stepName = document.createElement("span");
       stepName.className = "workflow-step-name";
-      stepName.textContent = template ? template.name : "⚠️ ?";
+      stepName.textContent = step.title || `Step ${index + 1}`;
 
       const actions = document.createElement("span");
       actions.className = "workflow-step-actions";
@@ -217,9 +185,9 @@ export class WorkflowPanel {
       actionSelect.className = "workflow-step-action-select";
 
       const actionOptions = [
-        { value: "none", label: "⏭️ Skip", cls: "action-none" },
-        { value: "extract", label: "🔍 Extract (regex)", cls: "action-extract" },
-        { value: "store_full", label: "📋 Store Full", cls: "action-store" }
+        { value: "none", label: "⏭️ Skip" },
+        { value: "extract", label: "🔍 Extract (regex)" },
+        { value: "store_full", label: "📋 Store Full" }
       ];
 
       actionOptions.forEach((opt) => {
@@ -247,16 +215,12 @@ export class WorkflowPanel {
         actionBadge.textContent = "⏭️ Passes through";
       }
 
-      // Input indicator (if template content contains the step's injection placeholder)
+      // Input indicator (if step content contains the injection placeholder)
       const stepPlaceholder =
         step.chainConfig?.injectionPlaceholder ||
         globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER ||
         "{{extract}}";
-      const hasInjection =
-        index > 0 &&
-        template &&
-        template.content &&
-        template.content.includes(stepPlaceholder);
+      const hasInjection = index > 0 && step.content && step.content.includes(stepPlaceholder);
 
       chainRow.appendChild(actionLabel);
       chainRow.appendChild(actionSelect);
@@ -349,44 +313,6 @@ export class WorkflowPanel {
     const nextWorkflows = AppState.getState().workflows.filter((wf) => wf.id !== workflow.id);
     await this.persistWorkflows(nextWorkflows, "");
     this.addLog(t("messages.workflowDeleted"), "info");
-  }
-
-  async handleAddStep() {
-    const workflow = this.getSelectedWorkflow();
-    if (!workflow) {
-      this.addLog(t("messages.workflowSelectRequired"), "warning");
-      return;
-    }
-
-    const templateId = this.stepTemplateSelect.value;
-    if (!templateId) {
-      return;
-    }
-
-const defaultRegex =
-        globalThis.CONFIG?.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
-      const defaultPlaceholder =
-        globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
-
-      const newStep = {
-        templateId,
-        order: workflow.steps.length,
-        chainConfig: {
-          responseAction: "none",
-          extractionRegex: defaultRegex,
-          injectionPlaceholder: defaultPlaceholder
-        }
-    };
-
-    const nextWorkflows = AppState.getState().workflows.map((wf) => {
-      if (wf.id !== workflow.id) {
-        return wf;
-      }
-      return { ...wf, steps: [...wf.steps, newStep] };
-    });
-
-    await this.persistWorkflows(nextWorkflows, workflow.id);
-    this.stepTemplateSelect.value = "";
   }
 
   async removeStep(workflowId, stepIndex) {
