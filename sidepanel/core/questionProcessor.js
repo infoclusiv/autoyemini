@@ -143,7 +143,7 @@ export class QuestionProcessor {
     return step?.chainConfig || null;
   }
 
-  _handleWorkflowChaining(result, question) {
+  async _handleWorkflowChaining(result, question) {
     const state = AppState.getState();
     const chainConfig = this._getCurrentStepChainConfig();
 
@@ -194,6 +194,33 @@ export class QuestionProcessor {
       ];
       AppState.patch({ workflowContext: ctx, lastExtractedText: fullResponse });
       this.addLog("Full response stored for next step.", "success");
+
+      // Auto-save to Ruta de Proyectos via clusiv-v3
+      const workflowName = state.activeWorkflow.name || "workflow";
+      const step = state.activeWorkflow.steps[state.activeWorkflowStepIndex];
+      const stepTitle = step?.title || `step_${state.activeWorkflowStepIndex}`;
+      try {
+        const saveResp = await fetch("http://localhost:7788/api/save-step-response", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflowName,
+            stepTitle,
+            stepIndex: state.activeWorkflowStepIndex,
+            answer: fullResponse,
+            timestamp: Date.now()
+          })
+        });
+        const saveData = await saveResp.json();
+        if (!saveData.success) {
+          this.addLog(`Error al guardar en Ruta de Proyectos: ${saveData.error}. Workflow aborted.`, "error");
+          return false;
+        }
+        this.addLog(`Respuesta guardada en: ${saveData.path}`, "success");
+      } catch (saveError) {
+        this.addLog(`Error al guardar en Ruta de Proyectos: ${saveError.message}. Workflow aborted.`, "error");
+        return false;
+      }
     } else {
       const ctx = { ...state.workflowContext };
       ctx.stepResults = [
@@ -265,7 +292,7 @@ export class QuestionProcessor {
 
       if (!hasMorePending && latestState.activeWorkflow && result.success) {
         // All questions in this step are done - handle workflow chaining before advancing
-        const chainSuccess = this._handleWorkflowChaining(result, question);
+        const chainSuccess = await this._handleWorkflowChaining(result, question);
         if (!chainSuccess) {
           if (this.onWorkflowAbort) {
             this.onWorkflowAbort();
