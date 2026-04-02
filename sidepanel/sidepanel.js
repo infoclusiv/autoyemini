@@ -367,11 +367,16 @@ async function advanceWorkflowStep() {
           totalSteps: state.activeWorkflow.steps.length
         })
       });
-      const data = await resp.json();
-      if (data.success) {
-        addLog(`✅ Teleprompter script guardado en: ${data.path} (${data.blocksFound} bloques)`, "success");
+      if (!resp.ok) {
+        const raw = await resp.text();
+        addLog(`⚠️ clusiv-v3 respondió ${resp.status}: ${raw || "(sin cuerpo)"}`, "warning");
       } else {
-        addLog(`⚠️ No se pudo generar el script: ${data.error}`, "warning");
+        const data = await resp.json();
+        if (data.success) {
+          addLog(`✅ Teleprompter script guardado en: ${data.path} (${data.blocksFound} bloques)`, "success");
+        } else {
+          addLog(`⚠️ No se pudo generar el script: ${data.error}`, "warning");
+        }
       }
     } catch (err) {
       addLog(`⚠️ No se pudo conectar a clusiv-v3: ${err.message}`, "warning");
