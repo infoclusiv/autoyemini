@@ -356,6 +356,27 @@ async function advanceWorkflowStep() {
 
   if (nextStepIndex >= state.activeWorkflow.steps.length) {
     addLog(t("messages.workflowComplete"), "success");
+
+    // Notify clusiv-v3 to merge teleprompter scripts (fire-and-warn, never aborts workflow)
+    try {
+      const resp = await fetch("http://localhost:7788/api/workflow-complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workflowName: state.activeWorkflow.name,
+          totalSteps: state.activeWorkflow.steps.length
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        addLog(`✅ Teleprompter script guardado en: ${data.path} (${data.blocksFound} bloques)`, "success");
+      } else {
+        addLog(`⚠️ No se pudo generar el script: ${data.error}`, "warning");
+      }
+    } catch (err) {
+      addLog(`⚠️ No se pudo conectar a clusiv-v3: ${err.message}`, "warning");
+    }
+
     AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1, workflowContext: null });
     return;
   }
