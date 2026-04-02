@@ -255,11 +255,37 @@ async function executeWorkflowStep(stepIndex) {
     addLog(`Chained data available (${chainedText.length} chars)`, "info");
   }
 
+  // ── External source injection for step 0 ──────────────────────────────
+  let effectiveChainedText = chainedText;
+  const extSrc = step.chainConfig?.externalSource;
+  if (stepIndex === 0 && extSrc?.enabled) {
+    try {
+      const resp = await fetch(extSrc.url || "http://localhost:7788/api/best-title");
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (!data.title || data.status !== "ready") {
+        addLog("⚠️ External source has no title ready. Run clusiv-v3 analysis first.", "warning");
+        abortWorkflow();
+        return;
+      }
+      effectiveChainedText = data.title;
+      addLog(`🌐 External title fetched: "${effectiveChainedText}"`, "info");
+    } catch (err) {
+      addLog(`🌐 External source fetch failed: ${err.message}`, "error");
+      abortWorkflow();
+      return;
+    }
+  }
+
   // Clear questions from previous step before loading new ones
   AppState.setQuestions([]);
   await persistQuestions();
 
-  const addedCount = loadWorkflowStepQuestions(step, chainedText);
+  // When external source is active for step 0, use its placeholder as the injectionPlaceholder
+  const stepForLoad = (stepIndex === 0 && extSrc?.enabled && extSrc?.placeholder)
+    ? { ...step, chainConfig: { ...step.chainConfig, injectionPlaceholder: extSrc.placeholder } }
+    : step;
+  const addedCount = loadWorkflowStepQuestions(stepForLoad, effectiveChainedText);
   addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
 
   addLog(t("messages.openingChatGPT"), "info");
@@ -306,7 +332,7 @@ async function executeWorkflowStep(stepIndex) {
     isPaused: false,
     currentIndex: 0,
     processedSincePause: 0,
-    lastExtractedText: chainedText
+    lastExtractedText: effectiveChainedText
   });
 
   addLog(t("messages.startingBatch"), "info");

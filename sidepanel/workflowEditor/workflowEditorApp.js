@@ -252,43 +252,113 @@ function renderCanvas() {
       regexRow.classList.toggle("is-hidden", actionSel.value !== "extract");
     });
 
-    // ── Injection config row (placeholder input) ──
+    // ── Injection config row / External Source (step 0) ──────────────────
     const isFirstStep = index === 0;
     const prevStep = index > 0 ? workflow.steps[index - 1] : null;
     const prevHasOutput = prevStep && prevStep.chainConfig?.responseAction !== "none";
 
-    const injectionRow = document.createElement("div");
-    let injectionRowClass = "editor-node-injection-row";
+    let injectionRow;
     if (isFirstStep) {
-      injectionRowClass += " is-disabled";
-    } else if (!prevHasOutput) {
-      injectionRowClass += " is-inactive";
-    }
-    injectionRow.className = injectionRowClass;
+      // ── External Source section replaces the disabled injection row ──
+      const extSrc = step.chainConfig?.externalSource || {};
+      const extEnabled = extSrc.enabled === true;
+      const extUrl = extSrc.url || "http://localhost:7788/api/best-title";
+      const extPlaceholder = extSrc.placeholder || "{{clusiv_title}}";
 
-    const injectionLabel = document.createElement("label");
-    injectionLabel.className = "editor-node-field-label";
-    if (isFirstStep) {
-      injectionLabel.textContent = "📥 Injection placeholder: (no prior step)";
-    } else if (!prevHasOutput) {
-      injectionLabel.textContent = "📥 Injection placeholder: (prior step has no output)";
+      injectionRow = document.createElement("div");
+      injectionRow.className = "editor-node-external-source";
+
+      // Toggle row
+      const extToggleRow = document.createElement("div");
+      extToggleRow.className = "editor-node-external-source-toggle";
+      const extToggleLabel = document.createElement("label");
+      extToggleLabel.className = "editor-node-external-source-label";
+      const extToggleCb = document.createElement("input");
+      extToggleCb.type = "checkbox";
+      extToggleCb.checked = extEnabled;
+      extToggleLabel.appendChild(extToggleCb);
+      extToggleLabel.append(" \uD83C\uDF10 External Source (clusiv-v3)");
+      extToggleRow.appendChild(extToggleLabel);
+      injectionRow.appendChild(extToggleRow);
+
+      // Collapsible config panel
+      const extConfig = document.createElement("div");
+      extConfig.className = "editor-node-external-source-config" + (extEnabled ? "" : " is-hidden");
+
+      // URL row
+      const urlRow = document.createElement("div");
+      urlRow.className = "editor-node-injection-row";
+      const urlLabel = document.createElement("label");
+      urlLabel.className = "editor-node-field-label";
+      urlLabel.textContent = "\uD83D\uDD17 Source URL:";
+      const urlInput = document.createElement("input");
+      urlInput.type = "text";
+      urlInput.className = "editor-node-field-input";
+      urlInput.placeholder = "http://localhost:7788/api/best-title";
+      urlInput.value = extUrl;
+      urlInput.title = "URL to fetch the title from (GET request, must return JSON {title, status})";
+      urlInput.addEventListener("change", () => {
+        void updateStepExternalSource(workflow.id, index, "url", urlInput.value.trim() || urlInput.placeholder);
+      });
+      urlRow.appendChild(urlLabel);
+      urlRow.appendChild(urlInput);
+
+      // Placeholder row
+      const phRow = document.createElement("div");
+      phRow.className = "editor-node-injection-row";
+      const phLabel = document.createElement("label");
+      phLabel.className = "editor-node-field-label";
+      phLabel.textContent = "\uD83D\uDCE5 Injection placeholder:";
+      const phInput = document.createElement("input");
+      phInput.type = "text";
+      phInput.className = "editor-node-field-input";
+      phInput.placeholder = "{{clusiv_title}}";
+      phInput.value = extPlaceholder;
+      phInput.title = "Token in the step prompt that will be replaced with the fetched title";
+      phInput.addEventListener("change", () => {
+        void updateStepExternalSource(workflow.id, index, "placeholder", phInput.value.trim() || phInput.placeholder);
+      });
+      phRow.appendChild(phLabel);
+      phRow.appendChild(phInput);
+
+      extConfig.appendChild(urlRow);
+      extConfig.appendChild(phRow);
+      injectionRow.appendChild(extConfig);
+
+      extToggleCb.addEventListener("change", () => {
+        extConfig.classList.toggle("is-hidden", !extToggleCb.checked);
+        void updateStepExternalSource(workflow.id, index, "enabled", extToggleCb.checked);
+      });
     } else {
-      injectionLabel.textContent = "📥 Injection placeholder:";
+      // Standard injection row for non-first steps
+      injectionRow = document.createElement("div");
+      let injectionRowClass = "editor-node-injection-row";
+      if (!prevHasOutput) {
+        injectionRowClass += " is-inactive";
+      }
+      injectionRow.className = injectionRowClass;
+
+      const injectionLabel = document.createElement("label");
+      injectionLabel.className = "editor-node-field-label";
+      if (!prevHasOutput) {
+        injectionLabel.textContent = "\uD83D\uDCE5 Injection placeholder: (prior step has no output)";
+      } else {
+        injectionLabel.textContent = "\uD83D\uDCE5 Injection placeholder:";
+      }
+
+      const injectionInput = document.createElement("input");
+      injectionInput.type = "text";
+      injectionInput.className = "editor-node-field-input";
+      injectionInput.placeholder = globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+      injectionInput.value = step.chainConfig?.injectionPlaceholder || globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
+      injectionInput.title = "Placeholder text in this template that will be replaced by the previous step's output";
+      injectionInput.addEventListener("change", () => {
+        void updateStepChainField(workflow.id, index, "injectionPlaceholder", injectionInput.value.trim() || injectionInput.placeholder);
+      });
+
+      injectionRow.appendChild(injectionLabel);
+      injectionRow.appendChild(injectionInput);
     }
-
-    const injectionInput = document.createElement("input");
-    injectionInput.type = "text";
-    injectionInput.className = "editor-node-field-input";
-    injectionInput.placeholder = globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
-    injectionInput.value = step.chainConfig?.injectionPlaceholder || globalThis.CONFIG?.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}";
-    injectionInput.title = "Placeholder text in this template that will be replaced by the previous step's output";
-    injectionInput.disabled = isFirstStep;
-    injectionInput.addEventListener("change", () => {
-      void updateStepChainField(workflow.id, index, "injectionPlaceholder", injectionInput.value.trim() || injectionInput.placeholder);
-    });
-
-    injectionRow.appendChild(injectionLabel);
-    injectionRow.appendChild(injectionInput);
 
     // ── Anti-Bot Options (collapsible) ────────────────────
     const ab = step.antiBotConfig || {};
@@ -749,6 +819,21 @@ async function updateStepAntiBotField(workflowId, stepIndex, field, value) {
     const steps = w.steps.map((s, i) => {
       if (i !== stepIndex) return s;
       return { ...s, antiBotConfig: { ...s.antiBotConfig, [field]: value } };
+    });
+    return { ...w, steps };
+  });
+
+  await persist();
+}
+
+async function updateStepExternalSource(workflowId, stepIndex, field, value) {
+  workflows = workflows.map((w) => {
+    if (w.id !== workflowId) return w;
+    const steps = w.steps.map((s, i) => {
+      if (i !== stepIndex) return s;
+      const currentExtSrc = s.chainConfig?.externalSource || {};
+      const newExtSrc = { ...currentExtSrc, [field]: value };
+      return { ...s, chainConfig: { ...s.chainConfig, externalSource: newExtSrc } };
     });
     return { ...w, steps };
   });

@@ -33,6 +33,20 @@ export function normalizeWorkflows(value, existingTemplates) {
                   ? step.chainConfig.injectionPlaceholder
                   : defaultPlaceholder;
 
+              // ── externalSource config (step 0 external injection) ──
+              const rawExtSrc = step.chainConfig?.externalSource;
+              const externalSource = {
+                enabled: rawExtSrc?.enabled === true,
+                url:
+                  typeof rawExtSrc?.url === "string" && rawExtSrc.url.trim()
+                    ? rawExtSrc.url.trim()
+                    : "http://localhost:7788/api/best-title",
+                placeholder:
+                  typeof rawExtSrc?.placeholder === "string" && rawExtSrc.placeholder.trim()
+                    ? rawExtSrc.placeholder.trim()
+                    : "{{clusiv_title}}"
+              };
+
               // ── antiBotConfig per step ──────────────────────────────
               const abDefaults = globalThis.CONFIG?.ANTI_BOT || {};
               const defaultTypingSpeed = Array.isArray(abDefaults.TYPING_SPEED_MS) ? abDefaults.TYPING_SPEED_MS : [30, 100];
@@ -95,7 +109,7 @@ export function normalizeWorkflows(value, existingTemplates) {
                 title: stepTitle,
                 content: stepContent,
                 order: typeof step.order === "number" ? step.order : stepIndex,
-                chainConfig: { responseAction, extractionRegex, injectionPlaceholder },
+                chainConfig: { responseAction, extractionRegex, injectionPlaceholder, externalSource },
                 antiBotConfig
               };
             })
