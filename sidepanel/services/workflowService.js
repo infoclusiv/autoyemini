@@ -1,3 +1,20 @@
+export function getStoredStepIndexes(workflow) {
+  if (!workflow || !Array.isArray(workflow.steps)) {
+    return [];
+  }
+
+  return workflow.steps.reduce((indexes, step, stepIndex) => {
+    if (step?.chainConfig?.responseAction === "store_full") {
+      indexes.push(stepIndex);
+    }
+    return indexes;
+  }, []);
+}
+
+export function countStoredSteps(workflow) {
+  return getStoredStepIndexes(workflow).length;
+}
+
 export function normalizeWorkflows(value, existingTemplates) {
   if (!Array.isArray(value)) {
     return [];

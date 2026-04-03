@@ -1,6 +1,7 @@
 import { AppState } from "../state/appState.js";
 import { saveQuestions } from "../services/storageService.js";
 import { sendToBackground } from "../services/messagingService.js";
+import { getStoredStepIndexes } from "../services/workflowService.js";
 import { t } from "../i18n/i18n.js";
 import { buildQuestionForSubmission, extractTextFromAnswer } from "./extractionEngine.js";
 import {
@@ -196,9 +197,13 @@ export class QuestionProcessor {
       this.addLog("Full response stored for next step.", "success");
 
       // Auto-save to Ruta de Proyectos via clusiv-v3
-      const workflowName = state.activeWorkflow.name || "workflow";
-      const step = state.activeWorkflow.steps[state.activeWorkflowStepIndex];
+      const workflow = state.activeWorkflow;
+      const workflowName = workflow.name || "workflow";
+      const step = workflow.steps[state.activeWorkflowStepIndex];
       const stepTitle = step?.title || `step_${state.activeWorkflowStepIndex}`;
+      const storedStepIndexes = getStoredStepIndexes(workflow);
+      const totalStoredSteps = storedStepIndexes.length;
+      const isLastStoredStep = storedStepIndexes[storedStepIndexes.length - 1] === state.activeWorkflowStepIndex;
       try {
         const saveResp = await fetch("http://localhost:7788/api/save-step-response", {
           method: "POST",
@@ -207,6 +212,10 @@ export class QuestionProcessor {
             workflowName,
             stepTitle,
             stepIndex: state.activeWorkflowStepIndex,
+            totalStoredSteps,
+            totalSteps: totalStoredSteps,
+            isLastStoredStep,
+            isLastStep: isLastStoredStep,
             answer: fullResponse,
             timestamp: Date.now()
           })

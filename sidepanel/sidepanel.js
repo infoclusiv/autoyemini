@@ -9,7 +9,7 @@ import { ControlPanel } from "./ui/controlPanel.js";
 import { StatsPanel } from "./ui/statsPanel.js";
 import { SettingsPanel } from "./ui/settingsPanel.js";
 import { WorkflowRunner } from "./ui/workflowRunner.js";
-import { normalizeWorkflows } from "./services/workflowService.js";
+import { countStoredSteps, normalizeWorkflows } from "./services/workflowService.js";
 import { QuestionProcessor, parseQuestionsInput } from "./core/questionProcessor.js";
 import { waitForConfiguredDelay } from "./core/antiBotController.js";
 
@@ -357,6 +357,13 @@ async function advanceWorkflowStep() {
   if (nextStepIndex >= state.activeWorkflow.steps.length) {
     addLog(t("messages.workflowComplete"), "success");
 
+    const totalStoredSteps = countStoredSteps(state.activeWorkflow);
+    if (totalStoredSteps === 0) {
+      addLog("Workflow completed without any 'Store full response' steps. Teleprompter merge was skipped.", "warning");
+      AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1, workflowContext: null });
+      return;
+    }
+
     // Notify clusiv-v3 to merge teleprompter scripts (fire-and-warn, never aborts workflow)
     try {
       const resp = await fetch("http://localhost:7788/api/workflow-complete", {
@@ -364,7 +371,8 @@ async function advanceWorkflowStep() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workflowName: state.activeWorkflow.name,
-          totalSteps: state.activeWorkflow.steps.length
+          totalStoredSteps,
+          totalSteps: totalStoredSteps
         })
       });
       if (!resp.ok) {
