@@ -7,10 +7,49 @@ const { generateUUID } = globalThis.SharedUtils;
 // ─── State ────────────────────────────────────────────────
 let workflows = [];
 let selectedWorkflowId = "";
+let cachedAllProviders = globalThis.CONFIG?.PROVIDERS || {};
+
+const CUSTOM_PROVIDERS_KEY = globalThis.CONFIG?.STORAGE_KEYS?.CUSTOM_PROVIDERS || "customProviders";
 
 // ─── Modal state ──────────────────────────────────────────
 let modalWorkflowId = null;
 let modalStepIndex = -1;   // -1 = new step being created
+
+async function loadAllProviders() {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: "GET_ALL_PROVIDERS" });
+    cachedAllProviders = response && typeof response === "object"
+      ? response
+      : (globalThis.CONFIG?.PROVIDERS || {});
+  } catch {
+    cachedAllProviders = globalThis.CONFIG?.PROVIDERS || {};
+  }
+}
+
+function getProviderEntries(stepProvider = "chatgpt") {
+  const providers = { ...(cachedAllProviders || {}) };
+
+  if (stepProvider && !providers[stepProvider]) {
+    providers[stepProvider] = {
+      id: stepProvider,
+      label: `${stepProvider} (missing)`,
+      isBuiltIn: false
+    };
+  }
+
+  return Object.entries(providers).sort((a, b) => {
+    const aConfig = a[1] || {};
+    const bConfig = b[1] || {};
+    const aWeight = aConfig.isBuiltIn ? 0 : 1;
+    const bWeight = bConfig.isBuiltIn ? 0 : 1;
+
+    if (aWeight !== bWeight) {
+      return aWeight - bWeight;
+    }
+
+    return String(aConfig.label || a[0]).localeCompare(String(bConfig.label || b[0]));
+  });
+}
 
 // ─── Storage helpers ──────────────────────────────────────
 async function load() {
@@ -194,6 +233,32 @@ function renderCanvas() {
       ? step.content.replace(/\n/g, " ").substring(0, 80) + (step.content.length > 80 ? "…" : "")
       : "(no prompt — click ✏️ to add)";
     contentPreview.textContent = previewText;
+
+    const providerRow = document.createElement("div");
+    providerRow.className = "editor-node-response-row";
+
+    const providerLabel = document.createElement("span");
+    providerLabel.className = "editor-node-response-label";
+    providerLabel.textContent = "Provider";
+
+    const providerSel = document.createElement("select");
+    providerSel.className = "editor-node-action-select";
+    const stepProvider = step.provider || "chatgpt";
+
+    getProviderEntries(stepProvider).forEach(([value, providerConfig]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = providerConfig.label || value;
+      providerSel.appendChild(option);
+    });
+
+    providerSel.value = stepProvider;
+    providerSel.addEventListener("change", () => {
+      void updateStepProvider(workflow.id, index, providerSel.value);
+    });
+
+    providerRow.appendChild(providerLabel);
+    providerRow.appendChild(providerSel);
 
     // Response action row
     const responseRow = document.createElement("div");
@@ -567,6 +632,7 @@ function renderCanvas() {
     node.appendChild(header);
     node.appendChild(tplName);
     node.appendChild(contentPreview);
+    node.appendChild(providerRow);
     node.appendChild(responseRow);
     node.appendChild(badge);
     node.appendChild(regexRow);
@@ -720,6 +786,7 @@ async function saveStepModal() {
       id: generateUUID(),
       title,
       content,
+      provider: "chatgpt",
       order: (workflows.find((w) => w.id === modalWorkflowId)?.steps.length || 0),
       chainConfig: {
         responseAction: "none",
@@ -792,6 +859,20 @@ async function updateStepAction(workflowId, stepIndex, responseAction) {
     const steps = w.steps.map((s, i) => {
       if (i !== stepIndex) return s;
       return { ...s, chainConfig: { ...s.chainConfig, responseAction } };
+    });
+    return { ...w, steps };
+  });
+
+  await persist();
+  renderCanvas();
+}
+
+async function updateStepProvider(workflowId, stepIndex, provider) {
+  workflows = workflows.map((w) => {
+    if (w.id !== workflowId) return w;
+    const steps = w.steps.map((s, i) => {
+      if (i !== stepIndex) return s;
+      return { ...s, provider: provider || "chatgpt" };
     });
     return { ...w, steps };
   });
@@ -875,6 +956,7 @@ function setupEventListeners() {
 
 // ─── Init ─────────────────────────────────────────────────
 async function init() {
+  await loadAllProviders();
   await load();
   renderWorkflowSelect();
   renderCanvas();
@@ -883,8 +965,8 @@ async function init() {
   // Reflect changes made from the sidepanel while this tab is open
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
-    if (!changes[WORKFLOWS_KEY]) return;
-    load().then(() => {
+    if (!changes[WORKFLOWS_KEY] && !changes[CUSTOM_PROVIDERS_KEY]) return;
+    Promise.all([loadAllProviders(), load()]).then(() => {
       renderWorkflowSelect();
       renderCanvas();
     });

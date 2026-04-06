@@ -8,6 +8,27 @@ const CONFIG = {
 		URL_PATTERN: "https://chatgpt.com/*"
 	},
 
+	PROVIDERS: {
+		chatgpt: {
+			id: "chatgpt",
+			label: "ChatGPT",
+			BASE_URL: "https://chatgpt.com/",
+			TEMP_CHAT_PARAM: "?temporary-chat=true",
+			URL_PATTERN: "https://chatgpt.com/*",
+			HOSTNAME: "chatgpt.com",
+			supportsWebSearch: true,
+			supportsTempChat: true,
+			supportsSSE: true,
+			isBuiltIn: true,
+			selectors: {
+				input: null,
+				submitButton: null,
+				stopButton: null,
+				responseContainer: null
+			}
+		}
+	},
+
 	TIMING: {
 		BETWEEN_QUESTIONS_MS: [3500, 8000],
 		PAGE_LOAD_WAIT_MS: 5000,
@@ -52,7 +73,8 @@ const CONFIG = {
 		FATIGUE_MIN_PAUSE_MINUTES: "fatigueMinPauseMinutes",
 		FATIGUE_MAX_PAUSE_MINUTES: "fatigueMaxPauseMinutes",
 		PENDING_MESSAGE: "pendingMessage",
-		WORKFLOWS: "savedWorkflows"
+		WORKFLOWS: "savedWorkflows",
+		CUSTOM_PROVIDERS: "customProviders"
 	},
 
 	LOG_MAX_ENTRIES: 100

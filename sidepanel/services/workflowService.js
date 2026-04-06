@@ -120,11 +120,16 @@ export function normalizeWorkflows(value, existingTemplates) {
                   : `Step ${stepIndex + 1}`;
 
               const stepContent = typeof step.content === "string" ? step.content : "";
+              const stepProvider =
+                typeof step.provider === "string" && step.provider.trim()
+                  ? step.provider.trim()
+                  : "chatgpt";
 
               return {
                 id: stepId,
                 title: stepTitle,
                 content: stepContent,
+                provider: stepProvider,
                 order: typeof step.order === "number" ? step.order : stepIndex,
                 chainConfig: { responseAction, extractionRegex, injectionPlaceholder, externalSource },
                 antiBotConfig

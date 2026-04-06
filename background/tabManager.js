@@ -4,6 +4,18 @@ function getChatGPTUrl(useTempChat) {
     : CONFIG.CHATGPT.BASE_URL;
 }
 
+function getProviderUrl(providerConfig, useTempChat) {
+  if (!providerConfig) {
+    return getChatGPTUrl(useTempChat);
+  }
+
+  const tempParam = useTempChat && providerConfig.supportsTempChat
+    ? providerConfig.TEMP_CHAT_PARAM || ""
+    : "";
+
+  return `${providerConfig.BASE_URL}${tempParam}`;
+}
+
 function canReuseExistingChat(currentUrl) {
   if (!currentUrl) {
     return false;
@@ -18,6 +30,29 @@ function canReuseExistingChat(currentUrl) {
     }
 
     return parsedUrl.pathname === "/" || parsedUrl.pathname.startsWith("/c/");
+  } catch {
+    return false;
+  }
+}
+
+function canReuseProviderTab(currentUrl, providerConfig) {
+  if (!currentUrl || !providerConfig) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(currentUrl);
+    const baseUrl = new URL(providerConfig.BASE_URL);
+
+    if (parsedUrl.origin !== baseUrl.origin) {
+      return false;
+    }
+
+    if (providerConfig.id === "chatgpt") {
+      return parsedUrl.pathname === "/" || parsedUrl.pathname.startsWith("/c/");
+    }
+
+    return parsedUrl.hostname === baseUrl.hostname;
   } catch {
     return false;
   }
@@ -46,6 +81,44 @@ async function findOrCreateChatGPTTab(useTempChat, keepSameChat = false) {
 
     if (keepSameChat) {
       needsReload = !canReuseExistingChat(currentTab.url);
+    } else if (currentTab.url !== url) {
+      needsReload = true;
+    }
+
+    if (needsReload) {
+      await chrome.tabs.update(currentTab.id, { url, active: true });
+      await waitForTabLoad(currentTab.id);
+    } else if (currentTab.status !== "complete") {
+      await waitForTabLoad(currentTab.id);
+    } else {
+      await SharedUtils.sleep(CONFIG.TIMING.SSE_READY_WAIT_MS);
+    }
+
+    return tab;
+  }
+
+  const tab = await chrome.tabs.create({ url, active: true });
+  await waitForTabLoad(tab.id);
+  return tab;
+}
+
+async function findOrCreateProviderTab(providerConfig, useTempChat, keepSameChat = false) {
+  if (!providerConfig || providerConfig.id === "chatgpt") {
+    return findOrCreateChatGPTTab(useTempChat, keepSameChat);
+  }
+
+  const url = getProviderUrl(providerConfig, useTempChat);
+  const urlPattern = providerConfig.URL_PATTERN || `${new URL(providerConfig.BASE_URL).origin}/*`;
+  const existingTabs = await chrome.tabs.query({ url: urlPattern });
+
+  if (existingTabs.length > 0) {
+    const currentTab = existingTabs[0];
+    const tab = await chrome.tabs.update(currentTab.id, { active: true });
+
+    let needsReload = false;
+
+    if (keepSameChat) {
+      needsReload = !canReuseProviderTab(currentTab.url, providerConfig);
     } else if (currentTab.url !== url) {
       needsReload = true;
     }

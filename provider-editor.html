@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Provider Editor</title>
+  <link rel="stylesheet" href="workflow-editor.css">
+  <link rel="stylesheet" href="provider-editor.css">
+</head>
+<body>
+  <div id="providerEditorApp">
+    <header class="editor-header">
+      <div class="editor-logo">
+        <span class="editor-logo-text">Provider Editor</span>
+      </div>
+      <div class="editor-toolbar">
+        <button id="newProviderBtn" class="editor-btn editor-btn-success">+ New Provider</button>
+      </div>
+    </header>
+
+    <main class="pe-main">
+      <aside class="pe-sidebar">
+        <div class="pe-sidebar-title">Providers</div>
+        <div id="providerList" class="pe-provider-list"></div>
+      </aside>
+
+      <section class="pe-editor-panel">
+        <div id="peEmptyState" class="pe-empty-state">
+          <div class="pe-empty-title">No provider selected</div>
+          <div class="pe-empty-text">Select a provider from the list or create a new one.</div>
+        </div>
+
+        <div id="peForm" class="pe-form" style="display:none;">
+          <div class="pe-form-header">
+            <h2 id="peFormTitle" class="pe-form-title">New Provider</h2>
+            <div class="pe-form-actions">
+              <button id="peDeleteBtn" class="editor-btn editor-btn-danger" style="display:none;">Delete</button>
+              <button id="peSaveBtn" class="editor-btn editor-btn-primary">Save Provider</button>
+            </div>
+          </div>
+
+          <div class="pe-section">
+            <div class="pe-section-title">Basic Information</div>
+
+            <div class="pe-field-row">
+              <div class="pe-field">
+                <label class="pe-label" for="peId">Provider ID <span class="pe-required">*</span></label>
+                <input id="peId" class="pe-input" type="text" placeholder="e.g. aistudio, perplexity, gemini" autocomplete="off">
+                <span class="pe-hint">Lowercase, no spaces. Used internally and in workflows.</span>
+              </div>
+              <div class="pe-field">
+                <label class="pe-label" for="peLabel">Display Name <span class="pe-required">*</span></label>
+                <input id="peLabel" class="pe-input" type="text" placeholder="e.g. Google AI Studio" autocomplete="off">
+                <span class="pe-hint">Name shown in the workflow editor dropdown.</span>
+              </div>
+            </div>
+
+            <div class="pe-field-row">
+              <div class="pe-field">
+                <label class="pe-label" for="peBaseUrl">Base URL <span class="pe-required">*</span></label>
+                <input id="peBaseUrl" class="pe-input" type="url" placeholder="https://aistudio.google.com/prompts/new_chat">
+                <span class="pe-hint">URL that opens a new conversation.</span>
+              </div>
+              <div class="pe-field">
+                <label class="pe-label" for="peHostname">Hostname <span class="pe-required">*</span></label>
+                <input id="peHostname" class="pe-input" type="text" placeholder="aistudio.google.com">
+                <span class="pe-hint">Domain without protocol. Used to find the provider tab.</span>
+              </div>
+            </div>
+
+            <div class="pe-field">
+              <label class="pe-label">Submit Method</label>
+              <div class="pe-radio-group">
+                <label class="pe-radio-label">
+                  <input type="radio" name="submitMethod" value="enter" checked>
+                  <span>Enter key</span>
+                </label>
+                <label class="pe-radio-label">
+                  <input type="radio" name="submitMethod" value="ctrl_enter">
+                  <span>Ctrl+Enter</span>
+                </label>
+                <label class="pe-radio-label">
+                  <input type="radio" name="submitMethod" value="button">
+                  <span>Click button</span>
+                </label>
+              </div>
+              <span class="pe-hint">How to send the prompt after writing it.</span>
+            </div>
+          </div>
+
+          <div class="pe-section">
+            <div class="pe-section-title">CSS Selectors</div>
+            <div class="pe-section-subtitle">
+              Open the provider site in another tab, inspect the page with DevTools, then test each selector here.
+            </div>
+
+            <div class="pe-selector-group">
+              <div class="pe-selector-header">
+                <span class="pe-selector-name">Prompt Input</span>
+                <span class="pe-selector-desc">The textarea or contenteditable used to type prompts.</span>
+              </div>
+              <div class="pe-selector-row">
+                <input id="selInput" class="pe-input pe-selector-input" type="text" placeholder="e.g. .ql-editor[contenteditable='true']">
+                <button class="pe-test-btn" data-selector="selInput" data-label="Prompt Input">Test</button>
+              </div>
+              <div id="selInput-result" class="pe-test-result"></div>
+              <input id="selInputFallback1" class="pe-input pe-selector-input pe-fallback" type="text" placeholder="Fallback selector (optional)">
+              <input id="selInputFallback2" class="pe-input pe-selector-input pe-fallback" type="text" placeholder="Second fallback (optional)">
+            </div>
+
+            <div class="pe-selector-group">
+              <div class="pe-selector-header">
+                <span class="pe-selector-name">Submit Button</span>
+                <span class="pe-selector-desc">Used if the provider submits with a clickable button.</span>
+              </div>
+              <div class="pe-selector-row">
+                <input id="selSubmitButton" class="pe-input pe-selector-input" type="text" placeholder="e.g. button[type='submit']">
+                <button class="pe-test-btn" data-selector="selSubmitButton" data-label="Submit Button">Test</button>
+              </div>
+              <div id="selSubmitButton-result" class="pe-test-result"></div>
+            </div>
+
+            <div class="pe-selector-group">
+              <div class="pe-selector-header">
+                <span class="pe-selector-name">Stop Button <span class="pe-optional">(optional)</span></span>
+                <span class="pe-selector-desc">Visible while the model is generating.</span>
+              </div>
+              <div class="pe-selector-row">
+                <input id="selStopButton" class="pe-input pe-selector-input" type="text" placeholder="e.g. button[aria-label='Stop']">
+                <button class="pe-test-btn" data-selector="selStopButton" data-label="Stop Button">Test</button>
+              </div>
+              <div id="selStopButton-result" class="pe-test-result"></div>
+              <span class="pe-hint">Test this while the provider is generating a response.</span>
+            </div>
+
+            <div class="pe-selector-group">
+              <div class="pe-selector-header">
+                <span class="pe-selector-name">Response Container <span class="pe-required">*</span></span>
+                <span class="pe-selector-desc">Element containing the provider response text.</span>
+              </div>
+              <div class="pe-selector-row">
+                <input id="selResponseContainer" class="pe-input pe-selector-input" type="text" placeholder="e.g. .assistant-message .markdown">
+                <button class="pe-test-btn" data-selector="selResponseContainer" data-label="Response Container">Test</button>
+              </div>
+              <div id="selResponseContainer-result" class="pe-test-result"></div>
+              <input id="selResponseContainerFallback1" class="pe-input pe-selector-input pe-fallback" type="text" placeholder="Fallback selector (optional)">
+              <input id="selResponseContainerFallback2" class="pe-input pe-selector-input pe-fallback" type="text" placeholder="Second fallback (optional)">
+            </div>
+
+            <div class="pe-selector-group">
+              <div class="pe-selector-header">
+                <span class="pe-selector-name">Loading Indicator <span class="pe-optional">(optional)</span></span>
+                <span class="pe-selector-desc">Spinner or busy element used to detect generation.</span>
+              </div>
+              <div class="pe-selector-row">
+                <input id="selLoadingIndicator" class="pe-input pe-selector-input" type="text" placeholder="e.g. .loading-spinner">
+                <button class="pe-test-btn" data-selector="selLoadingIndicator" data-label="Loading Indicator">Test</button>
+              </div>
+              <div id="selLoadingIndicator-result" class="pe-test-result"></div>
+            </div>
+          </div>
+
+          <div class="pe-section">
+            <div class="pe-section-title">Advanced Options</div>
+            <div class="pe-field-row">
+              <label class="pe-checkbox-label">
+                <span>
+                  <input type="checkbox" id="peSupportsWebSearch">
+                  Supports Web Search
+                </span>
+                <span class="pe-hint-inline">Enable if this provider has a toggleable web-search feature.</span>
+              </label>
+              <label class="pe-checkbox-label">
+                <span>
+                  <input type="checkbox" id="peSupportsTempChat">
+                  Supports Temporary Chat
+                </span>
+                <span class="pe-hint-inline">Enable if this provider has an ephemeral mode with a URL parameter.</span>
+              </label>
+            </div>
+            <div class="pe-field">
+              <label class="pe-label" for="peTempChatParam">Temp Chat URL Parameter</label>
+              <input id="peTempChatParam" class="pe-input" type="text" placeholder="e.g. ?temporary-chat=true">
+              <span class="pe-hint">Optional query string appended to the Base URL for temporary mode.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="shared/utils.js"></script>
+  <script type="module" src="sidepanel/providerEditor/providerEditorApp.js"></script>
+</body>
+</html>

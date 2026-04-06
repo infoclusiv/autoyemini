@@ -186,7 +186,8 @@ function loadWorkflowStepQuestions(step, chainedText) {
       sources: [],
       timestamp: Date.now(),
       error: null,
-      extractionConfig
+      extractionConfig,
+      stepProvider: step.provider || "chatgpt"
     });
   });
 
@@ -294,6 +295,7 @@ async function executeWorkflowStep(stepIndex) {
     const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
     const response = await sendToBackground({
       type: "OPEN_CHATGPT",
+      providerId: step.provider || "chatgpt",
       useTempChat,
       useWebSearch,
       keepSameChat
@@ -687,6 +689,10 @@ function setupEventListeners(elements) {
 
   document.getElementById("workflowBackupHistoryBtn").addEventListener("click", () => {
     void toggleWorkflowBackupList();
+  });
+
+  document.getElementById("openProviderEditorBtn").addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("provider-editor.html") });
   });
 }
 

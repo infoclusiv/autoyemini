@@ -1,6 +1,7 @@
 importScripts(
   "../config.js",
   "../shared/utils.js",
+  "providerRegistry.js",
   "tabManager.js",
   "sidePanelBridge.js",
   "messageRouter.js"

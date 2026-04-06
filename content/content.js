@@ -6,11 +6,19 @@
     currentAnswer: "",
     currentSources: [],
     isProcessing: false,
+    providerConfig: null,
     sendQuestionResult,
     handleAnswerComplete
   };
 
   function injectSSEInterceptor() {
+    const supportsSSE = ContentState.providerConfig?.supportsSSE
+      ?? window.location.hostname.includes("chatgpt.com");
+
+    if (!supportsSSE) {
+      return;
+    }
+
     try {
       const script = document.createElement("script");
       script.src = chrome.runtime.getURL("injected.js");
@@ -30,7 +38,9 @@
     ContentState.currentAnswer = "";
     ContentState.currentSources = [];
     ContentState.isProcessing = false;
-    modules.initSSEState();
+    if (typeof modules.initSSEState === "function") {
+      modules.initSSEState();
+    }
   }
 
   function sendQuestionResult(success, error = null) {
@@ -69,10 +79,15 @@
     ContentState.currentAnswer = "";
     ContentState.currentSources = [];
     ContentState.isProcessing = true;
-    modules.initSSEState();
+    if (typeof modules.initSSEState === "function") {
+      modules.initSSEState();
+    }
 
     try {
-      if (useWebSearch) {
+      const supportsWebSearch = ContentState.providerConfig?.supportsWebSearch
+        ?? window.location.hostname.includes("chatgpt.com");
+
+      if (useWebSearch && supportsWebSearch && typeof modules.enableWebSearch === "function") {
         await modules.enableWebSearch(antiBotConfig || {});
       }
 
@@ -128,16 +143,22 @@
       return;
     }
 
+    const supportsSSE = ContentState.providerConfig?.supportsSSE
+      ?? window.location.hostname.includes("chatgpt.com");
+    if (!supportsSSE) {
+      return;
+    }
+
     const { type, data, error } = event.data;
     switch (type) {
       case "SSE_DATA":
-        modules.handleSSEData(data, ContentState);
+        modules.handleSSEData?.(data, ContentState);
         break;
       case "SSE_DONE":
-        modules.handleSSEDone(ContentState);
+        modules.handleSSEDone?.(ContentState);
         break;
       case "SSE_ERROR":
-        modules.handleSSEError(error, ContentState);
+        modules.handleSSEError?.(error, ContentState);
         break;
       default:
         break;
@@ -154,6 +175,11 @@
       const useTempChat = message.useTempChat !== false;
       const useWebSearch = message.useWebSearch !== false;
       const antiBotConfig = message.antiBotConfig || {};
+
+      if (message.providerConfig) {
+        ContentState.providerConfig = message.providerConfig;
+        window.__PROVIDER_CONFIG__ = message.providerConfig;
+      }
 
       askQuestion(message.question, message.questionId, useTempChat, useWebSearch, antiBotConfig)
         .then((response) => sendResponse(response))

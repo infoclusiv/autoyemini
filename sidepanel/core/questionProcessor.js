@@ -106,6 +106,7 @@ export class QuestionProcessor {
       const { useTempChat, useWebSearch, keepSameChat } = antiBotSettings;
       const response = await sendToBackground({
         type: "PROCESS_QUESTION",
+        providerId: nextQuestion.stepProvider || "chatgpt",
         question: submittedQuestion,
         questionId: nextQuestion.id,
         useTempChat,
