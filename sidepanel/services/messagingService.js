@@ -4,8 +4,11 @@ export function sendToBackground(message) {
 
 export function onRuntimeMessage(handler) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    handler(message, sendResponse);
-    return true;
+    try {
+      return handler(message, sender, sendResponse) === true;
+    } catch {
+      return false;
+    }
   });
 }
 

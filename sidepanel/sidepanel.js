@@ -506,22 +506,21 @@ async function handleKeepSameChatChange(event) {
 }
 
 function wireMessageListeners() {
-  onRuntimeMessage((message, sendResponse) => {
+  onRuntimeMessage((message, _sender, sendResponse) => {
     switch (message.type) {
       case "QUESTION_COMPLETE":
         void questionProcessor.handleQuestionComplete(message.result);
         sendResponse({ received: true });
-        break;
+        return false;
       case "UPDATE_PROGRESS":
         sendResponse({ received: true });
-        break;
+        return false;
       case "LOG_MESSAGE":
         addLog(message.message, message.level || "info");
         sendResponse({ received: true });
-        break;
+        return false;
       default:
-        sendResponse({ received: false });
-        break;
+        return false;
     }
   });
 

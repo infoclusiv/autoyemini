@@ -146,10 +146,14 @@ function registerMessageRouter() {
         handleOpenChatGPT(message, sendResponse);
         return true;
       case "GET_ALL_PROVIDERS":
-        getAllProviders().then(sendResponse);
+        getAllProviders()
+          .then((providers) => sendResponse(providers || {}))
+          .catch(() => sendResponse({}));
         return true;
       case "GET_CUSTOM_PROVIDERS":
-        getCustomProviders().then(sendResponse);
+        getCustomProviders()
+          .then((providers) => sendResponse(providers || {}))
+          .catch(() => sendResponse({}));
         return true;
       case "SAVE_CUSTOM_PROVIDER":
         saveCustomProvider(message.provider).then(sendResponse);

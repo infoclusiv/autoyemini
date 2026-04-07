@@ -3,6 +3,56 @@ let selectedProviderId = null;
 let isNewMode = false;
 
 const CUSTOM_PROVIDERS_KEY = globalThis.CONFIG?.STORAGE_KEYS?.CUSTOM_PROVIDERS || "customProviders";
+const BUILTIN_PROVIDER_OVERRIDES_KEY =
+  globalThis.CONFIG?.STORAGE_KEYS?.BUILTIN_PROVIDER_OVERRIDES || "builtinProviderOverrides";
+const RESERVED_PROVIDER_IDS = new Set(["received", "success", "error"]);
+
+function normalizeProviderEntry(fallbackId, providerConfig) {
+  if (!providerConfig || typeof providerConfig !== "object" || Array.isArray(providerConfig)) {
+    return null;
+  }
+
+  const id = typeof providerConfig.id === "string" && providerConfig.id.trim()
+    ? providerConfig.id.trim()
+    : String(fallbackId || "").trim();
+
+  if (!id || RESERVED_PROVIDER_IDS.has(id)) {
+    return null;
+  }
+
+  return [
+    id,
+    {
+      ...providerConfig,
+      id,
+      label: typeof providerConfig.label === "string" && providerConfig.label.trim()
+        ? providerConfig.label.trim()
+        : id,
+      selectors: providerConfig.selectors && typeof providerConfig.selectors === "object"
+        ? { ...providerConfig.selectors }
+        : {}
+    }
+  ];
+}
+
+function sanitizeProviderMap(providerMap, fallbackMap = {}) {
+  const source = providerMap && typeof providerMap === "object" && !Array.isArray(providerMap)
+    ? providerMap
+    : fallbackMap;
+  const entries = Object.entries(source)
+    .map(([id, providerConfig]) => normalizeProviderEntry(id, providerConfig))
+    .filter(Boolean);
+
+  if (entries.length > 0) {
+    return Object.fromEntries(entries);
+  }
+
+  if (source !== fallbackMap) {
+    return sanitizeProviderMap(fallbackMap, {});
+  }
+
+  return {};
+}
 
 function sendMsg(type, payload = {}) {
   return chrome.runtime.sendMessage({ type, ...payload });
@@ -39,9 +89,12 @@ function getSortedProviderEntries() {
 }
 
 function getDefaultProviderId() {
+  if (allProviders.chatgpt) {
+    return "chatgpt";
+  }
+
   const entries = getSortedProviderEntries();
-  const preferredCustom = entries.find(([, provider]) => provider?.isBuiltIn !== true);
-  return preferredCustom?.[0] || entries[0]?.[0] || null;
+  return entries[0]?.[0] || null;
 }
 
 function clearTestResults() {
@@ -78,19 +131,23 @@ function showForm(provider, newMode) {
   document.getElementById("peForm").style.display = "block";
 
   const isBuiltIn = provider.isBuiltIn === true;
+  const hasBuiltInOverride = provider.hasOverride === true;
   const selectors = provider.selectors || {};
   const idField = document.getElementById("peId");
+  const deleteButton = document.getElementById("peDeleteBtn");
+  const saveButton = document.getElementById("peSaveBtn");
   const formControls = document.querySelectorAll("#peForm input, #peForm select, #peForm button.pe-test-btn");
 
   document.getElementById("peFormTitle").textContent = newMode
     ? "New Provider"
     : (provider.label || provider.id || "Provider");
 
-  document.getElementById("peDeleteBtn").style.display = !newMode && !isBuiltIn ? "inline-flex" : "none";
-  document.getElementById("peSaveBtn").style.display = isBuiltIn ? "none" : "inline-flex";
+  deleteButton.style.display = !newMode && (!isBuiltIn || hasBuiltInOverride) ? "inline-flex" : "none";
+  deleteButton.textContent = isBuiltIn ? "Reset Provider" : "Delete";
+  saveButton.style.display = "inline-flex";
 
   idField.value = newMode ? "" : (provider.id || "");
-  idField.disabled = isBuiltIn || !newMode;
+  idField.disabled = !newMode;
 
   document.getElementById("peLabel").value = provider.label || "";
   document.getElementById("peBaseUrl").value = provider.BASE_URL || "";
@@ -113,11 +170,12 @@ function showForm(provider, newMode) {
 
   document.getElementById("peSupportsWebSearch").checked = provider.supportsWebSearch === true;
   document.getElementById("peSupportsTempChat").checked = provider.supportsTempChat === true;
+  document.getElementById("peSupportsSSE").checked = provider.supportsSSE === true;
 
   formControls.forEach((element) => {
-    element.disabled = isBuiltIn;
+    element.disabled = false;
   });
-  idField.disabled = isBuiltIn || !newMode;
+  idField.disabled = !newMode;
 
   clearTestResults();
 }
@@ -178,9 +236,9 @@ function renderCurrentSelection() {
 async function loadProviders() {
   try {
     const response = await sendMsg("GET_ALL_PROVIDERS");
-    allProviders = response && typeof response === "object" ? response : {};
+    allProviders = sanitizeProviderMap(response, globalThis.CONFIG?.PROVIDERS || {});
   } catch {
-    allProviders = {};
+    allProviders = sanitizeProviderMap(globalThis.CONFIG?.PROVIDERS || {}, {});
   }
 
   if (!isNewMode && (!selectedProviderId || !allProviders[selectedProviderId])) {
@@ -219,8 +277,8 @@ function collectFormValues() {
     URL_PATTERN: urlPattern,
     supportsWebSearch: document.getElementById("peSupportsWebSearch").checked,
     supportsTempChat: document.getElementById("peSupportsTempChat").checked,
-    supportsSSE: false,
-    isBuiltIn: false,
+    supportsSSE: document.getElementById("peSupportsSSE").checked,
+    isBuiltIn: Boolean(!isNewMode && allProviders[selectedProviderId]?.isBuiltIn),
     selectors: {
       input: document.getElementById("selInput").value.trim() || null,
       inputFallback1: document.getElementById("selInputFallback1").value.trim() || null,
@@ -291,7 +349,9 @@ async function handleDelete() {
   }
 
   const provider = allProviders[selectedProviderId];
-  const confirmed = window.confirm(`Delete provider "${provider.label || selectedProviderId}"? This cannot be undone.`);
+  const confirmed = provider.isBuiltIn
+    ? window.confirm(`Reset provider "${provider.label || selectedProviderId}" to the built-in defaults?`)
+    : window.confirm(`Delete provider "${provider.label || selectedProviderId}"? This cannot be undone.`);
   if (!confirmed) {
     return;
   }
@@ -302,10 +362,12 @@ async function handleDelete() {
     return;
   }
 
-  selectedProviderId = null;
+  if (!provider.isBuiltIn) {
+    selectedProviderId = null;
+  }
   isNewMode = false;
   await loadProviders();
-  showToast("Provider deleted.");
+  showToast(provider.isBuiltIn ? "Provider reset to defaults." : "Provider deleted.");
 }
 
 async function handleTestSelector(inputId, label) {
@@ -411,7 +473,10 @@ async function init() {
   await loadProviders();
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local" || !changes[CUSTOM_PROVIDERS_KEY]) {
+    if (
+      area !== "local" ||
+      (!changes[CUSTOM_PROVIDERS_KEY] && !changes[BUILTIN_PROVIDER_OVERRIDES_KEY])
+    ) {
       return;
     }
 

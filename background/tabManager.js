@@ -1,7 +1,50 @@
-function getChatGPTUrl(useTempChat) {
-  return useTempChat
-    ? `${CONFIG.CHATGPT.BASE_URL}${CONFIG.CHATGPT.TEMP_CHAT_PARAM}`
-    : CONFIG.CHATGPT.BASE_URL;
+function getResolvedChatGPTConfig(providerConfig = null) {
+  const configuredChatGPT = CONFIG.PROVIDERS?.chatgpt || {};
+  const baseUrl = typeof providerConfig?.BASE_URL === "string" && providerConfig.BASE_URL.trim()
+    ? providerConfig.BASE_URL.trim()
+    : (configuredChatGPT.BASE_URL || CONFIG.CHATGPT.BASE_URL);
+  const tempChatParam = typeof providerConfig?.TEMP_CHAT_PARAM === "string"
+    ? providerConfig.TEMP_CHAT_PARAM.trim()
+    : (configuredChatGPT.TEMP_CHAT_PARAM || CONFIG.CHATGPT.TEMP_CHAT_PARAM);
+  const urlPattern = typeof providerConfig?.URL_PATTERN === "string" && providerConfig.URL_PATTERN.trim()
+    ? providerConfig.URL_PATTERN.trim()
+    : (configuredChatGPT.URL_PATTERN || CONFIG.CHATGPT.URL_PATTERN);
+  const hostname = typeof providerConfig?.HOSTNAME === "string" && providerConfig.HOSTNAME.trim()
+    ? providerConfig.HOSTNAME.trim()
+    : (configuredChatGPT.HOSTNAME || "chatgpt.com");
+
+  return {
+    ...configuredChatGPT,
+    ...providerConfig,
+    id: "chatgpt",
+    BASE_URL: baseUrl,
+    TEMP_CHAT_PARAM: tempChatParam,
+    URL_PATTERN: urlPattern,
+    HOSTNAME: hostname,
+    supportsTempChat:
+      providerConfig?.supportsTempChat !== false && configuredChatGPT.supportsTempChat !== false
+  };
+}
+
+function isChatGPTHost(providerConfig = null) {
+  const resolvedChatGPT = getResolvedChatGPTConfig(providerConfig);
+
+  if (resolvedChatGPT.HOSTNAME) {
+    return resolvedChatGPT.HOSTNAME.includes("chatgpt.com");
+  }
+
+  try {
+    return new URL(resolvedChatGPT.BASE_URL).hostname.includes("chatgpt.com");
+  } catch {
+    return true;
+  }
+}
+
+function getChatGPTUrl(useTempChat, providerConfig = null) {
+  const resolvedChatGPT = getResolvedChatGPTConfig(providerConfig);
+  return useTempChat && resolvedChatGPT.supportsTempChat
+    ? `${resolvedChatGPT.BASE_URL}${resolvedChatGPT.TEMP_CHAT_PARAM || ""}`
+    : resolvedChatGPT.BASE_URL;
 }
 
 function getProviderUrl(providerConfig, useTempChat) {
@@ -16,14 +59,15 @@ function getProviderUrl(providerConfig, useTempChat) {
   return `${providerConfig.BASE_URL}${tempParam}`;
 }
 
-function canReuseExistingChat(currentUrl) {
+function canReuseExistingChat(currentUrl, providerConfig = null) {
   if (!currentUrl) {
     return false;
   }
 
   try {
     const parsedUrl = new URL(currentUrl);
-    const baseUrl = new URL(CONFIG.CHATGPT.BASE_URL);
+    const resolvedChatGPT = getResolvedChatGPTConfig(providerConfig);
+    const baseUrl = new URL(resolvedChatGPT.BASE_URL);
 
     if (parsedUrl.origin !== baseUrl.origin) {
       return false;
@@ -48,7 +92,7 @@ function canReuseProviderTab(currentUrl, providerConfig) {
       return false;
     }
 
-    if (providerConfig.id === "chatgpt") {
+    if (providerConfig.id === "chatgpt" && isChatGPTHost(providerConfig)) {
       return parsedUrl.pathname === "/" || parsedUrl.pathname.startsWith("/c/");
     }
 
@@ -69,9 +113,11 @@ function waitForTabLoad(tabId) {
   });
 }
 
-async function findOrCreateChatGPTTab(useTempChat, keepSameChat = false) {
-  const url = getChatGPTUrl(useTempChat);
-  const existingTabs = await chrome.tabs.query({ url: CONFIG.CHATGPT.URL_PATTERN });
+async function findOrCreateChatGPTTab(providerConfig, useTempChat, keepSameChat = false) {
+  const resolvedChatGPT = getResolvedChatGPTConfig(providerConfig);
+  const url = getChatGPTUrl(useTempChat, resolvedChatGPT);
+  const urlPattern = resolvedChatGPT.URL_PATTERN || CONFIG.CHATGPT.URL_PATTERN;
+  const existingTabs = await chrome.tabs.query({ url: urlPattern });
 
   if (existingTabs.length > 0) {
     const currentTab = existingTabs[0];
@@ -80,7 +126,7 @@ async function findOrCreateChatGPTTab(useTempChat, keepSameChat = false) {
     let needsReload = false;
 
     if (keepSameChat) {
-      needsReload = !canReuseExistingChat(currentTab.url);
+      needsReload = !canReuseExistingChat(currentTab.url, resolvedChatGPT);
     } else if (currentTab.url !== url) {
       needsReload = true;
     }
@@ -103,8 +149,12 @@ async function findOrCreateChatGPTTab(useTempChat, keepSameChat = false) {
 }
 
 async function findOrCreateProviderTab(providerConfig, useTempChat, keepSameChat = false) {
-  if (!providerConfig || providerConfig.id === "chatgpt") {
-    return findOrCreateChatGPTTab(useTempChat, keepSameChat);
+  if (!providerConfig) {
+    return findOrCreateChatGPTTab(null, useTempChat, keepSameChat);
+  }
+
+  if (providerConfig.id === "chatgpt" && isChatGPTHost(providerConfig)) {
+    return findOrCreateChatGPTTab(providerConfig, useTempChat, keepSameChat);
   }
 
   const url = getProviderUrl(providerConfig, useTempChat);

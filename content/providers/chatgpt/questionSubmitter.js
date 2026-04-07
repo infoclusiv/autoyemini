@@ -2,11 +2,55 @@
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
   const { randomInt } = SharedUtils;
 
+  function getProviderSelectors() {
+    return window.__PROVIDER_CONFIG__?.selectors || {};
+  }
+
+  function queryElement(selectorList, options = {}) {
+    const { visibleOnly = false } = options;
+
+    for (const selector of selectorList.filter(Boolean)) {
+      try {
+        const element = document.querySelector(selector);
+        if (!element) {
+          continue;
+        }
+
+        if (visibleOnly && element.offsetParent === null && element.getClientRects().length === 0) {
+          continue;
+        }
+
+        return element;
+      } catch {
+      }
+    }
+
+    return null;
+  }
+
   function getInputElement() {
-    return (
-      document.querySelector('div[contenteditable="true"]#prompt-textarea') ||
-      document.querySelector('textarea#prompt-textarea, textarea[placeholder]')
+    const selectors = getProviderSelectors();
+    return queryElement(
+      [
+        selectors.input,
+        selectors.inputFallback1,
+        selectors.inputFallback2,
+        'div[contenteditable="true"]#prompt-textarea',
+        'textarea#prompt-textarea, textarea[placeholder]'
+      ],
+      { visibleOnly: true }
     );
+  }
+
+  function getSubmitButton() {
+    const selectors = getProviderSelectors();
+
+    return queryElement([
+      selectors.submitButton,
+      'button#composer-submit-button',
+      'button[data-testid="send-button"]',
+      'button[aria-label*="发送"], button[aria-label*="Send"]'
+    ]);
   }
 
   function isContentEditableInput(input) {
@@ -81,7 +125,7 @@
     dispatchInputEvent(input, "", "deleteContentBackward");
   }
 
-  function createKeyboardEvent(type, key, code, keyCode) {
+  function createKeyboardEvent(type, key, code, keyCode, extraOptions = {}) {
     return new KeyboardEvent(type, {
       key,
       code,
@@ -89,7 +133,8 @@
       which: keyCode,
       bubbles: true,
       cancelable: true,
-      composed: true
+      composed: true,
+      ...extraOptions
     });
   }
 
@@ -190,8 +235,22 @@
     try {
       await modules.waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
 
-      const contentEditable = document.querySelector('div[contenteditable="true"]#prompt-textarea');
-      if (contentEditable) {
+      const selectors = getProviderSelectors();
+      const submitMethod = selectors.submitMethod || "enter";
+      const input = getInputElement();
+      const contentEditable = input?.hasAttribute("contenteditable") ? input : null;
+
+      if (submitMethod === "ctrl_enter" && input) {
+        input.focus();
+        await modules.waitForDelay([120, 260], antiBotConfig);
+        input.dispatchEvent(createKeyboardEvent("keydown", "Enter", "Enter", 13, { ctrlKey: true }));
+        input.dispatchEvent(createKeyboardEvent("keypress", "Enter", "Enter", 13, { ctrlKey: true }));
+        input.dispatchEvent(createKeyboardEvent("keyup", "Enter", "Enter", 13, { ctrlKey: true }));
+        await modules.waitForDelay([700, 1200], antiBotConfig);
+        return true;
+      }
+
+      if (submitMethod !== "button" && contentEditable) {
         contentEditable.focus();
         await modules.waitForDelay([120, 260], antiBotConfig);
         contentEditable.dispatchEvent(createKeyboardEvent("keydown", "Enter", "Enter", 13));
@@ -201,15 +260,9 @@
         return true;
       }
 
-      let sendButton = document.querySelector("button#composer-submit-button");
+      const sendButton = getSubmitButton();
       if (!sendButton) {
-        sendButton = document.querySelector('button[data-testid="send-button"]');
-      }
-      if (!sendButton) {
-        sendButton = document.querySelector('button[aria-label*="发送"], button[aria-label*="Send"]');
-      }
-      if (!sendButton) {
-        return true;
+        return submitMethod !== "button";
       }
 
       if (sendButton.disabled) {

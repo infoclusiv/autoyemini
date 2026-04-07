@@ -21,10 +21,16 @@ const CONFIG = {
 			supportsSSE: true,
 			isBuiltIn: true,
 			selectors: {
-				input: null,
-				submitButton: null,
-				stopButton: null,
-				responseContainer: null
+				input: 'div[contenteditable="true"]#prompt-textarea',
+				inputFallback1: 'textarea#prompt-textarea',
+				inputFallback2: 'textarea[placeholder]',
+				submitButton: 'button#composer-submit-button, button[data-testid="send-button"]',
+				stopButton: 'button[data-testid="stop-button"], button[aria-label*="Stop"]',
+				responseContainer: 'div[data-message-author-role="assistant"]',
+				responseContainerFallback1: 'article[data-testid^="conversation-turn-"] .markdown',
+				responseContainerFallback2: 'article[data-testid^="conversation-turn-"] [class*="markdown"], article[data-testid^="conversation-turn-"] .prose',
+				loadingIndicator: 'button[data-testid="stop-button"], button[aria-label*="Stop"]',
+				submitMethod: "enter"
 			}
 		}
 	},
@@ -74,7 +80,8 @@ const CONFIG = {
 		FATIGUE_MAX_PAUSE_MINUTES: "fatigueMaxPauseMinutes",
 		PENDING_MESSAGE: "pendingMessage",
 		WORKFLOWS: "savedWorkflows",
-		CUSTOM_PROVIDERS: "customProviders"
+		CUSTOM_PROVIDERS: "customProviders",
+		BUILTIN_PROVIDER_OVERRIDES: "builtinProviderOverrides"
 	},
 
 	LOG_MAX_ENTRIES: 100

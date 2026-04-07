@@ -2,6 +2,10 @@
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
   const { normalizeWhitespace, sleep } = SharedUtils;
 
+  function getProviderSelectors() {
+    return window.__PROVIDER_CONFIG__?.selectors || {};
+  }
+
   function getAssistantMessageElements() {
     const explicitAssistantNodes = Array.from(
       document.querySelectorAll('div[data-message-author-role="assistant"]')
@@ -67,6 +71,32 @@
   }
 
   function scrapeLatestAssistantMessage() {
+    const selectors = getProviderSelectors();
+    const configuredSelectors = [
+      selectors.responseContainer,
+      selectors.responseContainerFallback1,
+      selectors.responseContainerFallback2
+    ].filter(Boolean);
+
+    for (const selector of configuredSelectors) {
+      try {
+        const nodes = document.querySelectorAll(selector);
+        if (!nodes.length) {
+          continue;
+        }
+
+        const latestNode = nodes[nodes.length - 1];
+        const answer = normalizeWhitespace(latestNode.innerText || latestNode.textContent || "");
+        if (answer) {
+          return {
+            answer,
+            sources: extractSources(latestNode)
+          };
+        }
+      } catch {
+      }
+    }
+
     const messages = getAssistantMessageElements();
     const latestMessage = messages[messages.length - 1];
     if (!latestMessage) {

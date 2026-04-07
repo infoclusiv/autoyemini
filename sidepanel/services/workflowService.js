@@ -15,6 +15,8 @@ export function countStoredSteps(workflow) {
   return getStoredStepIndexes(workflow).length;
 }
 
+const INVALID_PROVIDER_IDS = new Set(["received", "success", "error"]);
+
 export function normalizeWorkflows(value, existingTemplates) {
   if (!Array.isArray(value)) {
     return [];
@@ -124,12 +126,15 @@ export function normalizeWorkflows(value, existingTemplates) {
                 typeof step.provider === "string" && step.provider.trim()
                   ? step.provider.trim()
                   : "chatgpt";
+              const normalizedProvider = INVALID_PROVIDER_IDS.has(stepProvider)
+                ? "chatgpt"
+                : stepProvider;
 
               return {
                 id: stepId,
                 title: stepTitle,
                 content: stepContent,
-                provider: stepProvider,
+                provider: normalizedProvider,
                 order: typeof step.order === "number" ? step.order : stepIndex,
                 chainConfig: { responseAction, extractionRegex, injectionPlaceholder, externalSource },
                 antiBotConfig
