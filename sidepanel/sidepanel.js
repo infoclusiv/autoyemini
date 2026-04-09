@@ -1,5 +1,5 @@
 import { AppState } from "./state/appState.js";
-import { loadAll, removePendingMessage, saveQuestions, saveSetting, saveWorkflows, saveWorkflowBackup, loadWorkflowBackups, StorageKeys } from "./services/storageService.js";
+import { loadAll, loadPendingMessage, removePendingMessage, saveQuestions, saveSetting, saveWorkflows, saveWorkflowBackup, loadWorkflowBackups, StorageKeys } from "./services/storageService.js";
 import { exportQuestionsToJSON, exportSingleWorkflow } from "./services/exportService.js";
 import { onRuntimeMessage, onStorageChange, sendToBackground } from "./services/messagingService.js";
 import { applyTranslations, t } from "./i18n/i18n.js";
@@ -24,6 +24,8 @@ let settingsPanel;
 let workflowRunner;
 let questionProcessor;
 let cachedProviders = { ...(globalThis.CONFIG?.PROVIDERS || {}) };
+let isInitialized = false;
+let lastHandledRemoteStartRequestId = "";
 
 function getElements() {
   return {
@@ -139,6 +141,90 @@ async function openProviderTab(providerId, options = {}) {
   };
 }
 
+async function emitRemoteWorkflowEvent(status, payload = {}) {
+  const state = AppState.getState();
+  const requestId = payload.requestId || state.remoteWorkflowRequestId;
+  if (!requestId) {
+    return false;
+  }
+
+  const workflow = payload.workflow || state.activeWorkflow || null;
+  const totalSteps = typeof payload.totalSteps === "number"
+    ? payload.totalSteps
+    : Array.isArray(workflow?.steps)
+      ? workflow.steps.length
+      : 0;
+
+  try {
+    await sendToBackground({
+      type: "WORKFLOW_REMOTE_EVENT",
+      status,
+      requestId,
+      workflowId: payload.workflowId || workflow?.id || "",
+      workflowName: payload.workflowName || workflow?.name || "",
+      stepIndex: typeof payload.stepIndex === "number" ? payload.stepIndex : undefined,
+      stepTitle: payload.stepTitle || "",
+      totalSteps,
+      message: payload.message || ""
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getWorkflowResetPatch() {
+  return {
+    isRunning: false,
+    isPaused: false,
+    processedSincePause: 0,
+    lastExtractedText: "",
+    activeWorkflow: null,
+    activeWorkflowStepIndex: -1,
+    workflowContext: null,
+    remoteWorkflowRequestId: "",
+    remoteWorkflowSource: ""
+  };
+}
+
+async function handleRemoteWorkflowStart(message) {
+  const requestId = typeof message.requestId === "string" ? message.requestId.trim() : "";
+  const requestedWorkflowId = typeof message.workflowId === "string" ? message.workflowId.trim() : "";
+
+  if (requestId && requestId === lastHandledRemoteStartRequestId) {
+    return true;
+  }
+
+  if (!isInitialized || !workflowRunner || AppState.getState().workflows.length === 0) {
+    return false;
+  }
+
+  if (requestId) {
+    lastHandledRemoteStartRequestId = requestId;
+  }
+
+  const workflow = workflowRunner.selectWorkflow(requestedWorkflowId);
+  if (!workflow) {
+    const workflowName = typeof message.workflowName === "string" ? message.workflowName : requestedWorkflowId;
+    addLog(`No se encontró el workflow remoto solicitado: ${workflowName || "(sin id)"}.`, "error");
+    await emitRemoteWorkflowEvent("failed", {
+      requestId,
+      workflowId: requestedWorkflowId,
+      workflowName,
+      message: "No se encontró el workflow remoto solicitado en el sidepanel."
+    });
+    return true;
+  }
+
+  await handleStartWorkflow({
+    workflowId: workflow.id,
+    source: "remote",
+    bridgeRequestId: requestId,
+    remoteWorkflowName: workflow.name
+  });
+  return true;
+}
+
 function patchGeneralSettings(settings) {
   AppState.patch({
     useTempChat: settings.useTempChat,
@@ -206,7 +292,9 @@ async function handleStart() {
     isPaused: false,
     currentIndex: 0,
     processedSincePause: 0,
-    lastExtractedText: ""
+    lastExtractedText: "",
+    remoteWorkflowRequestId: "",
+    remoteWorkflowSource: ""
   });
   addLog(t("messages.startingBatch"), "info");
   addLog(t("messages.foundPending", { count: pendingQuestions.length }), "info");
@@ -267,22 +355,41 @@ function loadWorkflowStepQuestions(step, chainedText) {
   return questionsToAdd.length;
 }
 
-async function handleStartWorkflow() {
+async function handleStartWorkflow(options = {}) {
+  const { workflowId = "", source = "manual", bridgeRequestId = "", remoteWorkflowName = "" } = options;
+  const isRemote = source === "remote";
   const state = AppState.getState();
-  if (state.isRunning) {
-    addLog(t("messages.alreadyRunning"), "warning");
-    return;
+
+  const failWorkflowStart = async (message, level = "error", workflow = null) => {
+    addLog(message, level);
+    if (isRemote) {
+      await emitRemoteWorkflowEvent("failed", {
+        requestId: bridgeRequestId,
+        workflowId: workflow?.id || workflowId || "",
+        workflowName: workflow?.name || remoteWorkflowName || "",
+        message
+      });
+    }
+    return false;
+  };
+
+  if (state.isRunning || state.activeWorkflow) {
+    return failWorkflowStart(t("messages.alreadyRunning"), "warning");
   }
 
-  const workflow = workflowRunner.getSelectedWorkflow();
+  const workflow = workflowId
+    ? workflowRunner.getWorkflowById(workflowId)
+    : workflowRunner.getSelectedWorkflow();
   if (!workflow) {
-    addLog(t("messages.workflowSelectRequired"), "warning");
-    return;
+    return failWorkflowStart(t("messages.workflowSelectRequired"), "warning");
+  }
+
+  if (workflowId) {
+    workflowRunner.selectWorkflow(workflow.id);
   }
 
   if (workflow.steps.length === 0) {
-    addLog(t("messages.workflowNoSteps"), "warning");
-    return;
+    return failWorkflowStart(t("messages.workflowNoSteps"), "warning", workflow);
   }
 
   // Auto-backup the workflow snapshot before execution (fire-and-forget)
@@ -300,10 +407,23 @@ async function handleStartWorkflow() {
     workflowContext: {
       chainedText: "",
       stepResults: []
-    }
+    },
+    remoteWorkflowRequestId: isRemote ? bridgeRequestId : "",
+    remoteWorkflowSource: isRemote ? "remote" : ""
   });
 
+  if (isRemote) {
+    await emitRemoteWorkflowEvent("started", {
+      requestId: bridgeRequestId,
+      workflow,
+      workflowName: workflow.name,
+      totalSteps: workflow.steps.length,
+      message: `Workflow ${workflow.name} iniciado en el sidepanel.`
+    });
+  }
+
   await executeWorkflowStep(0);
+  return true;
 }
 
 async function executeWorkflowStep(stepIndex) {
@@ -312,7 +432,7 @@ async function executeWorkflowStep(stepIndex) {
 
   if (!workflow || stepIndex >= workflow.steps.length) {
     addLog(t("messages.workflowComplete"), "success");
-    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1, workflowContext: null });
+    AppState.patch(getWorkflowResetPatch());
     return;
   }
 
@@ -320,6 +440,13 @@ async function executeWorkflowStep(stepIndex) {
 
   AppState.patch({ activeWorkflowStepIndex: stepIndex });
   addLog(t("messages.workflowStepStarting", [stepIndex + 1, step.title || `Step ${stepIndex + 1}`]), "info");
+  await emitRemoteWorkflowEvent("step_started", {
+    workflow,
+    stepIndex,
+    stepTitle: step.title || `Step ${stepIndex + 1}`,
+    totalSteps: workflow.steps.length,
+    message: `Iniciando ${step.title || `Step ${stepIndex + 1}`}.`
+  });
 
   // Get the chainedText from the workflow context
   const chainedText = state.workflowContext?.chainedText || "";
@@ -418,6 +545,14 @@ async function advanceWorkflowStep() {
   }
 
   const nextStepIndex = state.activeWorkflowStepIndex + 1;
+  const currentStep = state.activeWorkflow.steps[state.activeWorkflowStepIndex] || null;
+  await emitRemoteWorkflowEvent("step_completed", {
+    workflow: state.activeWorkflow,
+    stepIndex: state.activeWorkflowStepIndex,
+    stepTitle: currentStep?.title || `Step ${state.activeWorkflowStepIndex + 1}`,
+    totalSteps: state.activeWorkflow.steps.length,
+    message: `Completado ${currentStep?.title || `Step ${state.activeWorkflowStepIndex + 1}`}.`
+  });
   addLog(t("messages.workflowStepComplete", { num: state.activeWorkflowStepIndex + 1 }), "success");
 
   if (nextStepIndex >= state.activeWorkflow.steps.length) {
@@ -426,7 +561,12 @@ async function advanceWorkflowStep() {
     const totalStoredSteps = countStoredSteps(state.activeWorkflow);
     if (totalStoredSteps === 0) {
       addLog("Workflow completed without any 'Store full response' steps. Teleprompter merge was skipped.", "warning");
-      AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1, workflowContext: null });
+      await emitRemoteWorkflowEvent("completed", {
+        workflow: state.activeWorkflow,
+        totalSteps: state.activeWorkflow.steps.length,
+        message: `Workflow ${state.activeWorkflow.name} completado.`
+      });
+      AppState.patch(getWorkflowResetPatch());
       return;
     }
 
@@ -456,7 +596,12 @@ async function advanceWorkflowStep() {
       addLog(`⚠️ No se pudo conectar a clusiv-v3: ${err.message}`, "warning");
     }
 
-    AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1, workflowContext: null });
+    await emitRemoteWorkflowEvent("completed", {
+      workflow: state.activeWorkflow,
+      totalSteps: state.activeWorkflow.steps.length,
+      message: `Workflow ${state.activeWorkflow.name} completado.`
+    });
+    AppState.patch(getWorkflowResetPatch());
     return;
   }
 
@@ -464,16 +609,14 @@ async function advanceWorkflowStep() {
 }
 
 function abortWorkflow() {
-  addLog("Workflow aborted.", "error");
-  AppState.patch({
-    isRunning: false,
-    isPaused: false,
-    processedSincePause: 0,
-    lastExtractedText: "",
-    activeWorkflow: null,
-    activeWorkflowStepIndex: -1,
-    workflowContext: null
+  const state = AppState.getState();
+  void emitRemoteWorkflowEvent("aborted", {
+    requestId: state.remoteWorkflowRequestId,
+    workflow: state.activeWorkflow,
+    message: `Workflow ${state.activeWorkflow?.name || "activo"} abortado en el sidepanel.`
   });
+  addLog("Workflow aborted.", "error");
+  AppState.patch(getWorkflowResetPatch());
 }
 
 function handlePause() {
@@ -488,15 +631,13 @@ function handleResume() {
 }
 
 function handleStop() {
-  AppState.patch({
-    isRunning: false,
-    isPaused: false,
-    processedSincePause: 0,
-    lastExtractedText: "",
-    activeWorkflow: null,
-    activeWorkflowStepIndex: -1,
-    workflowContext: null
+  const state = AppState.getState();
+  void emitRemoteWorkflowEvent("aborted", {
+    requestId: state.remoteWorkflowRequestId,
+    workflow: state.activeWorkflow,
+    message: `Workflow ${state.activeWorkflow?.name || "activo"} detenido manualmente.`
   });
+  AppState.patch(getWorkflowResetPatch());
   addLog(t("messages.executionStopped"), "warning");
 }
 
@@ -569,8 +710,61 @@ async function handleKeepSameChatChange(event) {
   await saveSetting(StorageKeys.KEEP_SAME_CHAT, enabled);
 }
 
+async function processSidePanelMessage(message, { fromStorage = false } = {}) {
+  if (!message) {
+    return false;
+  }
+
+  if (message.type === "REMOTE_START_WORKFLOW") {
+    if (!isInitialized) {
+      return false;
+    }
+
+    const handled = await handleRemoteWorkflowStart(message);
+    if (handled && fromStorage && message.timestamp) {
+      AppState.patch({ lastProcessedMessageTimestamp: message.timestamp });
+    }
+    return handled;
+  }
+
+  if (fromStorage) {
+    const state = AppState.getState();
+    if (message.timestamp && message.timestamp <= state.lastProcessedMessageTimestamp) {
+      return true;
+    }
+    if (message.timestamp) {
+      AppState.patch({ lastProcessedMessageTimestamp: message.timestamp });
+    }
+  }
+
+  switch (message.type) {
+    case "QUESTION_COMPLETE":
+      await questionProcessor.handleQuestionComplete(message.result);
+      return true;
+    case "UPDATE_PROGRESS":
+      return true;
+    case "LOG_MESSAGE":
+      addLog(message.message, message.level || "info");
+      return true;
+    default:
+      return false;
+  }
+}
+
 function wireMessageListeners() {
   onRuntimeMessage((message, _sender, sendResponse) => {
+    if (message.type === "REMOTE_START_WORKFLOW") {
+      if (!isInitialized) {
+        sendResponse({ received: false, pending: true });
+        return false;
+      }
+
+      void handleRemoteWorkflowStart(message)
+        .then((handled) => sendResponse({ received: handled }))
+        .catch(() => sendResponse({ received: false }));
+      return true;
+    }
+
     switch (message.type) {
       case "QUESTION_COMPLETE":
         void questionProcessor.handleQuestionComplete(message.result);
@@ -607,33 +801,11 @@ function wireMessageListeners() {
       return;
     }
 
-    const state = AppState.getState();
-    if (
-      pendingMessage.timestamp &&
-      pendingMessage.timestamp <= state.lastProcessedMessageTimestamp
-    ) {
-      return;
-    }
-
-    if (pendingMessage.timestamp) {
-      AppState.patch({ lastProcessedMessageTimestamp: pendingMessage.timestamp });
-    }
-
-    switch (pendingMessage.type) {
-      case "QUESTION_COMPLETE":
-        void questionProcessor.handleQuestionComplete(pendingMessage.result);
+    void processSidePanelMessage(pendingMessage, { fromStorage: true }).then((handled) => {
+      if (handled) {
         void removePendingMessage();
-        break;
-      case "UPDATE_PROGRESS":
-        void removePendingMessage();
-        break;
-      case "LOG_MESSAGE":
-        addLog(pendingMessage.message, pendingMessage.level || "info");
-        void removePendingMessage();
-        break;
-      default:
-        break;
-    }
+      }
+    });
   });
 }
 
@@ -832,6 +1004,19 @@ async function initialize() {
     }
   } catch (error) {
     addLog(`${t("messages.loadFailed")}: ${error.message}`, "error");
+  }
+
+  isInitialized = true;
+
+  try {
+    const pendingMessage = await loadPendingMessage();
+    if (pendingMessage) {
+      const handled = await processSidePanelMessage(pendingMessage, { fromStorage: true });
+      if (handled) {
+        await removePendingMessage();
+      }
+    }
+  } catch {
   }
 
   questionList.render();

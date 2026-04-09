@@ -49,6 +49,11 @@ export function removePendingMessage() {
   return chrome.storage.local.remove(StorageKeys.PENDING_MESSAGE);
 }
 
+export async function loadPendingMessage() {
+  const stored = await chrome.storage.local.get([StorageKeys.PENDING_MESSAGE]);
+  return stored[StorageKeys.PENDING_MESSAGE] || null;
+}
+
 export function saveWorkflows(workflows) {
   return chrome.storage.local.set({ [StorageKeys.WORKFLOWS]: workflows });
 }

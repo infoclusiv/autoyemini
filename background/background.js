@@ -4,6 +4,7 @@ importScripts(
   "providerRegistry.js",
   "tabManager.js",
   "sidePanelBridge.js",
+  "aiStudioBridgeClient.js",
   "messageRouter.js"
 );
 

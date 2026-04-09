@@ -48,6 +48,23 @@ export class WorkflowRunner {
     return AppState.getState().workflows.find((wf) => wf.id === selectedId) || null;
   }
 
+  getWorkflowById(workflowId) {
+    const normalizedId = typeof workflowId === "string" ? workflowId.trim() : "";
+    if (!normalizedId) return null;
+    return AppState.getState().workflows.find((wf) => wf.id === normalizedId) || null;
+  }
+
+  selectWorkflow(workflowId) {
+    const workflow = this.getWorkflowById(workflowId);
+    if (!workflow) {
+      return null;
+    }
+
+    this.selectElement.value = workflow.id;
+    this.renderProgress();
+    return workflow;
+  }
+
   renderSelect(workflows = AppState.getState().workflows) {
     const prev = this.selectElement.value;
     this.selectElement.innerHTML = "";
