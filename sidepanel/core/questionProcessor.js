@@ -24,9 +24,10 @@ export function parseQuestionsInput(rawValue, isSinglePrompt) {
 }
 
 export class QuestionProcessor {
-  constructor({ getSettings, addLog, onAllCompleted, onWorkflowAbort }) {
+  constructor({ getSettings, addLog, getProviderLabel, onAllCompleted, onWorkflowAbort }) {
     this.getSettings = getSettings;
     this.addLog = addLog;
+    this.getProviderLabel = getProviderLabel || ((providerId) => providerId || "chatgpt");
     this.onAllCompleted = onAllCompleted || null;
     this.onWorkflowAbort = onWorkflowAbort || null;
   }
@@ -97,8 +98,10 @@ export class QuestionProcessor {
     AppState.patch({ currentIndex: nextIndex });
     AppState.updateQuestion(nextQuestion.id, { status: "processing" });
     await this.persistQuestions();
+    const providerId = nextQuestion.stepProvider || "chatgpt";
+    const providerLabel = this.getProviderLabel(providerId);
     this.addLog(
-      `[${nextIndex + 1}/${refreshedState.questions.length}]: ${nextQuestion.question.substring(0, 50)}...`,
+      `[${providerLabel}] [${nextIndex + 1}/${refreshedState.questions.length}]: ${nextQuestion.question.substring(0, 50)}...`,
       "info"
     );
 
@@ -106,7 +109,7 @@ export class QuestionProcessor {
       const { useTempChat, useWebSearch, keepSameChat } = antiBotSettings;
       const response = await sendToBackground({
         type: "PROCESS_QUESTION",
-        providerId: nextQuestion.stepProvider || "chatgpt",
+        providerId,
         question: submittedQuestion,
         questionId: nextQuestion.id,
         useTempChat,
@@ -250,6 +253,9 @@ export class QuestionProcessor {
       return;
     }
 
+    const providerLabel = this.getProviderLabel(question.stepProvider || "chatgpt");
+    const logPrefix = `[${providerLabel}] `;
+
     if (result.success) {
       AppState.updateQuestion(result.questionId, {
         status: "completed",
@@ -261,7 +267,7 @@ export class QuestionProcessor {
       // Handle non-workflow extraction has been removed;
       // extraction is now configured per workflow step in chainConfig.
 
-      this.addLog(`${t("messages.completed")}: ${question.question.substring(0, 50)}...`, "success");
+      this.addLog(`${logPrefix}${t("messages.completed")}: ${question.question.substring(0, 50)}...`, "success");
     } else {
       AppState.updateQuestion(result.questionId, {
         status: "failed",
@@ -271,7 +277,7 @@ export class QuestionProcessor {
 
       if (state.activeWorkflow) {
         this.addLog(
-          `${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`,
+          `${logPrefix}${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`,
           "error"
         );
         this.addLog("Step failed. Workflow aborted.", "error");
@@ -282,7 +288,7 @@ export class QuestionProcessor {
       }
 
       this.addLog(
-        `${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`,
+        `${logPrefix}${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`,
         "error"
       );
     }

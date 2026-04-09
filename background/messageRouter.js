@@ -2,6 +2,7 @@ async function handleProcessQuestion(payload, sendResponse) {
   try {
     const providerId = payload.providerId || "chatgpt";
     const providerConfig = await getProviderById(providerId) || CONFIG.PROVIDERS?.chatgpt;
+    const providerLabel = providerConfig?.label || providerId || "provider";
     const useTempChat = payload.useTempChat !== false;
     const useWebSearch = payload.useWebSearch !== false;
     const keepSameChat = payload.keepSameChat === true;
@@ -17,7 +18,7 @@ async function handleProcessQuestion(payload, sendResponse) {
 
     if (!ready) {
       throw new Error(
-        "Content script not ready even after page refresh. Please try manually refreshing the ChatGPT page (F5)."
+        `Content script not ready even after page refresh. Please try manually refreshing the ${providerLabel} page (F5).`
       );
     }
 
@@ -51,6 +52,10 @@ async function handleOpenChatGPT(payload, sendResponse) {
   } catch (error) {
     sendResponse({ success: false, error: error.message });
   }
+}
+
+async function handleOpenProvider(payload, sendResponse) {
+  return handleOpenChatGPT(payload, sendResponse);
 }
 
 async function handleTestSelector(payload, sendResponse) {
@@ -143,7 +148,7 @@ function registerMessageRouter() {
         handleProcessQuestion(message, sendResponse);
         return true;
       case "OPEN_CHATGPT":
-        handleOpenChatGPT(message, sendResponse);
+        handleOpenProvider(message, sendResponse);
         return true;
       case "GET_ALL_PROVIDERS":
         getAllProviders()

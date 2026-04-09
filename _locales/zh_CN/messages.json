@@ -225,7 +225,13 @@
    },
    "msgCannotOpenChatGPT": {
       "description": "无法打开ChatGPT错误",
-      "message": "无法打开 ChatGPT"
+      "message": "无法打开 $PROVIDER$",
+      "placeholders": {
+         "provider": {
+            "content": "$1",
+            "example": "Google AI Studio"
+         }
+      }
    },
    "msgChatGPTOpenFailed": {
       "description": "ChatGPT打开失败消息",
@@ -301,7 +307,13 @@
    },
    "msgOpeningChatGPT": {
       "description": "正在打开ChatGPT消息",
-      "message": "正在打开 ChatGPT..."
+      "message": "正在打开 $PROVIDER$...",
+      "placeholders": {
+         "provider": {
+            "content": "$1",
+            "example": "Google AI Studio"
+         }
+      }
    },
    "msgPleaseEnterQuestion": {
       "description": "请输入问题警告",
@@ -321,7 +333,7 @@
    },
    "msgReady": {
       "description": "就绪消息",
-      "message": "ChatGPT 批量提问助手已就绪"
+      "message": "批量提问助手已就绪"
    },
    "msgResetFailed": {
       "description": "重置失败问题消息",
@@ -395,7 +407,13 @@
    },
    "msgWaitingPage": {
       "description": "等待页面消息",
-      "message": "等待ChatGPT页面完全加载（如需要会自动刷新页面）..."
+      "message": "等待 $PROVIDER$ 页面完全加载（如需要会自动刷新页面）...",
+      "placeholders": {
+         "provider": {
+            "content": "$1",
+            "example": "Google AI Studio"
+         }
+      }
    },
    "msgWebSearchDisabled": {
       "description": "禁用联网搜索消息",

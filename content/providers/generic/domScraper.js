@@ -1,6 +1,18 @@
 (function registerGenericScraperModule() {
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
   const { normalizeWhitespace, sleep } = SharedUtils;
+  const FALLBACK_RESPONSE_SELECTORS = [
+    '[data-message-author-role="assistant"]',
+    '[data-turn-role="model"]',
+    '[data-testid*="response"]',
+    '.markdown',
+    '[class*="markdown"]',
+    '.prose',
+    'main article',
+    'main section',
+    '[role="main"] article',
+    '[role="main"] section'
+  ];
 
   function getProviderSelectors() {
     return window.__PROVIDER_CONFIG__?.selectors || {};
@@ -36,6 +48,69 @@
     });
   }
 
+  function cloneForTextExtraction(node) {
+    const clone = node.cloneNode(true);
+    clone
+      .querySelectorAll('button, nav, form, svg, script, style, textarea, [aria-hidden="true"]')
+      .forEach((element) => element.remove());
+    return clone;
+  }
+
+  function getNodeText(node) {
+    const clone = cloneForTextExtraction(node);
+    return normalizeWhitespace(clone.innerText || clone.textContent || "");
+  }
+
+  function extractSources(container) {
+    const seen = new Set();
+    const sources = [];
+
+    container.querySelectorAll('a[href^="http"]').forEach((link) => {
+      const url = link.href;
+      if (!url || seen.has(url)) {
+        return;
+      }
+
+      seen.add(url);
+      sources.push({
+        title: normalizeWhitespace(link.textContent) || url,
+        url,
+        snippet: ""
+      });
+    });
+
+    return sources;
+  }
+
+  function getFallbackResponseNodes() {
+    const nodes = [];
+    const seen = new Set();
+
+    FALLBACK_RESPONSE_SELECTORS.forEach((selector) => {
+      try {
+        document.querySelectorAll(selector).forEach((node) => {
+          if (seen.has(node) || node === document.body || node === document.documentElement) {
+            return;
+          }
+
+          if (node.offsetParent === null && node.getClientRects().length === 0) {
+            return;
+          }
+
+          if (node.querySelector('textarea, [contenteditable="true"]')) {
+            return;
+          }
+
+          seen.add(node);
+          nodes.push(node);
+        });
+      } catch {
+      }
+    });
+
+    return nodes;
+  }
+
   function scrapeLatestAnswer() {
     const selectors = getProviderSelectors();
     const selectorList = [
@@ -52,11 +127,26 @@
         }
 
         const last = nodes[nodes.length - 1];
-        const text = normalizeWhitespace(last.innerText || last.textContent || "");
+        const text = getNodeText(last);
         if (text.length > 10) {
-          return { answer: text, sources: [] };
+          return { answer: text, sources: extractSources(last) };
         }
       } catch {
+      }
+    }
+
+    const fallbackNodes = getFallbackResponseNodes();
+    for (let index = fallbackNodes.length - 1; index >= 0; index -= 1) {
+      const node = fallbackNodes[index];
+      const answerRoot =
+        node.querySelector('.markdown, [class*="markdown"], .prose') || node;
+      const answer = getNodeText(answerRoot);
+
+      if (answer.length > 20) {
+        return {
+          answer,
+          sources: extractSources(answerRoot)
+        };
       }
     }
 

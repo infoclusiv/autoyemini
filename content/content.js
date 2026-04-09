@@ -1,21 +1,95 @@
 (function contentEntryPoint() {
   const modules = globalThis.ContentModules || {};
 
+  function hostnamesMatch(hostname, providerHostname) {
+    if (!hostname || !providerHostname) {
+      return false;
+    }
+
+    const normalizedHostname = String(hostname).toLowerCase();
+    const normalizedProviderHostname = String(providerHostname).toLowerCase();
+
+    return (
+      normalizedHostname === normalizedProviderHostname
+      || normalizedHostname.endsWith(`.${normalizedProviderHostname}`)
+      || normalizedHostname.includes(normalizedProviderHostname)
+    );
+  }
+
+  function resolveProviderConfigForLocation() {
+    return Object.values(CONFIG.PROVIDERS || {}).find((providerConfig) => {
+      return providerConfig && hostnamesMatch(window.location.hostname, providerConfig.HOSTNAME);
+    }) || null;
+  }
+
+  function getActiveProviderConfig() {
+    return ContentState.providerConfig || resolveProviderConfigForLocation();
+  }
+
+  function updateProviderConfig(providerConfig = null) {
+    ContentState.providerConfig = providerConfig || resolveProviderConfigForLocation();
+
+    if (ContentState.providerConfig) {
+      window.__PROVIDER_CONFIG__ = ContentState.providerConfig;
+      return;
+    }
+
+    delete window.__PROVIDER_CONFIG__;
+  }
+
+  function supportsSSE(providerConfig = getActiveProviderConfig()) {
+    return providerConfig?.supportsSSE === true;
+  }
+
+  function supportsWebSearch(providerConfig = getActiveProviderConfig()) {
+    return providerConfig?.supportsWebSearch === true;
+  }
+
+  function supportsLivePolling(providerConfig = getActiveProviderConfig()) {
+    return providerConfig?.supportsLivePolling === true;
+  }
+
+  function getAnswerTimeoutMs(providerConfig = getActiveProviderConfig()) {
+    const timeoutMs = Number(providerConfig?.answerTimeoutMs);
+    return Number.isFinite(timeoutMs) && timeoutMs > 0
+      ? timeoutMs
+      : CONFIG.TIMING.ANSWER_TIMEOUT_MS;
+  }
+
+  function getAnswerPollingConfig(providerConfig = getActiveProviderConfig()) {
+    const delayCandidate = Number(providerConfig?.answerPollIntervalMs);
+    const delayMs = Number.isFinite(delayCandidate) && delayCandidate > 0
+      ? delayCandidate
+      : CONFIG.TIMING.ANSWER_POLL_INTERVAL_MS;
+    const attemptsCandidate = Number(providerConfig?.answerPollAttempts);
+    const maxAttempts = Number.isFinite(attemptsCandidate) && attemptsCandidate > 0
+      ? attemptsCandidate
+      : Math.max(CONFIG.TIMING.ANSWER_POLL_ATTEMPTS, Math.ceil(getAnswerTimeoutMs(providerConfig) / delayMs));
+
+    return { maxAttempts, delayMs };
+  }
+
   const ContentState = {
     currentQuestion: null,
     currentAnswer: "",
     currentSources: [],
     isProcessing: false,
-    providerConfig: null,
+    providerConfig: resolveProviderConfigForLocation(),
+    answerTimeoutId: null,
+    answerWatcherId: 0,
+    sseInjected: false,
     sendQuestionResult,
     handleAnswerComplete
   };
 
-  function injectSSEInterceptor() {
-    const supportsSSE = ContentState.providerConfig?.supportsSSE
-      ?? window.location.hostname.includes("chatgpt.com");
+  if (ContentState.providerConfig) {
+    window.__PROVIDER_CONFIG__ = ContentState.providerConfig;
+  }
 
-    if (!supportsSSE) {
+  function injectSSEInterceptor() {
+    const providerConfig = getActiveProviderConfig();
+
+    if (!supportsSSE(providerConfig) || ContentState.sseInjected) {
       return;
     }
 
@@ -29,11 +103,56 @@
         this.remove();
       };
       (document.head || document.documentElement).appendChild(script);
+      ContentState.sseInjected = true;
     } catch {
     }
   }
 
+  function clearPendingAnswerTimeout() {
+    if (ContentState.answerTimeoutId !== null) {
+      clearTimeout(ContentState.answerTimeoutId);
+      ContentState.answerTimeoutId = null;
+    }
+  }
+
+  function beginAnswerWatchSession() {
+    clearPendingAnswerTimeout();
+    ContentState.answerWatcherId += 1;
+    return ContentState.answerWatcherId;
+  }
+
+  function isCurrentWatch(questionId, watcherId) {
+    return ContentState.isProcessing
+      && ContentState.currentQuestion?.questionId === questionId
+      && ContentState.answerWatcherId === watcherId;
+  }
+
+  async function scrapeLatestAnswer(maxAttempts, delayMs) {
+    if (typeof modules.waitForAssistantAnswer !== "function") {
+      return { answer: "", sources: [] };
+    }
+
+    return modules.waitForAssistantAnswer(maxAttempts, delayMs)
+      .catch(() => ({ answer: "", sources: [] }));
+  }
+
+  async function startLivePolling(questionId, watcherId, providerConfig) {
+    const { maxAttempts, delayMs } = getAnswerPollingConfig(providerConfig);
+    const scraped = await scrapeLatestAnswer(maxAttempts, delayMs);
+
+    if (!isCurrentWatch(questionId, watcherId) || !scraped.answer) {
+      return;
+    }
+
+    clearPendingAnswerTimeout();
+    ContentState.currentAnswer = scraped.answer;
+    ContentState.currentSources = scraped.sources;
+    handleAnswerComplete();
+  }
+
   function resetState() {
+    clearPendingAnswerTimeout();
+    ContentState.answerWatcherId += 1;
     ContentState.currentQuestion = null;
     ContentState.currentAnswer = "";
     ContentState.currentSources = [];
@@ -75,19 +194,23 @@
     useWebSearch = true,
     antiBotConfig = null
   ) {
+    const providerConfig = getActiveProviderConfig();
+
     ContentState.currentQuestion = { question, questionId };
     ContentState.currentAnswer = "";
     ContentState.currentSources = [];
     ContentState.isProcessing = true;
+    const watcherId = beginAnswerWatchSession();
     if (typeof modules.initSSEState === "function") {
       modules.initSSEState();
     }
 
     try {
-      const supportsWebSearch = ContentState.providerConfig?.supportsWebSearch
-        ?? window.location.hostname.includes("chatgpt.com");
+      if (supportsSSE(providerConfig)) {
+        injectSSEInterceptor();
+      }
 
-      if (useWebSearch && supportsWebSearch && typeof modules.enableWebSearch === "function") {
+      if (useWebSearch && supportsWebSearch(providerConfig) && typeof modules.enableWebSearch === "function") {
         await modules.enableWebSearch(antiBotConfig || {});
       }
 
@@ -99,14 +222,20 @@
         throw new Error("Failed to submit question");
       }
 
-      setTimeout(async () => {
-        if (!ContentState.isProcessing || ContentState.currentQuestion?.questionId !== questionId) {
+      if (!supportsSSE(providerConfig) && supportsLivePolling(providerConfig)) {
+        void startLivePolling(questionId, watcherId, providerConfig);
+      }
+
+      ContentState.answerTimeoutId = setTimeout(async () => {
+        if (!isCurrentWatch(questionId, watcherId)) {
           return;
         }
 
-        const scraped = await modules
-          .waitForAssistantAnswer(6, 1500)
-          .catch(() => ({ answer: "", sources: [] }));
+        const scraped = await scrapeLatestAnswer(6, 1500);
+
+        if (!isCurrentWatch(questionId, watcherId)) {
+          return;
+        }
 
         if (scraped.answer) {
           ContentState.currentAnswer = scraped.answer;
@@ -121,7 +250,7 @@
         }
 
         sendQuestionResult(false, "Timeout waiting for answer");
-      }, CONFIG.TIMING.ANSWER_TIMEOUT_MS);
+      }, getAnswerTimeoutMs(providerConfig));
 
       return { success: true, message: "Question submitted, waiting for answer" };
     } catch (error) {
@@ -143,9 +272,7 @@
       return;
     }
 
-    const supportsSSE = ContentState.providerConfig?.supportsSSE
-      ?? window.location.hostname.includes("chatgpt.com");
-    if (!supportsSSE) {
+    if (!supportsSSE()) {
       return;
     }
 
@@ -176,10 +303,8 @@
       const useWebSearch = message.useWebSearch !== false;
       const antiBotConfig = message.antiBotConfig || {};
 
-      if (message.providerConfig) {
-        ContentState.providerConfig = message.providerConfig;
-        window.__PROVIDER_CONFIG__ = message.providerConfig;
-      }
+      updateProviderConfig(message.providerConfig);
+      injectSSEInterceptor();
 
       askQuestion(message.question, message.questionId, useTempChat, useWebSearch, antiBotConfig)
         .then((response) => sendResponse(response))

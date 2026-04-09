@@ -324,11 +324,23 @@
       "description": "ChatGPT開啟失敗訊息"
    },
    "msgOpeningChatGPT": {
-      "message": "正在開啟 ChatGPT...",
+      "message": "正在開啟 $PROVIDER$...",
+      "placeholders": {
+         "provider": {
+            "content": "$1",
+            "example": "Google AI Studio"
+         }
+      },
       "description": "正在開啟ChatGPT訊息"
    },
    "msgCannotOpenChatGPT": {
-      "message": "無法開啟 ChatGPT",
+      "message": "無法開啟 $PROVIDER$",
+      "placeholders": {
+         "provider": {
+            "content": "$1",
+            "example": "Google AI Studio"
+         }
+      },
       "description": "無法開啟ChatGPT錯誤"
    },
    "msgError": {
@@ -350,7 +362,13 @@
       }
    },
    "msgWaitingPage": {
-      "message": "等待ChatGPT頁面完全載入（如需要會自動重新整理頁面）...",
+      "message": "等待 $PROVIDER$ 頁面完全載入（如需要會自動重新整理頁面）...",
+      "placeholders": {
+         "provider": {
+            "content": "$1",
+            "example": "Google AI Studio"
+         }
+      },
       "description": "等待頁面訊息"
    },
    "msgStartingFirst": {
@@ -406,7 +424,7 @@
       "description": "停用聯網搜尋訊息"
    },
    "msgReady": {
-      "message": "ChatGPT 批次提問助手已就緒",
+      "message": "批次提問助手已就緒",
       "description": "就緒訊息"
    },
    "loginTitle": {

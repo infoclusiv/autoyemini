@@ -23,6 +23,7 @@ let statsPanel;
 let settingsPanel;
 let workflowRunner;
 let questionProcessor;
+let cachedProviders = { ...(globalThis.CONFIG?.PROVIDERS || {}) };
 
 function getElements() {
   return {
@@ -60,6 +61,82 @@ function addLog(message, level = "info") {
 
 function persistQuestions() {
   return saveQuestions(AppState.getState().questions);
+}
+
+function normalizeProviderId(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : "chatgpt";
+}
+
+function updateCachedProviders(providerMap) {
+  const fallbackProviders = globalThis.CONFIG?.PROVIDERS || {};
+
+  if (!providerMap || typeof providerMap !== "object" || Array.isArray(providerMap)) {
+    cachedProviders = { ...fallbackProviders };
+    return;
+  }
+
+  cachedProviders = {
+    ...fallbackProviders,
+    ...providerMap
+  };
+}
+
+async function refreshProviderCatalog() {
+  try {
+    const providers = await sendToBackground({ type: "GET_ALL_PROVIDERS" });
+    updateCachedProviders(providers);
+  } catch {
+    updateCachedProviders(globalThis.CONFIG?.PROVIDERS || {});
+  }
+}
+
+function getProviderLabel(providerId = "chatgpt") {
+  const normalizedId = normalizeProviderId(providerId);
+  return cachedProviders[normalizedId]?.label
+    || globalThis.CONFIG?.PROVIDERS?.[normalizedId]?.label
+    || normalizedId;
+}
+
+function getPendingProviderId(questions = []) {
+  const pendingQuestion = questions.find((question) => {
+    if (!["pending", "failed", "processing"].includes(question.status)) {
+      return false;
+    }
+
+    return typeof question.stepProvider === "string" && question.stepProvider.trim();
+  });
+
+  return normalizeProviderId(pendingQuestion?.stepProvider);
+}
+
+function logProviderOpenFailure(providerId, error) {
+  addLog(
+    `${t("messages.cannotOpenProvider", { provider: getProviderLabel(providerId) })}: ${error?.message || error || "Unknown error"}`,
+    "error"
+  );
+}
+
+async function openProviderTab(providerId, options = {}) {
+  const normalizedProviderId = normalizeProviderId(providerId);
+  const providerLabel = getProviderLabel(normalizedProviderId);
+
+  addLog(t("messages.openingProvider", { provider: providerLabel }), "info");
+
+  const response = await sendToBackground({
+    type: "OPEN_CHATGPT",
+    providerId: normalizedProviderId,
+    ...options
+  });
+
+  if (!response?.success) {
+    throw new Error(response?.error || "Unknown error");
+  }
+
+  return {
+    providerId: normalizedProviderId,
+    providerLabel,
+    response
+  };
 }
 
 function patchGeneralSettings(settings) {
@@ -108,23 +185,17 @@ async function handleStart() {
 
   AppState.setQuestions(sanitizedQuestions);
   await persistQuestions();
-  addLog(t("messages.openingChatGPT"), "info");
+  const providerId = getPendingProviderId(sanitizedQuestions);
 
   try {
     const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
-    const response = await sendToBackground({
-      type: "OPEN_CHATGPT",
+    await openProviderTab(providerId, {
       useTempChat,
       useWebSearch,
       keepSameChat
     });
-
-    if (!response?.success) {
-      addLog(`${t("messages.cannotOpenChatGPT")}: ${response?.error || "Unknown error"}`, "error");
-      return;
-    }
   } catch (error) {
-    addLog(`${t("messages.error")}: ${error.message}`, "error");
+    logProviderOpenFailure(providerId, error);
     return;
   }
 
@@ -139,7 +210,7 @@ async function handleStart() {
   });
   addLog(t("messages.startingBatch"), "info");
   addLog(t("messages.foundPending", { count: pendingQuestions.length }), "info");
-  addLog(t("messages.waitingPage"), "info");
+  addLog(t("messages.waitingProviderPage", { provider: getProviderLabel(providerId) }), "info");
 
   await waitForConfiguredDelay(AppConfig.TIMING.BETWEEN_QUESTIONS_MS, antiBotSettings.randomDelays);
   addLog(t("messages.startingFirst"), "info");
@@ -288,26 +359,19 @@ async function executeWorkflowStep(stepIndex) {
     : step;
   const addedCount = loadWorkflowStepQuestions(stepForLoad, effectiveChainedText);
   addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
-
-  addLog(t("messages.openingChatGPT"), "info");
+  const providerId = normalizeProviderId(step.provider);
+  let providerLabel = getProviderLabel(providerId);
 
   try {
     const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
-    const response = await sendToBackground({
-      type: "OPEN_CHATGPT",
-      providerId: step.provider || "chatgpt",
+    const openedProvider = await openProviderTab(providerId, {
       useTempChat,
       useWebSearch,
       keepSameChat
     });
-
-    if (!response?.success) {
-      addLog(`${t("messages.cannotOpenChatGPT")}: ${response?.error || "Unknown error"}`, "error");
-      abortWorkflow();
-      return;
-    }
+    providerLabel = openedProvider.providerLabel;
   } catch (error) {
-    addLog(`${t("messages.error")}: ${error.message}`, "error");
+    logProviderOpenFailure(providerId, error);
     abortWorkflow();
     return;
   }
@@ -339,7 +403,7 @@ async function executeWorkflowStep(stepIndex) {
 
   addLog(t("messages.startingBatch"), "info");
   addLog(t("messages.foundPending", { count: pendingQuestions.length }), "info");
-  addLog(t("messages.waitingPage"), "info");
+  addLog(t("messages.waitingProviderPage", { provider: providerLabel }), "info");
 
   const antiBotSettings = AppState.getState();
   await waitForConfiguredDelay(AppConfig.TIMING.BETWEEN_QUESTIONS_MS, antiBotSettings.randomDelays);
@@ -530,6 +594,9 @@ function wireMessageListeners() {
       const rawWorkflows = changes.savedWorkflows.newValue;
       const normalized = normalizeWorkflows(rawWorkflows);
       AppState.patch({ workflows: normalized });
+    }
+    if (changes.customProviders || changes.builtinProviderOverrides) {
+      void refreshProviderCatalog();
     }
     if (!changes.pendingMessage) {
       return;
@@ -723,6 +790,8 @@ async function initialize() {
     keepSameChatCheckbox: elements.keepSameChatCheckbox
   });
 
+  await refreshProviderCatalog();
+
   workflowRunner = new WorkflowRunner({
     containerElement: elements.workflowSection,
     addLog,
@@ -734,6 +803,7 @@ async function initialize() {
   questionProcessor = new QuestionProcessor({
     getSettings: () => ({ ...settingsPanel.getValues(), ...AppState.getState() }),
     addLog,
+    getProviderLabel,
     onAllCompleted: () => {
       void advanceWorkflowStep();
     },

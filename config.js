@@ -32,6 +32,33 @@ const CONFIG = {
 				loadingIndicator: 'button[data-testid="stop-button"], button[aria-label*="Stop"]',
 				submitMethod: "enter"
 			}
+		},
+		aistudio: {
+			id: "aistudio",
+			label: "Google AI Studio",
+			BASE_URL: "https://aistudio.google.com/prompts/new_chat",
+			TEMP_CHAT_PARAM: "",
+			URL_PATTERN: "https://aistudio.google.com/*",
+			HOSTNAME: "aistudio.google.com",
+			supportsWebSearch: false,
+			supportsTempChat: false,
+			supportsSSE: false,
+			supportsLivePolling: true,
+			answerPollIntervalMs: 800,
+			isBuiltIn: true,
+			selectors: {
+				input: 'textarea[aria-label*="prompt" i], textarea[placeholder*="prompt" i], textarea[placeholder*="message" i], textarea:not([disabled]):not([aria-hidden="true"])',
+				inputFallback1: '[contenteditable="true"][role="textbox"]',
+				inputFallback2: '[contenteditable="true"]',
+				submitButton: 'button[aria-label*="Run"], button[aria-label*="Send"], button[data-testid*="send"], button[type="submit"]',
+				submitButtonFallback: 'button.mat-mdc-icon-button:not([disabled]), button:not([disabled])[type="button"]',
+				stopButton: 'button[aria-label*="Stop"], button[title*="Stop"], button[mattooltip*="Stop"]',
+				responseContainer: 'ms-chat-turn[author="model"], [data-turn-role="model"], [data-message-author-role="assistant"]',
+				responseContainerFallback1: 'main .markdown, main [class*="markdown"], main .prose, main [data-testid*="response"]',
+				responseContainerFallback2: 'main article, main section, [role="main"] article, [role="main"] section',
+				loadingIndicator: 'button[aria-label*="Stop"], [role="progressbar"], mat-progress-bar',
+				submitMethod: "button"
+			}
 		}
 	},
 
