@@ -24,6 +24,7 @@ const state = {
   lastProcessedMessageTimestamp: 0,
   remoteWorkflowRequestId: "",
   remoteWorkflowProviderId: "",
+  remoteWorkflowProjectFolder: "",
   remoteWorkflowSource: ""
 };
 

@@ -214,6 +214,8 @@ export class QuestionProcessor {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             workflowName,
+            requestId: state.remoteWorkflowRequestId || "",
+            projectFolder: state.remoteWorkflowProjectFolder || "",
             stepTitle,
             stepIndex: state.activeWorkflowStepIndex,
             totalStoredSteps,

@@ -2,10 +2,12 @@ import { AppState } from "./state/appState.js";
 import {
   clearRemoteWorkflowSession,
   loadAll,
+  loadLastRemoteStartRequestId,
   loadPendingMessage,
   loadRemoteWorkflowSession,
   removePendingMessage,
   saveQuestions,
+  saveLastRemoteStartRequestId,
   saveRemoteWorkflowSession,
   saveSetting,
   saveWorkflows,
@@ -338,6 +340,7 @@ function getWorkflowResetPatch() {
     workflowContext: null,
     remoteWorkflowRequestId: "",
     remoteWorkflowProviderId: "",
+    remoteWorkflowProjectFolder: "",
     remoteWorkflowSource: ""
   };
 }
@@ -356,6 +359,7 @@ async function handleRemoteWorkflowStart(message) {
 
   if (requestId) {
     lastHandledRemoteStartRequestId = requestId;
+    await saveLastRemoteStartRequestId(requestId);
   }
 
   const workflow = workflowRunner.selectWorkflow(requestedWorkflowId);
@@ -450,6 +454,7 @@ async function handleStart() {
     processedSincePause: 0,
     lastExtractedText: "",
     remoteWorkflowRequestId: "",
+    remoteWorkflowProjectFolder: "",
     remoteWorkflowSource: ""
   });
   addLog(t("messages.startingBatch"), "info");
@@ -518,6 +523,7 @@ async function handleStartWorkflow(options = {}) {
     bridgeRequestId = "",
     remoteWorkflowName = "",
     providerId = "",
+    projectFolder = "",
   } = options;
   const isRemote = source === "remote";
   const state = AppState.getState();
@@ -583,6 +589,7 @@ async function handleStartWorkflow(options = {}) {
     },
     remoteWorkflowRequestId: isRemote ? bridgeRequestId : "",
     remoteWorkflowProviderId: isRemote ? normalizedRemoteProviderId : "",
+    remoteWorkflowProjectFolder: isRemote ? String(projectFolder || "").trim() : "",
     remoteWorkflowSource: isRemote ? "remote" : ""
   });
 
@@ -790,6 +797,8 @@ async function advanceWorkflowStep() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workflowName: state.activeWorkflow.name,
+          requestId: state.remoteWorkflowRequestId || "",
+          projectFolder: state.remoteWorkflowProjectFolder || "",
           totalStoredSteps,
           totalSteps: totalStoredSteps
         })
@@ -1344,6 +1353,18 @@ async function initialize() {
     }
   } catch (error) {
     addLog(`${t("messages.loadFailed")}: ${error.message}`, "error");
+  }
+
+  try {
+    const [storedLastRemoteStartRequestId, storedSession] = await Promise.all([
+      loadLastRemoteStartRequestId(),
+      loadRemoteWorkflowSession()
+    ]);
+    const sessionRequestId = typeof storedSession?.requestId === "string"
+      ? storedSession.requestId.trim()
+      : "";
+    lastHandledRemoteStartRequestId = storedLastRemoteStartRequestId.trim() || sessionRequestId;
+  } catch {
   }
 
   isInitialized = true;

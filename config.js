@@ -106,6 +106,7 @@ const CONFIG = {
 		FATIGUE_MIN_PAUSE_MINUTES: "fatigueMinPauseMinutes",
 		FATIGUE_MAX_PAUSE_MINUTES: "fatigueMaxPauseMinutes",
 		PENDING_MESSAGE: "pendingMessage",
+		LAST_REMOTE_START_REQUEST_ID: "lastRemoteStartRequestId",
 		REMOTE_WORKFLOW_SESSION: "remoteWorkflowSession",
 		WORKFLOWS: "savedWorkflows",
 		CUSTOM_PROVIDERS: "customProviders",
