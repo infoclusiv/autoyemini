@@ -106,6 +106,7 @@ const CONFIG = {
 		FATIGUE_MIN_PAUSE_MINUTES: "fatigueMinPauseMinutes",
 		FATIGUE_MAX_PAUSE_MINUTES: "fatigueMaxPauseMinutes",
 		PENDING_MESSAGE: "pendingMessage",
+		REMOTE_WORKFLOW_SESSION: "remoteWorkflowSession",
 		WORKFLOWS: "savedWorkflows",
 		CUSTOM_PROVIDERS: "customProviders",
 		BUILTIN_PROVIDER_OVERRIDES: "builtinProviderOverrides"

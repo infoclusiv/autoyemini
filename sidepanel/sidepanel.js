@@ -1,5 +1,18 @@
 import { AppState } from "./state/appState.js";
-import { loadAll, loadPendingMessage, removePendingMessage, saveQuestions, saveSetting, saveWorkflows, saveWorkflowBackup, loadWorkflowBackups, StorageKeys } from "./services/storageService.js";
+import {
+  clearRemoteWorkflowSession,
+  loadAll,
+  loadPendingMessage,
+  loadRemoteWorkflowSession,
+  removePendingMessage,
+  saveQuestions,
+  saveRemoteWorkflowSession,
+  saveSetting,
+  saveWorkflows,
+  saveWorkflowBackup,
+  loadWorkflowBackups,
+  StorageKeys,
+} from "./services/storageService.js";
 import { exportQuestionsToJSON, exportSingleWorkflow } from "./services/exportService.js";
 import { onRuntimeMessage, onStorageChange, sendToBackground } from "./services/messagingService.js";
 import { applyTranslations, t } from "./i18n/i18n.js";
@@ -26,6 +39,9 @@ let questionProcessor;
 let cachedProviders = { ...(globalThis.CONFIG?.PROVIDERS || {}) };
 let isInitialized = false;
 let lastHandledRemoteStartRequestId = "";
+let aiStudioBridgeKeepAlivePort = null;
+let aiStudioBridgeKeepAliveTimer = null;
+let remoteWorkflowSessionClearTimer = null;
 
 function getElements() {
   return {
@@ -65,8 +81,145 @@ function persistQuestions() {
   return saveQuestions(AppState.getState().questions);
 }
 
+function stopAiStudioBridgeKeepAlive() {
+  if (aiStudioBridgeKeepAliveTimer) {
+    clearInterval(aiStudioBridgeKeepAliveTimer);
+    aiStudioBridgeKeepAliveTimer = null;
+  }
+
+  if (aiStudioBridgeKeepAlivePort) {
+    try {
+      aiStudioBridgeKeepAlivePort.disconnect();
+    } catch {
+    }
+    aiStudioBridgeKeepAlivePort = null;
+  }
+}
+
+function postAiStudioBridgeHeartbeat() {
+  if (!aiStudioBridgeKeepAlivePort) {
+    return;
+  }
+
+  try {
+    const state = AppState.getState();
+    aiStudioBridgeKeepAlivePort.postMessage({
+      type: "AI_STUDIO_SIDEPANEL_HEARTBEAT",
+      timestamp: Date.now(),
+      remoteWorkflowRequestId: state.remoteWorkflowRequestId || "",
+      remoteWorkflowProviderId: state.remoteWorkflowProviderId || "",
+      hasActiveWorkflow: Boolean(state.activeWorkflow),
+    });
+  } catch {
+  }
+}
+
+function startAiStudioBridgeKeepAlive() {
+  stopAiStudioBridgeKeepAlive();
+
+  try {
+    aiStudioBridgeKeepAlivePort = chrome.runtime.connect({ name: "aiStudioSidepanel" });
+  } catch {
+    aiStudioBridgeKeepAlivePort = null;
+    return;
+  }
+
+  aiStudioBridgeKeepAlivePort.onDisconnect.addListener(() => {
+    if (aiStudioBridgeKeepAliveTimer) {
+      clearInterval(aiStudioBridgeKeepAliveTimer);
+      aiStudioBridgeKeepAliveTimer = null;
+    }
+
+    aiStudioBridgeKeepAlivePort = null;
+    setTimeout(() => {
+      if (isInitialized) {
+        startAiStudioBridgeKeepAlive();
+      }
+    }, 1000);
+  });
+
+  postAiStudioBridgeHeartbeat();
+  aiStudioBridgeKeepAliveTimer = setInterval(postAiStudioBridgeHeartbeat, 20000);
+}
+
 function normalizeProviderId(value) {
   return typeof value === "string" && value.trim() ? value.trim() : "chatgpt";
+}
+
+function cancelRemoteWorkflowSessionClear() {
+  if (!remoteWorkflowSessionClearTimer) {
+    return;
+  }
+
+  clearTimeout(remoteWorkflowSessionClearTimer);
+  remoteWorkflowSessionClearTimer = null;
+}
+
+function scheduleRemoteWorkflowSessionClear(delayMs = 8000) {
+  cancelRemoteWorkflowSessionClear();
+  remoteWorkflowSessionClearTimer = setTimeout(() => {
+    remoteWorkflowSessionClearTimer = null;
+    void clearRemoteWorkflowSession();
+  }, delayMs);
+}
+
+function getRemoteWorkflowProviderId(workflow = AppState.getState().activeWorkflow) {
+  const state = AppState.getState();
+  if (state.remoteWorkflowProviderId) {
+    return normalizeProviderId(state.remoteWorkflowProviderId);
+  }
+
+  const firstStepProvider = Array.isArray(workflow?.steps)
+    ? workflow.steps.find((step) => typeof step?.provider === "string" && step.provider.trim())?.provider
+    : "";
+
+  return normalizeProviderId(firstStepProvider || "aistudio");
+}
+
+async function clearPersistedRemoteWorkflowSession() {
+  cancelRemoteWorkflowSessionClear();
+  await clearRemoteWorkflowSession();
+}
+
+async function persistRemoteWorkflowSession(status, payload = {}) {
+  cancelRemoteWorkflowSessionClear();
+
+  const state = AppState.getState();
+  const workflow = payload.workflow || state.activeWorkflow || null;
+  const requestId = payload.requestId || state.remoteWorkflowRequestId;
+  const workflowId = payload.workflowId || workflow?.id || "";
+
+  if (!requestId || !workflowId) {
+    await clearPersistedRemoteWorkflowSession();
+    return null;
+  }
+
+  const totalSteps = typeof payload.totalSteps === "number"
+    ? payload.totalSteps
+    : Array.isArray(workflow?.steps)
+      ? workflow.steps.length
+      : 0;
+
+  const session = {
+    requestId,
+    workflowId,
+    workflowName: payload.workflowName || workflow?.name || "",
+    providerId: normalizeProviderId(payload.providerId || getRemoteWorkflowProviderId(workflow)),
+    status: typeof status === "string" && status.trim() ? status.trim() : "started",
+    stepIndex: typeof payload.stepIndex === "number"
+      ? payload.stepIndex
+      : typeof state.activeWorkflowStepIndex === "number"
+        ? state.activeWorkflowStepIndex
+        : -1,
+    stepTitle: payload.stepTitle || "",
+    totalSteps,
+    message: payload.message || "",
+    source: payload.source || state.remoteWorkflowSource || "",
+    updatedAt: Date.now(),
+  };
+
+  await saveRemoteWorkflowSession(session);
+  return session;
 }
 
 function updateCachedProviders(providerMap) {
@@ -162,6 +315,7 @@ async function emitRemoteWorkflowEvent(status, payload = {}) {
       requestId,
       workflowId: payload.workflowId || workflow?.id || "",
       workflowName: payload.workflowName || workflow?.name || "",
+      providerId: payload.providerId || getRemoteWorkflowProviderId(workflow),
       stepIndex: typeof payload.stepIndex === "number" ? payload.stepIndex : undefined,
       stepTitle: payload.stepTitle || "",
       totalSteps,
@@ -183,6 +337,7 @@ function getWorkflowResetPatch() {
     activeWorkflowStepIndex: -1,
     workflowContext: null,
     remoteWorkflowRequestId: "",
+    remoteWorkflowProviderId: "",
     remoteWorkflowSource: ""
   };
 }
@@ -220,7 +375,8 @@ async function handleRemoteWorkflowStart(message) {
     workflowId: workflow.id,
     source: "remote",
     bridgeRequestId: requestId,
-    remoteWorkflowName: workflow.name
+    remoteWorkflowName: workflow.name,
+    providerId: typeof message.providerId === "string" ? message.providerId : "aistudio"
   });
   return true;
 }
@@ -356,17 +512,34 @@ function loadWorkflowStepQuestions(step, chainedText) {
 }
 
 async function handleStartWorkflow(options = {}) {
-  const { workflowId = "", source = "manual", bridgeRequestId = "", remoteWorkflowName = "" } = options;
+  const {
+    workflowId = "",
+    source = "manual",
+    bridgeRequestId = "",
+    remoteWorkflowName = "",
+    providerId = "",
+  } = options;
   const isRemote = source === "remote";
   const state = AppState.getState();
+  const normalizedRemoteProviderId = normalizeProviderId(providerId || "aistudio");
 
   const failWorkflowStart = async (message, level = "error", workflow = null) => {
     addLog(message, level);
     if (isRemote) {
+      await persistRemoteWorkflowSession("failed", {
+        requestId: bridgeRequestId,
+        workflowId: workflow?.id || workflowId || "",
+        workflowName: workflow?.name || remoteWorkflowName || "",
+        workflow,
+        providerId: normalizedRemoteProviderId,
+        message,
+      });
+      scheduleRemoteWorkflowSessionClear();
       await emitRemoteWorkflowEvent("failed", {
         requestId: bridgeRequestId,
         workflowId: workflow?.id || workflowId || "",
         workflowName: workflow?.name || remoteWorkflowName || "",
+        providerId: normalizedRemoteProviderId,
         message
       });
     }
@@ -409,17 +582,29 @@ async function handleStartWorkflow(options = {}) {
       stepResults: []
     },
     remoteWorkflowRequestId: isRemote ? bridgeRequestId : "",
+    remoteWorkflowProviderId: isRemote ? normalizedRemoteProviderId : "",
     remoteWorkflowSource: isRemote ? "remote" : ""
   });
 
   if (isRemote) {
+    await persistRemoteWorkflowSession("started", {
+      requestId: bridgeRequestId,
+      workflow,
+      workflowName: workflow.name,
+      providerId: normalizedRemoteProviderId,
+      totalSteps: workflow.steps.length,
+      message: `Workflow ${workflow.name} iniciado en el sidepanel.`,
+    });
     await emitRemoteWorkflowEvent("started", {
       requestId: bridgeRequestId,
       workflow,
       workflowName: workflow.name,
+      providerId: normalizedRemoteProviderId,
       totalSteps: workflow.steps.length,
       message: `Workflow ${workflow.name} iniciado en el sidepanel.`
     });
+  } else {
+    void clearPersistedRemoteWorkflowSession();
   }
 
   await executeWorkflowStep(0);
@@ -437,15 +622,25 @@ async function executeWorkflowStep(stepIndex) {
   }
 
   const step = workflow.steps[stepIndex];
+  const stepTitle = step.title || `Step ${stepIndex + 1}`;
 
   AppState.patch({ activeWorkflowStepIndex: stepIndex });
-  addLog(t("messages.workflowStepStarting", [stepIndex + 1, step.title || `Step ${stepIndex + 1}`]), "info");
+  addLog(t("messages.workflowStepStarting", [stepIndex + 1, stepTitle]), "info");
+  await persistRemoteWorkflowSession("step_started", {
+    workflow,
+    providerId: getRemoteWorkflowProviderId(workflow),
+    stepIndex,
+    stepTitle,
+    totalSteps: workflow.steps.length,
+    message: `Iniciando ${stepTitle}.`,
+  });
   await emitRemoteWorkflowEvent("step_started", {
     workflow,
     stepIndex,
-    stepTitle: step.title || `Step ${stepIndex + 1}`,
+    stepTitle,
+    providerId: getRemoteWorkflowProviderId(workflow),
     totalSteps: workflow.steps.length,
-    message: `Iniciando ${step.title || `Step ${stepIndex + 1}`}.`
+    message: `Iniciando ${stepTitle}.`
   });
 
   // Get the chainedText from the workflow context
@@ -546,12 +741,22 @@ async function advanceWorkflowStep() {
 
   const nextStepIndex = state.activeWorkflowStepIndex + 1;
   const currentStep = state.activeWorkflow.steps[state.activeWorkflowStepIndex] || null;
+  const currentStepTitle = currentStep?.title || `Step ${state.activeWorkflowStepIndex + 1}`;
+  await persistRemoteWorkflowSession("step_completed", {
+    workflow: state.activeWorkflow,
+    providerId: getRemoteWorkflowProviderId(state.activeWorkflow),
+    stepIndex: state.activeWorkflowStepIndex,
+    stepTitle: currentStepTitle,
+    totalSteps: state.activeWorkflow.steps.length,
+    message: `Completado ${currentStepTitle}.`,
+  });
   await emitRemoteWorkflowEvent("step_completed", {
     workflow: state.activeWorkflow,
     stepIndex: state.activeWorkflowStepIndex,
-    stepTitle: currentStep?.title || `Step ${state.activeWorkflowStepIndex + 1}`,
+    stepTitle: currentStepTitle,
+    providerId: getRemoteWorkflowProviderId(state.activeWorkflow),
     totalSteps: state.activeWorkflow.steps.length,
-    message: `Completado ${currentStep?.title || `Step ${state.activeWorkflowStepIndex + 1}`}.`
+    message: `Completado ${currentStepTitle}.`
   });
   addLog(t("messages.workflowStepComplete", { num: state.activeWorkflowStepIndex + 1 }), "success");
 
@@ -561,11 +766,19 @@ async function advanceWorkflowStep() {
     const totalStoredSteps = countStoredSteps(state.activeWorkflow);
     if (totalStoredSteps === 0) {
       addLog("Workflow completed without any 'Store full response' steps. Teleprompter merge was skipped.", "warning");
+      await persistRemoteWorkflowSession("completed", {
+        workflow: state.activeWorkflow,
+        providerId: getRemoteWorkflowProviderId(state.activeWorkflow),
+        totalSteps: state.activeWorkflow.steps.length,
+        message: `Workflow ${state.activeWorkflow.name} completado.`,
+      });
       await emitRemoteWorkflowEvent("completed", {
         workflow: state.activeWorkflow,
+        providerId: getRemoteWorkflowProviderId(state.activeWorkflow),
         totalSteps: state.activeWorkflow.steps.length,
         message: `Workflow ${state.activeWorkflow.name} completado.`
       });
+      scheduleRemoteWorkflowSessionClear();
       AppState.patch(getWorkflowResetPatch());
       return;
     }
@@ -596,11 +809,19 @@ async function advanceWorkflowStep() {
       addLog(`⚠️ No se pudo conectar a clusiv-v3: ${err.message}`, "warning");
     }
 
+    await persistRemoteWorkflowSession("completed", {
+      workflow: state.activeWorkflow,
+      providerId: getRemoteWorkflowProviderId(state.activeWorkflow),
+      totalSteps: state.activeWorkflow.steps.length,
+      message: `Workflow ${state.activeWorkflow.name} completado.`,
+    });
     await emitRemoteWorkflowEvent("completed", {
       workflow: state.activeWorkflow,
+      providerId: getRemoteWorkflowProviderId(state.activeWorkflow),
       totalSteps: state.activeWorkflow.steps.length,
       message: `Workflow ${state.activeWorkflow.name} completado.`
     });
+    scheduleRemoteWorkflowSessionClear();
     AppState.patch(getWorkflowResetPatch());
     return;
   }
@@ -608,14 +829,48 @@ async function advanceWorkflowStep() {
   await executeWorkflowStep(nextStepIndex);
 }
 
-function abortWorkflow() {
+async function abortWorkflow(status = "aborted", options = {}) {
   const state = AppState.getState();
-  void emitRemoteWorkflowEvent("aborted", {
-    requestId: state.remoteWorkflowRequestId,
-    workflow: state.activeWorkflow,
-    message: `Workflow ${state.activeWorkflow?.name || "activo"} abortado en el sidepanel.`
+  const workflow = options.workflow || state.activeWorkflow;
+  const requestId = options.requestId || state.remoteWorkflowRequestId;
+  const workflowName = options.workflowName || workflow?.name || "activo";
+  const message = options.message || `Workflow ${workflowName} abortado en el sidepanel.`;
+  const statusLevel = status === "failed" ? "error" : "warning";
+
+  await persistRemoteWorkflowSession(status, {
+    requestId,
+    workflow,
+    workflowId: options.workflowId || workflow?.id || "",
+    workflowName,
+    providerId: options.providerId || getRemoteWorkflowProviderId(workflow),
+    stepIndex: typeof options.stepIndex === "number" ? options.stepIndex : state.activeWorkflowStepIndex,
+    stepTitle: options.stepTitle || "",
+    totalSteps: typeof options.totalSteps === "number"
+      ? options.totalSteps
+      : Array.isArray(workflow?.steps)
+        ? workflow.steps.length
+        : 0,
+    message,
   });
-  addLog("Workflow aborted.", "error");
+
+  await emitRemoteWorkflowEvent(status, {
+    requestId,
+    workflow,
+    workflowId: options.workflowId || workflow?.id || "",
+    workflowName,
+    providerId: options.providerId || getRemoteWorkflowProviderId(workflow),
+    stepIndex: typeof options.stepIndex === "number" ? options.stepIndex : state.activeWorkflowStepIndex,
+    stepTitle: options.stepTitle || "",
+    totalSteps: typeof options.totalSteps === "number"
+      ? options.totalSteps
+      : Array.isArray(workflow?.steps)
+        ? workflow.steps.length
+        : 0,
+    message,
+  });
+
+  scheduleRemoteWorkflowSessionClear();
+  addLog(options.logMessage || "Workflow aborted.", statusLevel);
   AppState.patch(getWorkflowResetPatch());
 }
 
@@ -630,15 +885,75 @@ function handleResume() {
   void questionProcessor.processNextQuestion();
 }
 
-function handleStop() {
+function handleStop(options = {}) {
   const state = AppState.getState();
-  void emitRemoteWorkflowEvent("aborted", {
-    requestId: state.remoteWorkflowRequestId,
-    workflow: state.activeWorkflow,
-    message: `Workflow ${state.activeWorkflow?.name || "activo"} detenido manualmente.`
-  });
+  const source = options.source || "manual";
+  const isRemoteStop = source === "remote";
+
+  if (state.activeWorkflow || state.remoteWorkflowRequestId) {
+    void abortWorkflow("aborted", {
+      requestId: options.requestId || state.remoteWorkflowRequestId,
+      workflow: state.activeWorkflow,
+      providerId: options.providerId || state.remoteWorkflowProviderId || "",
+      message: options.message || (
+        isRemoteStop
+          ? `Workflow ${state.activeWorkflow?.name || "activo"} detenido por solicitud remota.`
+          : `Workflow ${state.activeWorkflow?.name || "activo"} detenido manualmente.`
+      ),
+      logMessage: isRemoteStop
+        ? "Workflow remoto detenido por solicitud del orquestador."
+        : t("messages.executionStopped"),
+    });
+    return;
+  }
+
+  void clearPersistedRemoteWorkflowSession();
   AppState.patch(getWorkflowResetPatch());
   addLog(t("messages.executionStopped"), "warning");
+}
+
+async function handleRemoteWorkflowStop(message) {
+  const requestedWorkflowRequestId = typeof message.workflowRequestId === "string"
+    ? message.workflowRequestId.trim()
+    : "";
+  const state = AppState.getState();
+  const activeWorkflowRequestId = state.remoteWorkflowRequestId;
+
+  if (activeWorkflowRequestId && requestedWorkflowRequestId && requestedWorkflowRequestId !== activeWorkflowRequestId) {
+    return false;
+  }
+
+  if (state.activeWorkflow || activeWorkflowRequestId) {
+    handleStop({
+      source: "remote",
+      requestId: requestedWorkflowRequestId || activeWorkflowRequestId,
+      providerId: state.remoteWorkflowProviderId || "",
+      message: `Workflow ${state.activeWorkflow?.name || "activo"} detenido por el bridge remoto.`,
+    });
+    return true;
+  }
+
+  const storedSession = await loadRemoteWorkflowSession();
+  if (!storedSession) {
+    return false;
+  }
+
+  if (requestedWorkflowRequestId && storedSession.requestId !== requestedWorkflowRequestId) {
+    return false;
+  }
+
+  await emitRemoteWorkflowEvent("aborted", {
+    requestId: storedSession.requestId,
+    workflowId: storedSession.workflowId,
+    workflowName: storedSession.workflowName,
+    providerId: storedSession.providerId,
+    stepIndex: storedSession.stepIndex,
+    stepTitle: storedSession.stepTitle,
+    totalSteps: storedSession.totalSteps,
+    message: storedSession.message || `Workflow ${storedSession.workflowName || storedSession.workflowId || "activo"} detenido por el bridge remoto.`,
+  });
+  await clearPersistedRemoteWorkflowSession();
+  return true;
 }
 
 async function handleRetryFailed() {
@@ -727,6 +1042,18 @@ async function processSidePanelMessage(message, { fromStorage = false } = {}) {
     return handled;
   }
 
+  if (message.type === "REMOTE_STOP_WORKFLOW") {
+    if (!isInitialized) {
+      return false;
+    }
+
+    const handled = await handleRemoteWorkflowStop(message);
+    if (handled && fromStorage && message.timestamp) {
+      AppState.patch({ lastProcessedMessageTimestamp: message.timestamp });
+    }
+    return handled;
+  }
+
   if (fromStorage) {
     const state = AppState.getState();
     if (message.timestamp && message.timestamp <= state.lastProcessedMessageTimestamp) {
@@ -760,6 +1087,18 @@ function wireMessageListeners() {
       }
 
       void handleRemoteWorkflowStart(message)
+        .then((handled) => sendResponse({ received: handled }))
+        .catch(() => sendResponse({ received: false }));
+      return true;
+    }
+
+    if (message.type === "REMOTE_STOP_WORKFLOW") {
+      if (!isInitialized) {
+        sendResponse({ received: false, pending: true });
+        return false;
+      }
+
+      void handleRemoteWorkflowStop(message)
         .then((handled) => sendResponse({ received: handled }))
         .catch(() => sendResponse({ received: false }));
       return true;
@@ -986,6 +1325,7 @@ async function initialize() {
 
   setupEventListeners(elements);
   wireMessageListeners();
+  startAiStudioBridgeKeepAlive();
 
   try {
     const stored = await loadAll();
@@ -1027,4 +1367,8 @@ async function initialize() {
 
 document.addEventListener("DOMContentLoaded", () => {
   void initialize();
+});
+
+window.addEventListener("beforeunload", () => {
+  stopAiStudioBridgeKeepAlive();
 });

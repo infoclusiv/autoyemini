@@ -1,15 +1,28 @@
 const AI_STUDIO_BRIDGE_URL = "ws://127.0.0.1:8766";
 const AI_STUDIO_BRIDGE_ALARM = "aiStudioBridgeHeartbeat";
-const AI_STUDIO_RECONNECT_DELAY_MS = 5000;
+const AI_STUDIO_BRIDGE_ALARM_PERIOD_MINUTES = 0.5;
+const AI_STUDIO_BRIDGE_BASE_RECONNECT_DELAY_MS = 2000;
+const AI_STUDIO_BRIDGE_MAX_RECONNECT_DELAY_MS = 30000;
+const AI_STUDIO_BRIDGE_HEARTBEAT_MS = 20000;
+const AI_STUDIO_WORKFLOW_SESSION_SYNC_DEBOUNCE_MS = 400;
 const AI_STUDIO_EXTENSION_TYPE = "autoyepeto";
 const AI_STUDIO_INSTANCE_ID = "default";
+const AI_STUDIO_SIDEPANEL_PORT_NAME = "aiStudioSidepanel";
 
 let aiStudioSocket = null;
 let aiStudioReconnectTimer = null;
+let aiStudioHeartbeatTimer = null;
+let aiStudioSessionSyncTimer = null;
 let aiStudioConnecting = false;
+let aiStudioReconnectAttempt = 0;
+const aiStudioSidePanelPorts = new Set();
 
 function getWorkflowStorageKey() {
   return CONFIG?.STORAGE_KEYS?.WORKFLOWS || "savedWorkflows";
+}
+
+function getRemoteWorkflowSessionStorageKey() {
+  return CONFIG?.STORAGE_KEYS?.REMOTE_WORKFLOW_SESSION || "remoteWorkflowSession";
 }
 
 function normalizeWorkflowCatalog(workflows) {
@@ -47,7 +60,7 @@ function normalizeWorkflowCatalog(workflows) {
           ? workflow.name.trim()
           : `Workflow ${index + 1}`,
         stepCount: steps.length,
-        providerIds
+        providerIds,
       };
     })
     .filter(Boolean);
@@ -57,6 +70,17 @@ async function getStoredWorkflowCatalog() {
   const storageKey = getWorkflowStorageKey();
   const stored = await chrome.storage.local.get([storageKey]);
   return normalizeWorkflowCatalog(stored[storageKey]);
+}
+
+async function getStoredRemoteWorkflowSession() {
+  const storageKey = getRemoteWorkflowSessionStorageKey();
+  const stored = await chrome.storage.local.get([storageKey]);
+  const session = stored[storageKey];
+  if (!session || typeof session !== "object") {
+    return null;
+  }
+
+  return { ...session };
 }
 
 function isAiStudioSocketOpen() {
@@ -70,12 +94,39 @@ function clearAiStudioReconnectTimer() {
   }
 }
 
-function scheduleAiStudioReconnect() {
+function clearAiStudioSessionSyncTimer() {
+  if (aiStudioSessionSyncTimer) {
+    clearTimeout(aiStudioSessionSyncTimer);
+    aiStudioSessionSyncTimer = null;
+  }
+}
+
+function stopAiStudioHeartbeat() {
+  if (aiStudioHeartbeatTimer) {
+    clearInterval(aiStudioHeartbeatTimer);
+    aiStudioHeartbeatTimer = null;
+  }
+}
+
+function computeAiStudioReconnectDelayMs() {
+  const backoffMs = Math.min(
+    AI_STUDIO_BRIDGE_MAX_RECONNECT_DELAY_MS,
+    AI_STUDIO_BRIDGE_BASE_RECONNECT_DELAY_MS * (2 ** Math.max(0, aiStudioReconnectAttempt)),
+  );
+  aiStudioReconnectAttempt += 1;
+  return Math.min(
+    AI_STUDIO_BRIDGE_MAX_RECONNECT_DELAY_MS,
+    backoffMs + Math.floor(Math.random() * 750),
+  );
+}
+
+function scheduleAiStudioReconnect(reason = "unknown") {
   clearAiStudioReconnectTimer();
+  const delayMs = computeAiStudioReconnectDelayMs();
   aiStudioReconnectTimer = setTimeout(() => {
     aiStudioReconnectTimer = null;
-    void ensureAiStudioBridgeConnection();
-  }, AI_STUDIO_RECONNECT_DELAY_MS);
+    void ensureAiStudioBridgeConnection(`reconnect:${reason}`);
+  }, delayMs);
 }
 
 function sendAiStudioSocketMessage(payload) {
@@ -87,8 +138,45 @@ function sendAiStudioSocketMessage(payload) {
     aiStudioSocket.send(JSON.stringify(payload));
     return true;
   } catch {
+    try {
+      aiStudioSocket?.close();
+    } catch {
+    }
     return false;
   }
+}
+
+async function sendAiStudioHeartbeat(reason = "heartbeat") {
+  if (!isAiStudioSocketOpen()) {
+    return false;
+  }
+
+  const session = await getStoredRemoteWorkflowSession();
+  return sendAiStudioSocketMessage({
+    action: "HEARTBEAT",
+    extensionType: AI_STUDIO_EXTENSION_TYPE,
+    instanceId: AI_STUDIO_INSTANCE_ID,
+    version: CONFIG.APP_VERSION,
+    reason,
+    timestamp: Date.now(),
+    sidePanelOpen: aiStudioSidePanelPorts.size > 0,
+    workflowSession: session || undefined,
+  });
+}
+
+function startAiStudioHeartbeat() {
+  stopAiStudioHeartbeat();
+  aiStudioHeartbeatTimer = setInterval(() => {
+    void sendAiStudioHeartbeat("interval");
+  }, AI_STUDIO_BRIDGE_HEARTBEAT_MS);
+}
+
+function debouncePublishStoredRemoteWorkflowSession(reason = "storage-change") {
+  clearAiStudioSessionSyncTimer();
+  aiStudioSessionSyncTimer = setTimeout(() => {
+    aiStudioSessionSyncTimer = null;
+    void publishStoredRemoteWorkflowSession(reason);
+  }, AI_STUDIO_WORKFLOW_SESSION_SYNC_DEBOUNCE_MS);
 }
 
 async function publishWorkflowCatalog(replyTo = "") {
@@ -101,7 +189,35 @@ async function publishWorkflowCatalog(replyTo = "") {
     action: "WORKFLOW_CATALOG",
     extensionType: AI_STUDIO_EXTENSION_TYPE,
     workflows,
-    replyTo: replyTo || undefined
+    replyTo: replyTo || undefined,
+  });
+}
+
+async function publishStoredRemoteWorkflowSession(reason = "session-sync") {
+  if (!isAiStudioSocketOpen()) {
+    return false;
+  }
+
+  const session = await getStoredRemoteWorkflowSession();
+  if (!session) {
+    return false;
+  }
+
+  return sendAiStudioSocketMessage({
+    action: "WORKFLOW_STATUS",
+    extensionType: AI_STUDIO_EXTENSION_TYPE,
+    status: session.status || "started",
+    requestId: session.requestId,
+    workflowId: session.workflowId,
+    workflowName: session.workflowName,
+    providerId: session.providerId,
+    stepIndex: session.stepIndex,
+    stepTitle: session.stepTitle,
+    totalSteps: session.totalSteps,
+    message: session.message || "",
+    timestamp: Date.now(),
+    syncedFrom: reason,
+    fromStoredSession: true,
   });
 }
 
@@ -126,7 +242,7 @@ async function ensureSidePanelUi(windowId) {
 }
 
 async function handleStartWorkflowRequest(message) {
-  const requestId = typeof message.requestId === "string" ? message.requestId : "";
+  const bridgeRequestId = typeof message.requestId === "string" ? message.requestId.trim() : "";
   const workflowId = typeof message.workflowId === "string" ? message.workflowId.trim() : "";
   const providerId = typeof message.providerId === "string" && message.providerId.trim()
     ? message.providerId.trim()
@@ -138,10 +254,13 @@ async function handleStartWorkflowRequest(message) {
   if (!workflowId || !workflow) {
     sendAiStudioSocketMessage({
       action: "WORKFLOW_START_ACK",
-      replyTo: requestId || undefined,
+      replyTo: bridgeRequestId || undefined,
+      requestId: bridgeRequestId || undefined,
+      workflowRequestId: bridgeRequestId || undefined,
       ok: false,
       workflowId,
-      message: "No se encontró el workflow solicitado en la extensión."
+      providerId,
+      message: "No se encontró el workflow solicitado en la extensión.",
     });
     return;
   }
@@ -157,32 +276,89 @@ async function handleStartWorkflowRequest(message) {
 
     await forwardToSidePanel({
       type: "REMOTE_START_WORKFLOW",
-      requestId,
+      requestId: bridgeRequestId,
       workflowId: workflow.id,
       workflowName: workflow.name,
-      projectFolder: typeof message.projectFolder === "string" ? message.projectFolder : ""
+      providerId,
+      projectFolder: typeof message.projectFolder === "string" ? message.projectFolder : "",
+      timestamp: Date.now(),
     });
 
     sendAiStudioSocketMessage({
       action: "WORKFLOW_START_ACK",
-      replyTo: requestId || undefined,
+      replyTo: bridgeRequestId || undefined,
+      requestId: bridgeRequestId || undefined,
+      workflowRequestId: bridgeRequestId || undefined,
       ok: true,
       workflowId: workflow.id,
       workflowName: workflow.name,
+      providerId,
       tabId: tab?.id || null,
       uiMode: uiResult.mode,
-      message: `Workflow ${workflow.name} enviado al sidepanel.`
+      message: `Workflow ${workflow.name} enviado al sidepanel.`,
     });
   } catch (error) {
     sendAiStudioSocketMessage({
       action: "WORKFLOW_START_ACK",
-      replyTo: requestId || undefined,
+      replyTo: bridgeRequestId || undefined,
+      requestId: bridgeRequestId || undefined,
+      workflowRequestId: bridgeRequestId || undefined,
       ok: false,
       workflowId: workflow.id,
       workflowName: workflow.name,
-      message: error?.message || "No se pudo iniciar el workflow remoto."
+      providerId,
+      message: error?.message || "No se pudo iniciar el workflow remoto.",
     });
   }
+}
+
+async function handleStopWorkflowRequest(message) {
+  const stopRequestId = typeof message.requestId === "string" ? message.requestId.trim() : "";
+  const workflowRequestId = typeof message.workflowRequestId === "string"
+    ? message.workflowRequestId.trim()
+    : "";
+  const workflowId = typeof message.workflowId === "string" ? message.workflowId.trim() : "";
+  const storedSession = await getStoredRemoteWorkflowSession();
+
+  const targetWorkflowRequestId = workflowRequestId || storedSession?.requestId || "";
+  const targetWorkflowId = workflowId || storedSession?.workflowId || "";
+  const targetWorkflowName = storedSession?.workflowName || "";
+  const targetProviderId = storedSession?.providerId || "";
+
+  if (!targetWorkflowRequestId && !targetWorkflowId) {
+    sendAiStudioSocketMessage({
+      action: "WORKFLOW_STOP_ACK",
+      replyTo: stopRequestId || undefined,
+      ok: false,
+      workflowRequestId: workflowRequestId || undefined,
+      workflowId: workflowId || undefined,
+      message: "No hay un workflow remoto activo para detener.",
+    });
+    return;
+  }
+
+  await forwardToSidePanel({
+    type: "REMOTE_STOP_WORKFLOW",
+    workflowRequestId: targetWorkflowRequestId,
+    workflowId: targetWorkflowId,
+    workflowName: targetWorkflowName,
+    providerId: targetProviderId,
+    timestamp: Date.now(),
+  });
+
+  sendAiStudioSocketMessage({
+    action: "WORKFLOW_STOP_ACK",
+    replyTo: stopRequestId || undefined,
+    ok: true,
+    workflowRequestId: targetWorkflowRequestId || undefined,
+    workflowId: targetWorkflowId || undefined,
+    workflowName: targetWorkflowName || undefined,
+    providerId: targetProviderId || undefined,
+    stopping: true,
+    message: storedSession
+      ? "Se envió la solicitud de detención al sidepanel."
+      : "Se registró una solicitud de detención pendiente para el sidepanel.",
+  });
 }
 
 function forwardWorkflowStatusToBridge(message) {
@@ -197,11 +373,12 @@ function forwardWorkflowStatusToBridge(message) {
     requestId: message.requestId,
     workflowId: message.workflowId,
     workflowName: message.workflowName,
+    providerId: message.providerId,
     stepIndex: message.stepIndex,
     stepTitle: message.stepTitle,
     totalSteps: message.totalSteps,
     message: message.message,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 }
 
@@ -219,7 +396,8 @@ function handleAiStudioBridgeMessage(event) {
         action: "PONG",
         replyTo: data.requestId || undefined,
         extensionType: AI_STUDIO_EXTENSION_TYPE,
-        version: CONFIG.APP_VERSION
+        version: CONFIG.APP_VERSION,
+        timestamp: Date.now(),
       });
       break;
     case "REQUEST_WORKFLOW_CATALOG":
@@ -228,12 +406,15 @@ function handleAiStudioBridgeMessage(event) {
     case "START_WORKFLOW":
       void handleStartWorkflowRequest(data);
       break;
+    case "STOP_WORKFLOW":
+      void handleStopWorkflowRequest(data);
+      break;
     default:
       break;
   }
 }
 
-function connectAiStudioBridgeSocket() {
+function connectAiStudioBridgeSocket(reason = "manual") {
   if (aiStudioConnecting || isAiStudioSocketOpen()) {
     return;
   }
@@ -244,20 +425,26 @@ function connectAiStudioBridgeSocket() {
     aiStudioSocket = new WebSocket(AI_STUDIO_BRIDGE_URL);
   } catch {
     aiStudioConnecting = false;
-    scheduleAiStudioReconnect();
+    scheduleAiStudioReconnect(reason);
     return;
   }
 
   aiStudioSocket.addEventListener("open", async () => {
     aiStudioConnecting = false;
+    aiStudioReconnectAttempt = 0;
     clearAiStudioReconnectTimer();
+    startAiStudioHeartbeat();
+
     sendAiStudioSocketMessage({
       action: "EXTENSION_CONNECTED",
       extensionType: AI_STUDIO_EXTENSION_TYPE,
       instanceId: AI_STUDIO_INSTANCE_ID,
-      version: CONFIG.APP_VERSION
+      version: CONFIG.APP_VERSION,
     });
+
     await publishWorkflowCatalog();
+    await sendAiStudioHeartbeat("socket-open");
+    await publishStoredRemoteWorkflowSession("socket-open");
   });
 
   aiStudioSocket.addEventListener("message", handleAiStudioBridgeMessage);
@@ -265,7 +452,9 @@ function connectAiStudioBridgeSocket() {
   aiStudioSocket.addEventListener("close", () => {
     aiStudioSocket = null;
     aiStudioConnecting = false;
-    scheduleAiStudioReconnect();
+    stopAiStudioHeartbeat();
+    clearAiStudioSessionSyncTimer();
+    scheduleAiStudioReconnect(reason);
   });
 
   aiStudioSocket.addEventListener("error", () => {
@@ -277,11 +466,23 @@ function connectAiStudioBridgeSocket() {
   });
 }
 
-async function ensureAiStudioBridgeConnection() {
+async function ensureAiStudioBridgeConnection(reason = "manual") {
   if (isAiStudioSocketOpen() || aiStudioConnecting) {
     return;
   }
-  connectAiStudioBridgeSocket();
+
+  connectAiStudioBridgeSocket(reason);
+}
+
+function ensureAiStudioAlarm() {
+  if (!chrome.alarms?.create) {
+    return;
+  }
+
+  try {
+    chrome.alarms.create(AI_STUDIO_BRIDGE_ALARM, { periodInMinutes: AI_STUDIO_BRIDGE_ALARM_PERIOD_MINUTES });
+  } catch {
+  }
 }
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -291,6 +492,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
   if (changes[getWorkflowStorageKey()]) {
     void publishWorkflowCatalog();
+  }
+
+  if (changes[getRemoteWorkflowSessionStorageKey()]) {
+    debouncePublishStoredRemoteWorkflowSession("storage-change");
   }
 });
 
@@ -304,28 +509,62 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
-if (chrome.alarms?.create) {
-  chrome.alarms.create(AI_STUDIO_BRIDGE_ALARM, { periodInMinutes: 1 });
+if (chrome.runtime?.onConnect) {
+  chrome.runtime.onConnect.addListener((port) => {
+    if (port?.name !== AI_STUDIO_SIDEPANEL_PORT_NAME) {
+      return;
+    }
+
+    aiStudioSidePanelPorts.add(port);
+    void ensureAiStudioBridgeConnection("sidepanel-connect");
+    void sendAiStudioHeartbeat("sidepanel-connect");
+
+    port.onMessage.addListener((message) => {
+      if (message?.type !== "AI_STUDIO_SIDEPANEL_HEARTBEAT") {
+        return;
+      }
+
+      void ensureAiStudioBridgeConnection("sidepanel-heartbeat");
+      void sendAiStudioHeartbeat("sidepanel-heartbeat");
+      if (message.remoteWorkflowRequestId) {
+        debouncePublishStoredRemoteWorkflowSession("sidepanel-heartbeat");
+      }
+    });
+
+    port.onDisconnect.addListener(() => {
+      aiStudioSidePanelPorts.delete(port);
+    });
+  });
 }
 
 if (chrome.alarms?.onAlarm) {
   chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm?.name === AI_STUDIO_BRIDGE_ALARM) {
-      void ensureAiStudioBridgeConnection();
+    if (alarm?.name !== AI_STUDIO_BRIDGE_ALARM) {
+      return;
     }
+
+    if (isAiStudioSocketOpen()) {
+      void sendAiStudioHeartbeat("alarm");
+      return;
+    }
+
+    void ensureAiStudioBridgeConnection("alarm");
   });
 }
 
 if (chrome.runtime?.onStartup) {
   chrome.runtime.onStartup.addListener(() => {
-    void ensureAiStudioBridgeConnection();
+    ensureAiStudioAlarm();
+    void ensureAiStudioBridgeConnection("runtime-startup");
   });
 }
 
 if (chrome.runtime?.onInstalled) {
   chrome.runtime.onInstalled.addListener(() => {
-    void ensureAiStudioBridgeConnection();
+    ensureAiStudioAlarm();
+    void ensureAiStudioBridgeConnection("runtime-installed");
   });
 }
 
-void ensureAiStudioBridgeConnection();
+ensureAiStudioAlarm();
+void ensureAiStudioBridgeConnection("service-worker-start");

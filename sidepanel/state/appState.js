@@ -23,6 +23,7 @@ const state = {
   processedSincePause: 0,
   lastProcessedMessageTimestamp: 0,
   remoteWorkflowRequestId: "",
+  remoteWorkflowProviderId: "",
   remoteWorkflowSource: ""
 };
 
