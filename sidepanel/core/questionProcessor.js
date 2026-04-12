@@ -42,7 +42,15 @@ export class QuestionProcessor {
       return;
     }
 
-    this.addLog(t("messages.biologicalPause"), "info");
+    this.addLog(t("messages.biologicalPause"), "info", {
+      category: "ANTIBOT",
+      details: {
+        processedSincePause: state.processedSincePause,
+        fatigueCount: settings.fatigueCount,
+        fatigueMinMinutes: settings.fatigueMinMinutes,
+        fatigueMaxMinutes: settings.fatigueMaxMinutes
+      }
+    });
     await randomSleep(getBiologicalPauseDuration(settings));
 
     const latestState = AppState.getState();
@@ -77,7 +85,12 @@ export class QuestionProcessor {
 
     if (nextIndex === -1) {
       AppState.patch({ isRunning: false, lastExtractedText: "" });
-      this.addLog(t("messages.allCompleted"), "success");
+      this.addLog(t("messages.allCompleted"), "success", {
+        category: "QUESTION",
+        details: {
+          totalQuestions: refreshedState.questions.length
+        }
+      });
       if (this.onAllCompleted) {
         this.onAllCompleted();
       }
@@ -91,7 +104,13 @@ export class QuestionProcessor {
       refreshedState.lastExtractedText
     );
     if (submitResult.wasInjected) {
-      this.addLog(t("messages.textInjected"), "info");
+      this.addLog(t("messages.textInjected"), "info", {
+        category: "EXTRACTION",
+        details: {
+          placeholderUsed: nextQuestion.extractionConfig?.injectionPlaceholder || "",
+          chainedTextLength: refreshedState.lastExtractedText.length
+        }
+      });
     }
     const submittedQuestion = submitResult.text;
 
@@ -102,7 +121,17 @@ export class QuestionProcessor {
     const providerLabel = this.getProviderLabel(providerId);
     this.addLog(
       `[${providerLabel}] [${nextIndex + 1}/${refreshedState.questions.length}]: ${nextQuestion.question.substring(0, 50)}...`,
-      "info"
+      "info",
+      {
+        category: "QUESTION",
+        details: {
+          questionId: nextQuestion.id,
+          providerId,
+          providerLabel,
+          questionIndex: nextIndex,
+          totalQuestions: refreshedState.questions.length
+        }
+      }
     );
 
     try {
@@ -122,11 +151,27 @@ export class QuestionProcessor {
         throw new Error(response?.error || "No response from background script");
       }
 
-      this.addLog(t("messages.submittedWaiting"), "info");
+      this.addLog(t("messages.submittedWaiting"), "info", {
+        category: "QUESTION",
+        details: {
+          questionId: nextQuestion.id,
+          providerId,
+          keepSameChat,
+          useTempChat,
+          useWebSearch
+        }
+      });
     } catch (error) {
       AppState.updateQuestion(nextQuestion.id, { status: "failed", error: error.message });
       await this.persistQuestions();
-      this.addLog(`${t("messages.processingFailed")}: ${error.message}`, "error");
+      this.addLog(`${t("messages.processingFailed")}: ${error.message}`, "error", {
+        category: "QUESTION",
+        details: {
+          questionId: nextQuestion.id,
+          providerId,
+          error: error.message
+        }
+      });
       AppState.patch({ currentIndex: nextIndex + 1 });
 
       const latestState = AppState.getState();
@@ -172,7 +217,14 @@ export class QuestionProcessor {
         if (!extractedText) {
           this.addLog(
             `Extraction failed: pattern not found in response. Workflow aborted.`,
-            "error"
+            "error",
+            {
+              category: "EXTRACTION",
+              details: {
+                regex: stepRegex,
+                answerPreview: (result.answer || "").substring(0, 200)
+              }
+            }
           );
           return false;
         }
@@ -184,9 +236,21 @@ export class QuestionProcessor {
           { stepIndex: state.activeWorkflowStepIndex, action: "extract", text: extractedText, success: true }
         ];
         AppState.patch({ workflowContext: ctx, lastExtractedText: extractedText });
-        this.addLog(t("messages.textExtracted"), "success");
+        this.addLog(t("messages.textExtracted"), "success", {
+          category: "EXTRACTION",
+          details: {
+            regex: stepRegex,
+            extractedTextLength: extractedText.length
+          }
+        });
       } catch (error) {
-        this.addLog(`Extraction regex error: ${error.message}. Workflow aborted.`, "error");
+        this.addLog(`Extraction regex error: ${error.message}. Workflow aborted.`, "error", {
+          category: "EXTRACTION",
+          details: {
+            regex: stepRegex,
+            error: error.message
+          }
+        });
         return false;
       }
     } else if (responseAction === "store_full") {
@@ -198,7 +262,13 @@ export class QuestionProcessor {
         { stepIndex: state.activeWorkflowStepIndex, action: "store_full", text: fullResponse.substring(0, 200), success: true }
       ];
       AppState.patch({ workflowContext: ctx, lastExtractedText: fullResponse });
-      this.addLog("Full response stored for next step.", "success");
+      this.addLog("Full response stored for next step.", "success", {
+        category: "EXTRACTION",
+        details: {
+          responseLength: fullResponse.length,
+          stepIndex: state.activeWorkflowStepIndex
+        }
+      });
 
       // Auto-save to Ruta de Proyectos via clusiv-v3
       const workflow = state.activeWorkflow;
@@ -228,12 +298,36 @@ export class QuestionProcessor {
         });
         const saveData = await saveResp.json();
         if (!saveData.success) {
-          this.addLog(`Error al guardar en Ruta de Proyectos: ${saveData.error}. Workflow aborted.`, "error");
+          this.addLog(`Error al guardar en Ruta de Proyectos: ${saveData.error}. Workflow aborted.`, "error", {
+            category: "STORAGE",
+            details: {
+              workflowName,
+              stepTitle,
+              stepIndex: state.activeWorkflowStepIndex,
+              error: saveData.error
+            }
+          });
           return false;
         }
-        this.addLog(`Respuesta guardada en: ${saveData.path}`, "success");
+        this.addLog(`Respuesta guardada en: ${saveData.path}`, "success", {
+          category: "STORAGE",
+          details: {
+            workflowName,
+            stepTitle,
+            stepIndex: state.activeWorkflowStepIndex,
+            path: saveData.path
+          }
+        });
       } catch (saveError) {
-        this.addLog(`Error al guardar en Ruta de Proyectos: ${saveError.message}. Workflow aborted.`, "error");
+        this.addLog(`Error al guardar en Ruta de Proyectos: ${saveError.message}. Workflow aborted.`, "error", {
+          category: "STORAGE",
+          details: {
+            workflowName,
+            stepTitle,
+            stepIndex: state.activeWorkflowStepIndex,
+            error: saveError.message
+          }
+        });
         return false;
       }
     } else {
@@ -269,7 +363,15 @@ export class QuestionProcessor {
       // Handle non-workflow extraction has been removed;
       // extraction is now configured per workflow step in chainConfig.
 
-      this.addLog(`${logPrefix}${t("messages.completed")}: ${question.question.substring(0, 50)}...`, "success");
+      this.addLog(`${logPrefix}${t("messages.completed")}: ${question.question.substring(0, 50)}...`, "success", {
+        category: "QUESTION",
+        details: {
+          questionId: question.id,
+          providerLabel,
+          answerLength: typeof result.answer === "string" ? result.answer.length : 0,
+          sourcesCount: Array.isArray(result.sources) ? result.sources.length : 0
+        }
+      });
     } else {
       AppState.updateQuestion(result.questionId, {
         status: "failed",
@@ -280,9 +382,25 @@ export class QuestionProcessor {
       if (state.activeWorkflow) {
         this.addLog(
           `${logPrefix}${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`,
-          "error"
+          "error",
+          {
+            category: "QUESTION",
+            details: {
+              questionId: question.id,
+              providerLabel,
+              error: result.error
+            }
+          }
         );
-        this.addLog("Step failed. Workflow aborted.", "error");
+        this.addLog("Step failed. Workflow aborted.", "error", {
+          category: "WORKFLOW",
+          details: {
+            questionId: question.id,
+            providerLabel,
+            error: result.error,
+            activeStepIndex: state.activeWorkflowStepIndex
+          }
+        });
         if (this.onWorkflowAbort) {
           this.onWorkflowAbort();
         }
@@ -291,7 +409,15 @@ export class QuestionProcessor {
 
       this.addLog(
         `${logPrefix}${t("messages.failed")}: ${question.question.substring(0, 50)}... - ${result.error}`,
-        "error"
+        "error",
+        {
+          category: "QUESTION",
+          details: {
+            questionId: question.id,
+            providerLabel,
+            error: result.error
+          }
+        }
       );
     }
 
@@ -319,7 +445,13 @@ export class QuestionProcessor {
         }
       }
 
-      this.addLog(t("messages.waitingNext"), "info");
+      this.addLog(t("messages.waitingNext"), "info", {
+        category: "QUESTION",
+        details: {
+          nextIndex: latestState.currentIndex,
+          pendingRemaining: latestState.questions.filter((entry) => entry.status === "pending").length
+        }
+      });
       await waitForConfiguredDelay(
         AppConfig.TIMING.BETWEEN_QUESTIONS_MS,
         latestState.randomDelays

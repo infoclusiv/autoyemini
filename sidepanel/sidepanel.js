@@ -25,6 +25,7 @@ import { StatsPanel } from "./ui/statsPanel.js";
 import { SettingsPanel } from "./ui/settingsPanel.js";
 import { WorkflowRunner } from "./ui/workflowRunner.js";
 import { countStoredSteps, normalizeWorkflows } from "./services/workflowService.js";
+import { DebugLogger } from "./core/debugLogger.js";
 import { QuestionProcessor, parseQuestionsInput } from "./core/questionProcessor.js";
 import { waitForConfiguredDelay } from "./core/antiBotController.js";
 
@@ -75,8 +76,241 @@ function getElements() {
   };
 }
 
-function addLog(message, level = "info") {
-  logPanel.add(message, level);
+function normalizeLogLevel(level) {
+  const value = typeof level === "string" ? level.trim().toLowerCase() : "info";
+  const levelMap = {
+    debug: "DEBUG",
+    info: "INFO",
+    success: "SUCCESS",
+    warning: "WARNING",
+    warn: "WARNING",
+    error: "ERROR",
+    critical: "CRITICAL"
+  };
+
+  return levelMap[value] || "INFO";
+}
+
+function buildQuestionSummary(questions = []) {
+  return questions.reduce((summary, question) => {
+    const status = question.status || "unknown";
+    summary.total += 1;
+    summary[status] = (summary[status] || 0) + 1;
+    return summary;
+  }, {
+    total: 0,
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    failed: 0
+  });
+}
+
+function getCurrentQuestionForLogging(state) {
+  if (!Array.isArray(state.questions) || state.questions.length === 0) {
+    return null;
+  }
+
+  const processingQuestion = state.questions.find((question) => question.status === "processing");
+  if (processingQuestion) {
+    return processingQuestion;
+  }
+
+  const indexedQuestion = state.questions[state.currentIndex] || null;
+  if (indexedQuestion && indexedQuestion.status !== "completed") {
+    return indexedQuestion;
+  }
+
+  return state.questions.find((question) => ["pending", "failed"].includes(question.status)) || null;
+}
+
+function buildLogSnapshot(state) {
+  const activeStep = state.activeWorkflow?.steps?.[state.activeWorkflowStepIndex] || null;
+
+  return {
+    isRunning: state.isRunning,
+    isPaused: state.isPaused,
+    currentIndex: state.currentIndex,
+    questionSummary: buildQuestionSummary(state.questions),
+    activeWorkflow: state.activeWorkflow
+      ? {
+        id: state.activeWorkflow.id || "",
+        name: state.activeWorkflow.name || "",
+        totalSteps: Array.isArray(state.activeWorkflow.steps) ? state.activeWorkflow.steps.length : 0,
+        currentStepIndex: state.activeWorkflowStepIndex,
+        currentStepTitle: activeStep?.title || ""
+      }
+      : null,
+    lastExtractedTextLength: String(state.lastExtractedText || "").length,
+    settings: {
+      useTempChat: state.useTempChat,
+      useWebSearch: state.useWebSearch,
+      keepSameChat: state.keepSameChat,
+      humanTyping: state.humanTyping,
+      randomDelays: state.randomDelays,
+      biologicalPauses: state.biologicalPauses
+    },
+    remoteWorkflow: state.remoteWorkflowRequestId
+      ? {
+        requestId: state.remoteWorkflowRequestId,
+        providerId: state.remoteWorkflowProviderId,
+        projectFolder: state.remoteWorkflowProjectFolder,
+        source: state.remoteWorkflowSource
+      }
+      : null
+  };
+}
+
+function buildLogSystemSnapshot(state) {
+  return {
+    appState: {
+      ...buildLogSnapshot(state),
+      workflowContext: state.workflowContext
+        ? {
+          chainedTextLength: String(state.workflowContext.chainedText || "").length,
+          stepResults: Array.isArray(state.workflowContext.stepResults)
+            ? state.workflowContext.stepResults.map((result) => ({
+              stepIndex: result.stepIndex,
+              action: result.action,
+              success: result.success === true,
+              textLength: typeof result.text === "string" ? result.text.length : 0,
+              textPreview: typeof result.text === "string" ? result.text.substring(0, 120) : ""
+            }))
+            : []
+        }
+        : null,
+      questions: state.questions.map((question, index) => ({
+        id: question.id,
+        index,
+        status: question.status,
+        providerId: normalizeProviderId(question.stepProvider),
+        questionPreview: String(question.question || "").substring(0, 120),
+        answerLength: typeof question.answer === "string" ? question.answer.length : 0,
+        sourcesCount: Array.isArray(question.sources) ? question.sources.length : 0,
+        error: question.error || null,
+        timestamp: question.timestamp || null,
+        completedAt: question.completedAt || null
+      })),
+      workflows: state.workflows.map((workflow) => ({
+        id: workflow.id,
+        name: workflow.name,
+        stepCount: Array.isArray(workflow.steps) ? workflow.steps.length : 0
+      }))
+    },
+    providers: Object.values(cachedProviders)
+      .filter((provider) => provider && typeof provider === "object")
+      .map((provider) => ({
+        id: provider.id || "",
+        label: provider.label || provider.id || "",
+        hostname: provider.HOSTNAME || "",
+        supportsSSE: provider.supportsSSE === true,
+        supportsWebSearch: provider.supportsWebSearch === true,
+        supportsTempChat: provider.supportsTempChat === true,
+        supportsLivePolling: provider.supportsLivePolling === true
+      }))
+  };
+}
+
+function buildLoggerContext() {
+  const state = AppState.getState();
+  const currentQuestion = getCurrentQuestionForLogging(state);
+  const activeStep = state.activeWorkflow?.steps?.[state.activeWorkflowStepIndex] || null;
+  const providerId = currentQuestion ? normalizeProviderId(currentQuestion.stepProvider) : null;
+
+  return {
+    workflowContext: state.activeWorkflow
+      ? {
+        workflowId: state.activeWorkflow.id || "",
+        workflowName: state.activeWorkflow.name || "",
+        stepIndex: state.activeWorkflowStepIndex,
+        stepTitle: activeStep?.title || `Step ${state.activeWorkflowStepIndex + 1}`
+      }
+      : null,
+    questionContext: currentQuestion
+      ? {
+        questionId: currentQuestion.id,
+        questionPreview: String(currentQuestion.question || "").substring(0, 60),
+        providerId,
+        providerLabel: getProviderLabel(providerId),
+        status: currentQuestion.status
+      }
+      : null,
+    snapshot: buildLogSnapshot(state),
+    systemSnapshot: buildLogSystemSnapshot(state)
+  };
+}
+
+function addLog(message, level = "info", metadata = {}) {
+  const normalizedMetadata = metadata && typeof metadata === "object" && !Array.isArray(metadata)
+    ? metadata
+    : {};
+  const entryMetadata = {
+    source: "sidepanel",
+    category: "SYSTEM",
+    ...normalizedMetadata
+  };
+
+  if (logPanel) {
+    return logPanel.add(message, level, entryMetadata);
+  }
+
+  return DebugLogger.log(normalizeLogLevel(level), message, entryMetadata);
+}
+
+function addWorkflowLog(message, level = "info", metadata = {}) {
+  return addLog(message, level, {
+    source: "workflowRunner",
+    category: "WORKFLOW",
+    ...metadata
+  });
+}
+
+function addQuestionLog(message, level = "info", metadata = {}) {
+  return addLog(message, level, {
+    source: "questionQueue",
+    category: "QUESTION",
+    ...metadata
+  });
+}
+
+function addProviderLog(message, level = "info", metadata = {}) {
+  return addLog(message, level, {
+    source: "providerRouter",
+    category: "PROVIDER",
+    ...metadata
+  });
+}
+
+function addBridgeLog(message, level = "info", metadata = {}) {
+  return addLog(message, level, {
+    source: "bridge",
+    category: "BRIDGE",
+    ...metadata
+  });
+}
+
+function addStorageLog(message, level = "info", metadata = {}) {
+  return addLog(message, level, {
+    source: "storage",
+    category: "STORAGE",
+    ...metadata
+  });
+}
+
+function addUILog(message, level = "info", metadata = {}) {
+  return addLog(message, level, {
+    source: "ui",
+    category: "UI",
+    ...metadata
+  });
+}
+
+function addSystemLog(message, level = "info", metadata = {}) {
+  return addLog(message, level, {
+    source: "sidepanel",
+    category: "SYSTEM",
+    ...metadata
+  });
 }
 
 function persistQuestions() {
@@ -267,9 +501,16 @@ function getPendingProviderId(questions = []) {
 }
 
 function logProviderOpenFailure(providerId, error) {
-  addLog(
+  addProviderLog(
     `${t("messages.cannotOpenProvider", { provider: getProviderLabel(providerId) })}: ${error?.message || error || "Unknown error"}`,
-    "error"
+    "error",
+    {
+      details: {
+        providerId,
+        providerLabel: getProviderLabel(providerId),
+        error: error?.message || error || "Unknown error"
+      }
+    }
   );
 }
 
@@ -277,7 +518,15 @@ async function openProviderTab(providerId, options = {}) {
   const normalizedProviderId = normalizeProviderId(providerId);
   const providerLabel = getProviderLabel(normalizedProviderId);
 
-  addLog(t("messages.openingProvider", { provider: providerLabel }), "info");
+  addProviderLog(t("messages.openingProvider", { provider: providerLabel }), "info", {
+    details: {
+      providerId: normalizedProviderId,
+      providerLabel,
+      useTempChat: options.useTempChat !== false,
+      useWebSearch: options.useWebSearch !== false,
+      keepSameChat: options.keepSameChat === true
+    }
+  });
 
   const response = await sendToBackground({
     type: "OPEN_CHATGPT",
@@ -365,7 +614,13 @@ async function handleRemoteWorkflowStart(message) {
   const workflow = workflowRunner.selectWorkflow(requestedWorkflowId);
   if (!workflow) {
     const workflowName = typeof message.workflowName === "string" ? message.workflowName : requestedWorkflowId;
-    addLog(`No se encontró el workflow remoto solicitado: ${workflowName || "(sin id)"}.`, "error");
+    addBridgeLog(`No se encontró el workflow remoto solicitado: ${workflowName || "(sin id)"}.`, "error", {
+      details: {
+        requestId,
+        workflowId: requestedWorkflowId,
+        workflowName
+      }
+    });
     await emitRemoteWorkflowEvent("failed", {
       requestId,
       workflowId: requestedWorkflowId,
@@ -530,7 +785,15 @@ async function handleStartWorkflow(options = {}) {
   const normalizedRemoteProviderId = normalizeProviderId(providerId || "aistudio");
 
   const failWorkflowStart = async (message, level = "error", workflow = null) => {
-    addLog(message, level);
+    addWorkflowLog(message, level, {
+      details: {
+        workflowId: workflow?.id || workflowId || "",
+        workflowName: workflow?.name || remoteWorkflowName || "",
+        source,
+        requestId: bridgeRequestId || "",
+        providerId: normalizedRemoteProviderId
+      }
+    });
     if (isRemote) {
       await persistRemoteWorkflowSession("failed", {
         requestId: bridgeRequestId,
@@ -578,7 +841,15 @@ async function handleStartWorkflow(options = {}) {
   AppState.setQuestions([]);
   await persistQuestions();
 
-  addLog(t("messages.workflowStarting", { name: workflow.name }), "info");
+  addWorkflowLog(t("messages.workflowStarting", { name: workflow.name }), "info", {
+    details: {
+      workflowId: workflow.id,
+      workflowName: workflow.name,
+      source,
+      requestId: bridgeRequestId || "",
+      totalSteps: workflow.steps.length
+    }
+  });
 
   AppState.patch({
     activeWorkflow: { ...workflow },
@@ -623,7 +894,13 @@ async function executeWorkflowStep(stepIndex) {
   const workflow = state.activeWorkflow;
 
   if (!workflow || stepIndex >= workflow.steps.length) {
-    addLog(t("messages.workflowComplete"), "success");
+    addWorkflowLog(t("messages.workflowComplete"), "success", {
+      details: {
+        workflowId: workflow?.id || "",
+        workflowName: workflow?.name || "",
+        totalSteps: Array.isArray(workflow?.steps) ? workflow.steps.length : 0
+      }
+    });
     AppState.patch(getWorkflowResetPatch());
     return;
   }
@@ -632,7 +909,15 @@ async function executeWorkflowStep(stepIndex) {
   const stepTitle = step.title || `Step ${stepIndex + 1}`;
 
   AppState.patch({ activeWorkflowStepIndex: stepIndex });
-  addLog(t("messages.workflowStepStarting", [stepIndex + 1, stepTitle]), "info");
+  addWorkflowLog(t("messages.workflowStepStarting", [stepIndex + 1, stepTitle]), "info", {
+    details: {
+      workflowId: workflow.id,
+      workflowName: workflow.name,
+      stepIndex,
+      stepTitle,
+      providerId: normalizeProviderId(step.provider)
+    }
+  });
   await persistRemoteWorkflowSession("step_started", {
     workflow,
     providerId: getRemoteWorkflowProviderId(workflow),
@@ -653,7 +938,14 @@ async function executeWorkflowStep(stepIndex) {
   // Get the chainedText from the workflow context
   const chainedText = state.workflowContext?.chainedText || "";
   if (chainedText && stepIndex > 0) {
-    addLog(`Chained data available (${chainedText.length} chars)`, "info");
+    addWorkflowLog(`Chained data available (${chainedText.length} chars)`, "info", {
+      category: "EXTRACTION",
+      details: {
+        stepIndex,
+        stepTitle,
+        chainedTextLength: chainedText.length
+      }
+    });
   }
 
   // ── External source injection for step 0 ──────────────────────────────
@@ -665,14 +957,35 @@ async function executeWorkflowStep(stepIndex) {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       if (!data.title || data.status !== "ready") {
-        addLog("⚠️ External source has no title ready. Run clusiv-v3 analysis first.", "warning");
+        addBridgeLog("External source has no title ready. Run clusiv-v3 analysis first.", "warning", {
+          details: {
+            stepIndex,
+            stepTitle,
+            url: extSrc.url || "http://localhost:7788/api/best-title",
+            responseStatus: data.status || "unknown"
+          }
+        });
         abortWorkflow();
         return;
       }
       effectiveChainedText = data.title;
-      addLog(`🌐 External title fetched: "${effectiveChainedText}"`, "info");
+      addBridgeLog(`External title fetched: "${effectiveChainedText}"`, "info", {
+        details: {
+          stepIndex,
+          stepTitle,
+          titleLength: effectiveChainedText.length,
+          url: extSrc.url || "http://localhost:7788/api/best-title"
+        }
+      });
     } catch (err) {
-      addLog(`🌐 External source fetch failed: ${err.message}`, "error");
+      addBridgeLog(`External source fetch failed: ${err.message}`, "error", {
+        details: {
+          stepIndex,
+          stepTitle,
+          url: extSrc.url || "http://localhost:7788/api/best-title",
+          error: err.message
+        }
+      });
       abortWorkflow();
       return;
     }
@@ -687,7 +1000,16 @@ async function executeWorkflowStep(stepIndex) {
     ? { ...step, chainConfig: { ...step.chainConfig, injectionPlaceholder: extSrc.placeholder } }
     : step;
   const addedCount = loadWorkflowStepQuestions(stepForLoad, effectiveChainedText);
-  addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
+  addQuestionLog(`${addedCount} ${t("messages.questionsAdded")}`, "success", {
+    details: {
+      workflowId: workflow.id,
+      workflowName: workflow.name,
+      stepIndex,
+      stepTitle,
+      addedCount,
+      providerId: normalizeProviderId(step.provider)
+    }
+  });
   const providerId = normalizeProviderId(step.provider);
   let providerLabel = getProviderLabel(providerId);
 
@@ -730,13 +1052,41 @@ async function executeWorkflowStep(stepIndex) {
     lastExtractedText: effectiveChainedText
   });
 
-  addLog(t("messages.startingBatch"), "info");
-  addLog(t("messages.foundPending", { count: pendingQuestions.length }), "info");
-  addLog(t("messages.waitingProviderPage", { provider: providerLabel }), "info");
+  addQuestionLog(t("messages.startingBatch"), "info", {
+    details: {
+      pendingQuestions: pendingQuestions.length,
+      providerId,
+      providerLabel,
+      workflowId: workflow.id,
+      stepIndex
+    }
+  });
+  addQuestionLog(t("messages.foundPending", { count: pendingQuestions.length }), "info", {
+    details: {
+      pendingQuestions: pendingQuestions.length,
+      stepIndex,
+      stepTitle
+    }
+  });
+  addProviderLog(t("messages.waitingProviderPage", { provider: providerLabel }), "info", {
+    details: {
+      providerId,
+      providerLabel,
+      stepIndex,
+      stepTitle
+    }
+  });
 
   const antiBotSettings = AppState.getState();
   await waitForConfiguredDelay(AppConfig.TIMING.BETWEEN_QUESTIONS_MS, antiBotSettings.randomDelays);
-  addLog(t("messages.startingFirst"), "info");
+  addQuestionLog(t("messages.startingFirst"), "info", {
+    details: {
+      providerId,
+      providerLabel,
+      stepIndex,
+      stepTitle
+    }
+  });
   void questionProcessor.processNextQuestion();
 }
 
@@ -765,14 +1115,33 @@ async function advanceWorkflowStep() {
     totalSteps: state.activeWorkflow.steps.length,
     message: `Completado ${currentStepTitle}.`
   });
-  addLog(t("messages.workflowStepComplete", { num: state.activeWorkflowStepIndex + 1 }), "success");
+  addWorkflowLog(t("messages.workflowStepComplete", { num: state.activeWorkflowStepIndex + 1 }), "success", {
+    details: {
+      workflowId: state.activeWorkflow.id,
+      workflowName: state.activeWorkflow.name,
+      stepIndex: state.activeWorkflowStepIndex,
+      stepTitle: currentStepTitle
+    }
+  });
 
   if (nextStepIndex >= state.activeWorkflow.steps.length) {
-    addLog(t("messages.workflowComplete"), "success");
+    addWorkflowLog(t("messages.workflowComplete"), "success", {
+      details: {
+        workflowId: state.activeWorkflow.id,
+        workflowName: state.activeWorkflow.name,
+        totalSteps: state.activeWorkflow.steps.length
+      }
+    });
 
     const totalStoredSteps = countStoredSteps(state.activeWorkflow);
     if (totalStoredSteps === 0) {
-      addLog("Workflow completed without any 'Store full response' steps. Teleprompter merge was skipped.", "warning");
+      addBridgeLog("Workflow completed without any 'Store full response' steps. Teleprompter merge was skipped.", "warning", {
+        details: {
+          workflowId: state.activeWorkflow.id,
+          workflowName: state.activeWorkflow.name,
+          totalStoredSteps
+        }
+      });
       await persistRemoteWorkflowSession("completed", {
         workflow: state.activeWorkflow,
         providerId: getRemoteWorkflowProviderId(state.activeWorkflow),
@@ -805,17 +1174,43 @@ async function advanceWorkflowStep() {
       });
       if (!resp.ok) {
         const raw = await resp.text();
-        addLog(`⚠️ clusiv-v3 respondió ${resp.status}: ${raw || "(sin cuerpo)"}`, "warning");
+        addBridgeLog(`clusiv-v3 responded ${resp.status}: ${raw || "(sin cuerpo)"}`, "warning", {
+          details: {
+            workflowId: state.activeWorkflow.id,
+            workflowName: state.activeWorkflow.name,
+            status: resp.status,
+            body: raw || ""
+          }
+        });
       } else {
         const data = await resp.json();
         if (data.success) {
-          addLog(`✅ Teleprompter script guardado en: ${data.path} (${data.blocksFound} bloques)`, "success");
+          addBridgeLog(`Teleprompter script guardado en: ${data.path} (${data.blocksFound} bloques)`, "success", {
+            details: {
+              workflowId: state.activeWorkflow.id,
+              workflowName: state.activeWorkflow.name,
+              path: data.path,
+              blocksFound: data.blocksFound
+            }
+          });
         } else {
-          addLog(`⚠️ No se pudo generar el script: ${data.error}`, "warning");
+          addBridgeLog(`No se pudo generar el script: ${data.error}`, "warning", {
+            details: {
+              workflowId: state.activeWorkflow.id,
+              workflowName: state.activeWorkflow.name,
+              error: data.error
+            }
+          });
         }
       }
     } catch (err) {
-      addLog(`⚠️ No se pudo conectar a clusiv-v3: ${err.message}`, "warning");
+      addBridgeLog(`No se pudo conectar a clusiv-v3: ${err.message}`, "warning", {
+        details: {
+          workflowId: state.activeWorkflow.id,
+          workflowName: state.activeWorkflow.name,
+          error: err.message
+        }
+      });
     }
 
     await persistRemoteWorkflowSession("completed", {
@@ -879,7 +1274,18 @@ async function abortWorkflow(status = "aborted", options = {}) {
   });
 
   scheduleRemoteWorkflowSessionClear();
-  addLog(options.logMessage || "Workflow aborted.", statusLevel);
+  addWorkflowLog(options.logMessage || "Workflow aborted.", statusLevel, {
+    details: {
+      status,
+      requestId,
+      workflowId: workflow?.id || options.workflowId || "",
+      workflowName,
+      providerId: options.providerId || getRemoteWorkflowProviderId(workflow),
+      stepIndex: typeof options.stepIndex === "number" ? options.stepIndex : state.activeWorkflowStepIndex,
+      stepTitle: options.stepTitle || "",
+      source: options.source || "sidepanel"
+    }
+  });
   AppState.patch(getWorkflowResetPatch());
 }
 
@@ -1080,7 +1486,11 @@ async function processSidePanelMessage(message, { fromStorage = false } = {}) {
     case "UPDATE_PROGRESS":
       return true;
     case "LOG_MESSAGE":
-      addLog(message.message, message.level || "info");
+      addLog(message.message, message.level || "info", {
+        category: message.category || "SYSTEM",
+        source: message.source || "background",
+        details: message.details || null
+      });
       return true;
     default:
       return false;
@@ -1122,7 +1532,11 @@ function wireMessageListeners() {
         sendResponse({ received: true });
         return false;
       case "LOG_MESSAGE":
-        addLog(message.message, message.level || "info");
+        addLog(message.message, message.level || "info", {
+          category: message.category || "SYSTEM",
+          source: message.source || "background",
+          details: message.details || null
+        });
         sendResponse({ received: true });
         return false;
       default:
@@ -1287,7 +1701,10 @@ async function initialize() {
 
   const elements = getElements();
 
+  DebugLogger.setContextProvider(buildLoggerContext);
+  DebugLogger.setMaxEntries(AppConfig.LOG_MAX_ENTRIES);
   logPanel = new LogPanel(elements.logContainer);
+  DebugLogger.startSession();
   questionList = new QuestionList(elements.questionsList);
   controlPanel = new ControlPanel({
     idleButtons: elements.idleButtons,
@@ -1314,7 +1731,7 @@ async function initialize() {
 
   workflowRunner = new WorkflowRunner({
     containerElement: elements.workflowSection,
-    addLog,
+    addLog: (message, level = "info", metadata = {}) => addWorkflowLog(message, level, metadata),
     onStartWorkflow: () => {
       void handleStartWorkflow();
     }
@@ -1322,7 +1739,11 @@ async function initialize() {
 
   questionProcessor = new QuestionProcessor({
     getSettings: () => ({ ...settingsPanel.getValues(), ...AppState.getState() }),
-    addLog,
+    addLog: (message, level = "info", metadata = {}) => addLog(message, level, {
+      source: "questionProcessor",
+      category: "QUESTION",
+      ...metadata
+    }),
     getProviderLabel,
     onAllCompleted: () => {
       void advanceWorkflowStep();
@@ -1349,10 +1770,18 @@ async function initialize() {
     settingsPanel.setValues(stored);
 
     if (stored.questions.length > 0) {
-      addLog(t("messages.loadedQuestions", { count: stored.questions.length }), "info");
+      addStorageLog(t("messages.loadedQuestions", { count: stored.questions.length }), "info", {
+        details: {
+          count: stored.questions.length
+        }
+      });
     }
   } catch (error) {
-    addLog(`${t("messages.loadFailed")}: ${error.message}`, "error");
+    addStorageLog(`${t("messages.loadFailed")}: ${error.message}`, "error", {
+      details: {
+        error: error.message
+      }
+    });
   }
 
   try {
@@ -1383,7 +1812,12 @@ async function initialize() {
   questionList.render();
   controlPanel.render();
   statsPanel.render();
-  addLog(t("messages.ready"), "success");
+  addSystemLog(t("messages.ready"), "success", {
+    details: {
+      providerCount: Object.keys(cachedProviders).length,
+      workflowCount: AppState.getState().workflows.length
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {

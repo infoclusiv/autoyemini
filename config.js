@@ -113,7 +113,7 @@ const CONFIG = {
 		BUILTIN_PROVIDER_OVERRIDES: "builtinProviderOverrides"
 	},
 
-	LOG_MAX_ENTRIES: 100
+	LOG_MAX_ENTRIES: 500
 };
 
 globalThis.CONFIG = CONFIG;
