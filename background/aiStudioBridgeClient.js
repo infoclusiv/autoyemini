@@ -8,6 +8,7 @@ const AI_STUDIO_WORKFLOW_SESSION_SYNC_DEBOUNCE_MS = 400;
 const AI_STUDIO_EXTENSION_TYPE = "autoyepeto";
 const AI_STUDIO_INSTANCE_ID = "default";
 const AI_STUDIO_SIDEPANEL_PORT_NAME = "aiStudioSidepanel";
+const AI_STUDIO_TERMINAL_WORKFLOW_STATUSES = new Set(["completed", "done", "aborted", "failed", "stopped"]);
 
 let aiStudioSocket = null;
 let aiStudioReconnectTimer = null;
@@ -15,6 +16,7 @@ let aiStudioHeartbeatTimer = null;
 let aiStudioSessionSyncTimer = null;
 let aiStudioConnecting = false;
 let aiStudioReconnectAttempt = 0;
+let aiStudioLastForwardedWorkflowStatusKey = "";
 const aiStudioSidePanelPorts = new Set();
 
 function getWorkflowStorageKey() {
@@ -203,11 +205,21 @@ async function publishStoredRemoteWorkflowSession(reason = "session-sync") {
     return false;
   }
 
+  const sessionStatus = typeof session.status === "string"
+    ? session.status.trim().toLowerCase()
+    : "";
+  if (AI_STUDIO_TERMINAL_WORKFLOW_STATUSES.has(sessionStatus)) {
+    return false;
+  }
+
   return sendAiStudioSocketMessage({
     action: "WORKFLOW_STATUS",
     extensionType: AI_STUDIO_EXTENSION_TYPE,
     status: session.status || "started",
     requestId: session.requestId,
+    sessionId: typeof session.sessionId === "string" && session.sessionId.trim()
+      ? session.sessionId.trim()
+      : undefined,
     workflowId: session.workflowId,
     workflowName: session.workflowName,
     providerId: session.providerId,
@@ -247,6 +259,7 @@ async function handleStartWorkflowRequest(message) {
   const providerId = typeof message.providerId === "string" && message.providerId.trim()
     ? message.providerId.trim()
     : "aistudio";
+  const sessionId = typeof message.sessionId === "string" ? message.sessionId.trim() : "";
 
   const workflows = await getStoredWorkflowCatalog();
   const workflow = workflows.find((entry) => entry.id === workflowId) || null;
@@ -277,6 +290,7 @@ async function handleStartWorkflowRequest(message) {
     await forwardToSidePanel({
       type: "REMOTE_START_WORKFLOW",
       requestId: bridgeRequestId,
+      sessionId,
       workflowId: workflow.id,
       workflowName: workflow.name,
       providerId,
@@ -366,11 +380,26 @@ function forwardWorkflowStatusToBridge(message) {
     return false;
   }
 
-  return sendAiStudioSocketMessage({
+  const statusKey = [
+    typeof message.requestId === "string" ? message.requestId.trim() : "",
+    typeof message.sessionId === "string" ? message.sessionId.trim() : "",
+    typeof message.workflowId === "string" ? message.workflowId.trim() : "",
+    Number.isInteger(message.stepIndex) ? String(message.stepIndex) : "",
+    typeof message.status === "string" ? message.status.trim() : "",
+  ].join("|");
+
+  if (statusKey && statusKey === aiStudioLastForwardedWorkflowStatusKey) {
+    return false;
+  }
+
+  const forwarded = sendAiStudioSocketMessage({
     action: "WORKFLOW_STATUS",
     extensionType: AI_STUDIO_EXTENSION_TYPE,
     status: message.status,
     requestId: message.requestId,
+    sessionId: typeof message.sessionId === "string" && message.sessionId.trim()
+      ? message.sessionId.trim()
+      : undefined,
     workflowId: message.workflowId,
     workflowName: message.workflowName,
     providerId: message.providerId,
@@ -380,6 +409,12 @@ function forwardWorkflowStatusToBridge(message) {
     message: message.message,
     timestamp: Date.now(),
   });
+
+  if (forwarded && statusKey) {
+    aiStudioLastForwardedWorkflowStatusKey = statusKey;
+  }
+
+  return forwarded;
 }
 
 function handleAiStudioBridgeMessage(event) {
@@ -526,7 +561,7 @@ if (chrome.runtime?.onConnect) {
 
       void ensureAiStudioBridgeConnection("sidepanel-heartbeat");
       void sendAiStudioHeartbeat("sidepanel-heartbeat");
-      if (message.remoteWorkflowRequestId) {
+      if (message.remoteWorkflowRequestId && message.hasActiveWorkflow === true) {
         debouncePublishStoredRemoteWorkflowSession("sidepanel-heartbeat");
       }
     });

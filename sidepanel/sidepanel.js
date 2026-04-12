@@ -438,6 +438,7 @@ async function persistRemoteWorkflowSession(status, payload = {}) {
 
   const session = {
     requestId,
+    sessionId: payload.sessionId || state.remoteWorkflowSessionId || "",
     workflowId,
     workflowName: payload.workflowName || workflow?.name || "",
     providerId: normalizeProviderId(payload.providerId || getRemoteWorkflowProviderId(workflow)),
@@ -564,6 +565,7 @@ async function emitRemoteWorkflowEvent(status, payload = {}) {
       type: "WORKFLOW_REMOTE_EVENT",
       status,
       requestId,
+      sessionId: payload.sessionId || state.remoteWorkflowSessionId || "",
       workflowId: payload.workflowId || workflow?.id || "",
       workflowName: payload.workflowName || workflow?.name || "",
       providerId: payload.providerId || getRemoteWorkflowProviderId(workflow),
@@ -588,6 +590,7 @@ function getWorkflowResetPatch() {
     activeWorkflowStepIndex: -1,
     workflowContext: null,
     remoteWorkflowRequestId: "",
+    remoteWorkflowSessionId: "",
     remoteWorkflowProviderId: "",
     remoteWorkflowProjectFolder: "",
     remoteWorkflowSource: ""
@@ -596,6 +599,7 @@ function getWorkflowResetPatch() {
 
 async function handleRemoteWorkflowStart(message) {
   const requestId = typeof message.requestId === "string" ? message.requestId.trim() : "";
+  const sessionId = typeof message.sessionId === "string" ? message.sessionId.trim() : "";
   const requestedWorkflowId = typeof message.workflowId === "string" ? message.workflowId.trim() : "";
 
   if (requestId && requestId === lastHandledRemoteStartRequestId) {
@@ -623,6 +627,7 @@ async function handleRemoteWorkflowStart(message) {
     });
     await emitRemoteWorkflowEvent("failed", {
       requestId,
+      sessionId,
       workflowId: requestedWorkflowId,
       workflowName,
       message: "No se encontró el workflow remoto solicitado en el sidepanel."
@@ -634,6 +639,7 @@ async function handleRemoteWorkflowStart(message) {
     workflowId: workflow.id,
     source: "remote",
     bridgeRequestId: requestId,
+    remoteWorkflowSessionId: sessionId,
     remoteWorkflowName: workflow.name,
     providerId: typeof message.providerId === "string" ? message.providerId : "aistudio"
   });
@@ -709,6 +715,8 @@ async function handleStart() {
     processedSincePause: 0,
     lastExtractedText: "",
     remoteWorkflowRequestId: "",
+    remoteWorkflowSessionId: "",
+    remoteWorkflowProviderId: "",
     remoteWorkflowProjectFolder: "",
     remoteWorkflowSource: ""
   });
@@ -776,6 +784,7 @@ async function handleStartWorkflow(options = {}) {
     workflowId = "",
     source = "manual",
     bridgeRequestId = "",
+    remoteWorkflowSessionId = "",
     remoteWorkflowName = "",
     providerId = "",
     projectFolder = "",
@@ -797,6 +806,7 @@ async function handleStartWorkflow(options = {}) {
     if (isRemote) {
       await persistRemoteWorkflowSession("failed", {
         requestId: bridgeRequestId,
+        sessionId: remoteWorkflowSessionId,
         workflowId: workflow?.id || workflowId || "",
         workflowName: workflow?.name || remoteWorkflowName || "",
         workflow,
@@ -806,6 +816,7 @@ async function handleStartWorkflow(options = {}) {
       scheduleRemoteWorkflowSessionClear();
       await emitRemoteWorkflowEvent("failed", {
         requestId: bridgeRequestId,
+        sessionId: remoteWorkflowSessionId,
         workflowId: workflow?.id || workflowId || "",
         workflowName: workflow?.name || remoteWorkflowName || "",
         providerId: normalizedRemoteProviderId,
@@ -859,6 +870,7 @@ async function handleStartWorkflow(options = {}) {
       stepResults: []
     },
     remoteWorkflowRequestId: isRemote ? bridgeRequestId : "",
+    remoteWorkflowSessionId: isRemote ? remoteWorkflowSessionId : "",
     remoteWorkflowProviderId: isRemote ? normalizedRemoteProviderId : "",
     remoteWorkflowProjectFolder: isRemote ? String(projectFolder || "").trim() : "",
     remoteWorkflowSource: isRemote ? "remote" : ""
@@ -867,6 +879,7 @@ async function handleStartWorkflow(options = {}) {
   if (isRemote) {
     await persistRemoteWorkflowSession("started", {
       requestId: bridgeRequestId,
+      sessionId: remoteWorkflowSessionId,
       workflow,
       workflowName: workflow.name,
       providerId: normalizedRemoteProviderId,
@@ -875,6 +888,7 @@ async function handleStartWorkflow(options = {}) {
     });
     await emitRemoteWorkflowEvent("started", {
       requestId: bridgeRequestId,
+      sessionId: remoteWorkflowSessionId,
       workflow,
       workflowName: workflow.name,
       providerId: normalizedRemoteProviderId,
@@ -1359,6 +1373,7 @@ async function handleRemoteWorkflowStop(message) {
 
   await emitRemoteWorkflowEvent("aborted", {
     requestId: storedSession.requestId,
+    sessionId: storedSession.sessionId || "",
     workflowId: storedSession.workflowId,
     workflowName: storedSession.workflowName,
     providerId: storedSession.providerId,
