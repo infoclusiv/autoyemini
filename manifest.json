@@ -10,30 +10,18 @@
          "config.js",
          "shared/utils.js",
          "content/domInteraction.js",
-         "content/providers/chatgpt/domScraper.js",
-         "content/providers/chatgpt/webSearchEnabler.js",
-         "content/providers/chatgpt/questionSubmitter.js",
-         "content/providers/chatgpt/sseHandler.js",
+         "content/domScraper.js",
+         "content/webSearchEnabler.js",
+         "content/questionSubmitter.js",
+         "content/sseHandler.js",
          "content/content.js"
       ],
       "matches": [ "https://chatgpt.com/*" ],
       "run_at": "document_start"
-   }, {
-      "js": [
-         "config.js",
-         "shared/utils.js",
-         "content/domInteraction.js",
-         "content/providers/generic/domScraper.js",
-         "content/providers/generic/questionSubmitter.js",
-         "content/content.js"
-      ],
-      "matches": [ "https://*/*", "http://*/*" ],
-      "exclude_matches": [ "https://chatgpt.com/*" ],
-      "run_at": "document_start"
    } ],
    "default_locale": "en",
    "description": "__MSG_extDescription__",
-   "host_permissions": [ "https://chatgpt.com/*", "https://*/*", "http://*/*" ],
+   "host_permissions": [ "https://chatgpt.com/*" ],
    "icons": {
       "128": "icons/icon128.png",
       "16": "icons/icon16.png",
@@ -42,7 +30,7 @@
    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAty/zRxEXE31pZHV+JspPJlQDKW+ZevlqO1qOMamowcDABekVaiDeTbpWPZEJgSWcOA50MyGb+1Pi2qzKrJXeZJnWlqb2l0/bz3XIN/ky4NIeRPNjaQzJ4BHVo8BAcEMIpZgSxOnYaVlwNhzOIb2KlJFavFY3UuVs5LiY35K3B9DwK3J2Rt8279GyT4FLsjfjDGiMuSudQ3KAyP+V48vhA/MQi7O2ihRlxwgwwWb6xwsLbJLQY9e8o39YLMI5cSZSCfrDSlE6KJh7p93BVFqzJ9bkfIWjZOj53461rQCTgpGBhsEEbHdoAPizCLgEKVcLzHJvKZeOxbd06Bc3Z7QrcQIDAQAB",
    "manifest_version": 3,
    "name": "__MSG_extName__",
-   "permissions": [ "storage", "sidePanel", "tabs", "activeTab", "scripting", "alarms" ],
+   "permissions": [ "storage", "sidePanel", "tabs", "activeTab" ],
    "side_panel": {
       "default_path": "sidepanel.html"
    },

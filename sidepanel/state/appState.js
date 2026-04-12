@@ -21,12 +21,7 @@ const state = {
   fatigueMinMinutes: 0.5,
   fatigueMaxMinutes: 1,
   processedSincePause: 0,
-  lastProcessedMessageTimestamp: 0,
-  remoteWorkflowRequestId: "",
-  remoteWorkflowSessionId: "",
-  remoteWorkflowProviderId: "",
-  remoteWorkflowProjectFolder: "",
-  remoteWorkflowSource: ""
+  lastProcessedMessageTimestamp: 0
 };
 
 const listeners = new Set();

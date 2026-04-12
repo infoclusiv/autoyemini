@@ -1,14 +1,7 @@
 async function forwardToSidePanel(message) {
-  let delivered = false;
-
   try {
-    const response = await chrome.runtime.sendMessage(message);
-    delivered = Boolean(response?.received);
+    await chrome.runtime.sendMessage(message);
   } catch {
-  }
-
-  if (delivered) {
-    return true;
   }
 
   try {
@@ -20,6 +13,4 @@ async function forwardToSidePanel(message) {
     });
   } catch {
   }
-
-  return false;
 }

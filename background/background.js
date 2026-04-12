@@ -1,10 +1,8 @@
 importScripts(
   "../config.js",
   "../shared/utils.js",
-  "providerRegistry.js",
   "tabManager.js",
   "sidePanelBridge.js",
-  "aiStudioBridgeClient.js",
   "messageRouter.js"
 );
 

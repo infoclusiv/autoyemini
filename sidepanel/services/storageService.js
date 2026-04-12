@@ -8,10 +8,7 @@ const storageKeys = globalThis.CONFIG?.STORAGE_KEYS || {
   USE_WEB_SEARCH: "useWebSearch",
   KEEP_SAME_CHAT: "keepSameChat",
   SINGLE_PROMPT_MODE: "singlePromptMode",
-  PENDING_MESSAGE: "pendingMessage",
-  LAST_REMOTE_START_REQUEST_ID: "lastRemoteStartRequestId",
-  REMOTE_WORKFLOW_SESSION: "remoteWorkflowSession",
-  WORKFLOWS: "savedWorkflows"
+  PENDING_MESSAGE: "pendingMessage"
 };
 
 export const StorageKeys = storageKeys;
@@ -52,38 +49,8 @@ export function removePendingMessage() {
   return chrome.storage.local.remove(StorageKeys.PENDING_MESSAGE);
 }
 
-export async function loadPendingMessage() {
-  const stored = await chrome.storage.local.get([StorageKeys.PENDING_MESSAGE]);
-  return stored[StorageKeys.PENDING_MESSAGE] || null;
-}
-
 export function saveWorkflows(workflows) {
   return chrome.storage.local.set({ [StorageKeys.WORKFLOWS]: workflows });
-}
-
-export function saveRemoteWorkflowSession(session) {
-  return chrome.storage.local.set({ [StorageKeys.REMOTE_WORKFLOW_SESSION]: session });
-}
-
-export function saveLastRemoteStartRequestId(requestId) {
-  return chrome.storage.local.set({
-    [StorageKeys.LAST_REMOTE_START_REQUEST_ID]: typeof requestId === "string" ? requestId.trim() : ""
-  });
-}
-
-export async function loadLastRemoteStartRequestId() {
-  const stored = await chrome.storage.local.get([StorageKeys.LAST_REMOTE_START_REQUEST_ID]);
-  const requestId = stored[StorageKeys.LAST_REMOTE_START_REQUEST_ID];
-  return typeof requestId === "string" ? requestId : "";
-}
-
-export async function loadRemoteWorkflowSession() {
-  const stored = await chrome.storage.local.get([StorageKeys.REMOTE_WORKFLOW_SESSION]);
-  return stored[StorageKeys.REMOTE_WORKFLOW_SESSION] || null;
-}
-
-export function clearRemoteWorkflowSession() {
-  return chrome.storage.local.remove(StorageKeys.REMOTE_WORKFLOW_SESSION);
 }
 
 const WORKFLOWS_BACKUP_KEY = "workflowBackups";

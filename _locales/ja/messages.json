@@ -225,13 +225,7 @@
    },
    "msgCannotOpenChatGPT": {
       "description": "Cannot open ChatGPT error",
-      "message": "$PROVIDER$を開けません",
-      "placeholders": {
-         "provider": {
-            "content": "$1",
-            "example": "Google AI Studio"
-         }
-      }
+      "message": "ChatGPTを開けません"
    },
    "msgChatGPTOpenFailed": {
       "description": "ChatGPT open failed message",
@@ -307,13 +301,7 @@
    },
    "msgOpeningChatGPT": {
       "description": "Opening ChatGPT message",
-      "message": "$PROVIDER$を開いています...",
-      "placeholders": {
-         "provider": {
-            "content": "$1",
-            "example": "Google AI Studio"
-         }
-      }
+      "message": "ChatGPTを開いています..."
    },
    "msgPleaseEnterQuestion": {
       "description": "Please enter question warning",
@@ -333,7 +321,7 @@
    },
    "msgReady": {
       "description": "Ready message",
-      "message": "一括質問アシスタント準備完了"
+      "message": "ChatGPT一括質問アシスタント準備完了"
    },
    "msgResetFailed": {
       "description": "Reset failed questions message",
@@ -407,13 +395,7 @@
    },
    "msgWaitingPage": {
       "description": "Waiting for page message",
-      "message": "$PROVIDER$ページの読み込みを待っています（必要に応じて自動的に更新されます）...",
-      "placeholders": {
-         "provider": {
-            "content": "$1",
-            "example": "Google AI Studio"
-         }
-      }
+      "message": "ChatGPTページの読み込みを待っています（必要に応じて自動的に更新されます）..."
    },
    "msgWebSearchDisabled": {
       "description": "Web search disabled message",
