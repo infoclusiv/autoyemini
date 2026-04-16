@@ -60,8 +60,16 @@ function registerMessageRouter() {
         forwardToSidePanel(message);
         break;
       case "QUESTION_COMPLETE":
-        forwardToSidePanel(message);
-        sendResponse({ received: true });
+        void (async () => {
+          const handledRemotely = await globalThis.ChatGPTRemoteRuntime.handleQuestionComplete(message.result);
+          forwardToSidePanel(message);
+          sendResponse({ received: true, remoteHandled: handledRemotely === true });
+        })();
+        return true;
+      case "ENSURE_REMOTE_BRIDGE":
+        void ChatGPTRemoteBridge.ensureConnected("runtime-message").then((ok) => {
+          sendResponse({ success: ok === true });
+        });
         return true;
       default:
         break;

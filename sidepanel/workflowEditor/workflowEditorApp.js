@@ -277,7 +277,7 @@ function renderCanvas() {
       extToggleCb.type = "checkbox";
       extToggleCb.checked = extEnabled;
       extToggleLabel.appendChild(extToggleCb);
-      extToggleLabel.append(" \uD83C\uDF10 External Source (clusiv-v3)");
+      extToggleLabel.append(" \uD83C\uDF10 External Source (clusiv-v5)");
       extToggleRow.appendChild(extToggleLabel);
       injectionRow.appendChild(extToggleRow);
 

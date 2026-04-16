@@ -196,7 +196,7 @@ export class QuestionProcessor {
       AppState.patch({ workflowContext: ctx, lastExtractedText: fullResponse });
       this.addLog("Full response stored for next step.", "success");
 
-      // Auto-save to Ruta de Proyectos via clusiv-v3
+      // Auto-save to Ruta de Proyectos via clusiv-v5
       const workflow = state.activeWorkflow;
       const workflowName = workflow.name || "workflow";
       const step = workflow.steps[state.activeWorkflowStepIndex];

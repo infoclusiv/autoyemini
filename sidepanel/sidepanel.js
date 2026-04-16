@@ -264,7 +264,7 @@ async function executeWorkflowStep(stepIndex) {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       if (!data.title || data.status !== "ready") {
-        addLog("⚠️ External source has no title ready. Run clusiv-v3 analysis first.", "warning");
+        addLog("⚠️ External source has no title ready. Run clusiv-v5 analysis first.", "warning");
         abortWorkflow();
         return;
       }
@@ -364,7 +364,7 @@ async function advanceWorkflowStep() {
       return;
     }
 
-    // Notify clusiv-v3 to merge teleprompter scripts (fire-and-warn, never aborts workflow)
+    // Notify clusiv-v5 to merge teleprompter scripts (fire-and-warn, never aborts workflow)
     try {
       const resp = await fetch("http://localhost:7788/api/workflow-complete", {
         method: "POST",
@@ -377,7 +377,7 @@ async function advanceWorkflowStep() {
       });
       if (!resp.ok) {
         const raw = await resp.text();
-        addLog(`⚠️ clusiv-v3 respondió ${resp.status}: ${raw || "(sin cuerpo)"}`, "warning");
+        addLog(`⚠️ clusiv-v5 respondió ${resp.status}: ${raw || "(sin cuerpo)"}`, "warning");
       } else {
         const data = await resp.json();
         if (data.success) {
@@ -387,7 +387,7 @@ async function advanceWorkflowStep() {
         }
       }
     } catch (err) {
-      addLog(`⚠️ No se pudo conectar a clusiv-v3: ${err.message}`, "warning");
+      addLog(`⚠️ No se pudo conectar a clusiv-v5: ${err.message}`, "warning");
     }
 
     AppState.patch({ activeWorkflow: null, activeWorkflowStepIndex: -1, workflowContext: null });
