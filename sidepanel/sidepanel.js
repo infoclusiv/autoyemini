@@ -59,6 +59,25 @@ function addLog(message, level = "info") {
   logPanel.add(message, level);
 }
 
+async function ensureRemoteBridgeFromPanel(reason = "sidepanel-init") {
+  try {
+    const response = await sendToBackground({
+      type: "ENSURE_REMOTE_BRIDGE",
+      reason
+    });
+
+    if (!response?.success) {
+      addLog("⚠️ No se pudo reactivar el bridge remoto desde el panel.", "warning");
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    addLog(`⚠️ No se pudo contactar el service worker para reactivar el bridge remoto: ${error.message}`, "warning");
+    return false;
+  }
+}
+
 function persistQuestions() {
   return saveQuestions(AppState.getState().questions);
 }
@@ -781,6 +800,7 @@ async function initialize() {
   questionList.render();
   controlPanel.render();
   statsPanel.render();
+  void ensureRemoteBridgeFromPanel("sidepanel-init");
   addLog(t("messages.ready"), "success");
 }
 

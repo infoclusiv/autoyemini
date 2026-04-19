@@ -67,8 +67,15 @@ function registerMessageRouter() {
         })();
         return true;
       case "ENSURE_REMOTE_BRIDGE":
-        void ChatGPTRemoteBridge.ensureConnected("runtime-message").then((ok) => {
-          sendResponse({ success: ok === true });
+        void ChatGPTRemoteBridge.ensureConnected(
+          typeof message.reason === "string" && message.reason.trim()
+            ? message.reason.trim()
+            : "runtime-message"
+        ).then((ok) => {
+          sendResponse({
+            success: ok === true,
+            debugState: globalThis.ChatGPTRemoteBridge?.getDebugState?.() || null
+          });
         });
         return true;
       default:
