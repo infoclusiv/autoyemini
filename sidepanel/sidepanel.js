@@ -265,7 +265,11 @@ async function executeWorkflowStep(stepIndex) {
   const extSrc = step.chainConfig?.externalSource;
   if (stepIndex === 0 && extSrc?.enabled) {
     try {
-      const resp = await fetch(extSrc.url || "http://localhost:7788/api/best-title");
+      const resp = await fetch(
+        globalThis.CONFIG?.REMOTE_API?.resolveBestTitleUrl?.(extSrc.url)
+          || globalThis.CONFIG?.REMOTE_API?.BEST_TITLE_URL
+          || "http://localhost:7788/api/extensions/autoyemini/best-title"
+      );
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
       if (!data.title || data.status !== "ready") {
@@ -371,15 +375,18 @@ async function advanceWorkflowStep() {
 
     // Notify clusiv-v5 to merge teleprompter scripts (fire-and-warn, never aborts workflow)
     try {
-      const resp = await fetch("http://localhost:7788/api/workflow-complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workflowName: state.activeWorkflow.name,
-          totalStoredSteps,
-          totalSteps: totalStoredSteps
-        })
-      });
+      const resp = await fetch(
+        globalThis.CONFIG?.REMOTE_API?.WORKFLOW_COMPLETE_URL || "http://localhost:7788/api/extensions/autoyemini/workflow-complete",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflowName: state.activeWorkflow.name,
+            totalStoredSteps,
+            totalSteps: totalStoredSteps
+          })
+        }
+      );
       if (!resp.ok) {
         const raw = await resp.text();
         addLog(`⚠️ clusiv-v5 respondió ${resp.status}: ${raw || "(sin cuerpo)"}`, "warning");

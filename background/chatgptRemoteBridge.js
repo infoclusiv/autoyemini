@@ -1,5 +1,8 @@
 (function registerChatGPTRemoteBridge() {
-  const BRIDGE_URL = "ws://localhost:8766";
+  const bridgeConfig = CONFIG?.REMOTE_BRIDGE || {};
+  const BRIDGE_URL = bridgeConfig.BRIDGE_URL || "ws://localhost:8767";
+  const EXTENSION_ID = bridgeConfig.EXTENSION_ID || "autoyemini";
+  const EXTENSION_TYPE = bridgeConfig.EXTENSION_TYPE || "ai-studio-workflow";
   const RECONNECT_ALARM = "chatgpt-remote-bridge-alarm";
   const REQUEST_TIMEOUT_MS = 10000;
 
@@ -135,7 +138,9 @@
           action: "PONG",
           replyTo: message.requestId,
           version: CONFIG.APP_VERSION,
-          extensionType: "chatgpt-workflow"
+          extensionId: EXTENSION_ID,
+          extensionType: EXTENSION_TYPE,
+          instanceId: "default"
         });
         break;
       case "LIST_WORKFLOWS":
@@ -171,7 +176,8 @@
         sendRaw({
           action: "EXTENSION_CONNECTED",
           version: CONFIG.APP_VERSION,
-          extensionType: "chatgpt-workflow",
+          extensionId: EXTENSION_ID,
+          extensionType: EXTENSION_TYPE,
           instanceId: "default",
           reason
         });

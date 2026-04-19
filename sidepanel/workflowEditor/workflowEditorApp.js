@@ -262,7 +262,7 @@ function renderCanvas() {
       // ── External Source section replaces the disabled injection row ──
       const extSrc = step.chainConfig?.externalSource || {};
       const extEnabled = extSrc.enabled === true;
-      const extUrl = extSrc.url || "http://localhost:7788/api/best-title";
+      const extUrl = extSrc.url || globalThis.CONFIG?.REMOTE_API?.BEST_TITLE_URL || "http://localhost:7788/api/extensions/autoyemini/best-title";
       const extPlaceholder = extSrc.placeholder || "{{clusiv_title}}";
 
       injectionRow = document.createElement("div");
@@ -294,7 +294,7 @@ function renderCanvas() {
       const urlInput = document.createElement("input");
       urlInput.type = "text";
       urlInput.className = "editor-node-field-input";
-      urlInput.placeholder = "http://localhost:7788/api/best-title";
+      urlInput.placeholder = globalThis.CONFIG?.REMOTE_API?.BEST_TITLE_URL || "http://localhost:7788/api/extensions/autoyemini/best-title";
       urlInput.value = extUrl;
       urlInput.title = "URL to fetch the title from (GET request, must return JSON {title, status})";
       urlInput.addEventListener("change", () => {

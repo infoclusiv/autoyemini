@@ -326,9 +326,35 @@ if (
 	globalThis.__AUTOYEMINI_SITE_PROFILE_LISTENER__ = true;
 }
 
+const REMOTE_API_LEGACY_BASE_URL = "http://localhost:7788/api";
+const REMOTE_API_BASE_URL = "http://localhost:7788/api/extensions/autoyemini";
+
+function normalizeRemoteApiUrl(value, fallback) {
+	return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function resolveLegacyBestTitleUrl(value) {
+	const fallback = `${REMOTE_API_BASE_URL}/best-title`;
+	const candidate = normalizeRemoteApiUrl(value, fallback);
+	return candidate === `${REMOTE_API_LEGACY_BASE_URL}/best-title` ? fallback : candidate;
+}
+
 const CONFIG = {
 	APP_VERSION: "1.0.0",
 	APP_NAME: "AI Studio Workflow Assistant",
+	REMOTE_BRIDGE: {
+		EXTENSION_ID: "autoyemini",
+		EXTENSION_TYPE: "ai-studio-workflow",
+		BRIDGE_URL: "ws://localhost:8767"
+	},
+	REMOTE_API: {
+		LEGACY_BASE_URL: REMOTE_API_LEGACY_BASE_URL,
+		BASE_URL: REMOTE_API_BASE_URL,
+		BEST_TITLE_URL: `${REMOTE_API_BASE_URL}/best-title`,
+		SAVE_STEP_RESPONSE_URL: `${REMOTE_API_BASE_URL}/save-step-response`,
+		WORKFLOW_COMPLETE_URL: `${REMOTE_API_BASE_URL}/workflow-complete`,
+		resolveBestTitleUrl: resolveLegacyBestTitleUrl
+	},
 	DEFAULT_SITE_PROFILE: cloneValue(DEFAULT_SITE_PROFILE),
 	normalizeStoredSiteProfile,
 	normalizeSiteProfile,

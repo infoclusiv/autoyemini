@@ -57,7 +57,7 @@ export function normalizeWorkflows(value, existingTemplates) {
                 url:
                   typeof rawExtSrc?.url === "string" && rawExtSrc.url.trim()
                     ? rawExtSrc.url.trim()
-                    : "http://localhost:7788/api/best-title",
+                    : globalThis.CONFIG?.REMOTE_API?.BEST_TITLE_URL || "http://localhost:7788/api/extensions/autoyemini/best-title",
                 placeholder:
                   typeof rawExtSrc?.placeholder === "string" && rawExtSrc.placeholder.trim()
                     ? rawExtSrc.placeholder.trim()

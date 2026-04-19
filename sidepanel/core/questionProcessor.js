@@ -205,21 +205,24 @@ export class QuestionProcessor {
       const totalStoredSteps = storedStepIndexes.length;
       const isLastStoredStep = storedStepIndexes[storedStepIndexes.length - 1] === state.activeWorkflowStepIndex;
       try {
-        const saveResp = await fetch("http://localhost:7788/api/save-step-response", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            workflowName,
-            stepTitle,
-            stepIndex: state.activeWorkflowStepIndex,
-            totalStoredSteps,
-            totalSteps: totalStoredSteps,
-            isLastStoredStep,
-            isLastStep: isLastStoredStep,
-            answer: fullResponse,
-            timestamp: Date.now()
-          })
-        });
+        const saveResp = await fetch(
+          AppConfig?.REMOTE_API?.SAVE_STEP_RESPONSE_URL || "http://localhost:7788/api/extensions/autoyemini/save-step-response",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              workflowName,
+              stepTitle,
+              stepIndex: state.activeWorkflowStepIndex,
+              totalStoredSteps,
+              totalSteps: totalStoredSteps,
+              isLastStoredStep,
+              isLastStep: isLastStoredStep,
+              answer: fullResponse,
+              timestamp: Date.now()
+            })
+          }
+        );
         const saveData = await saveResp.json();
         if (!saveData.success) {
           this.addLog(`Error al guardar en Ruta de Proyectos: ${saveData.error}. Workflow aborted.`, "error");

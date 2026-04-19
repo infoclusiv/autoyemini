@@ -120,7 +120,7 @@
                     typeof step.chainConfig?.externalSource?.url === "string" &&
                     step.chainConfig.externalSource.url.trim()
                       ? step.chainConfig.externalSource.url.trim()
-                      : "http://localhost:7788/api/best-title",
+                      : CONFIG?.REMOTE_API?.BEST_TITLE_URL || "http://localhost:7788/api/extensions/autoyemini/best-title",
                   placeholder:
                     typeof step.chainConfig?.externalSource?.placeholder === "string" &&
                     step.chainConfig.externalSource.placeholder.trim()
@@ -232,7 +232,11 @@
 
   async function fetchExternalTitle(step) {
     const extSource = step.chainConfig?.externalSource || {};
-    const response = await fetch(extSource.url || "http://localhost:7788/api/best-title");
+    const response = await fetch(
+      CONFIG?.REMOTE_API?.resolveBestTitleUrl?.(extSource.url)
+        || CONFIG?.REMOTE_API?.BEST_TITLE_URL
+        || "http://localhost:7788/api/extensions/autoyemini/best-title"
+    );
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} al consultar el título externo.`);
     }
@@ -315,21 +319,24 @@
     const totalStoredSteps = storedStepIndexes.length;
     const isLastStoredStep = storedStepIndexes[storedStepIndexes.length - 1] === stepIndex;
 
-    const response = await fetch("http://localhost:7788/api/save-step-response", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        workflowName: runtimeState.workflowName,
-        stepTitle: step?.title || `step_${stepIndex}`,
-        stepIndex,
-        totalStoredSteps,
-        totalSteps: totalStoredSteps,
-        isLastStoredStep,
-        isLastStep: isLastStoredStep,
-        answer,
-        timestamp: Date.now()
-      })
-    });
+    const response = await fetch(
+      CONFIG?.REMOTE_API?.SAVE_STEP_RESPONSE_URL || "http://localhost:7788/api/extensions/autoyemini/save-step-response",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workflowName: runtimeState.workflowName,
+          stepTitle: step?.title || `step_${stepIndex}`,
+          stepIndex,
+          totalStoredSteps,
+          totalSteps: totalStoredSteps,
+          isLastStoredStep,
+          isLastStep: isLastStoredStep,
+          answer,
+          timestamp: Date.now()
+        })
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} al guardar la respuesta del step.`);
@@ -391,15 +398,18 @@
 
     if (totalStoredSteps > 0) {
       try {
-        const response = await fetch("http://localhost:7788/api/workflow-complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            workflowName,
-            totalStoredSteps,
-            totalSteps: totalStoredSteps
-          })
-        });
+        const response = await fetch(
+          CONFIG?.REMOTE_API?.WORKFLOW_COMPLETE_URL || "http://localhost:7788/api/extensions/autoyemini/workflow-complete",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              workflowName,
+              totalStoredSteps,
+              totalSteps: totalStoredSteps
+            })
+          }
+        );
         const payload = await response.json();
         if (response.ok && payload.success) {
           message = `Workflow ${workflowName} completado. Script guardado en: ${payload.path}`;
