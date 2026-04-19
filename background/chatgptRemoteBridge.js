@@ -3,6 +3,11 @@
   const BRIDGE_URL = bridgeConfig.BRIDGE_URL || "ws://localhost:8767";
   const EXTENSION_ID = bridgeConfig.EXTENSION_ID || "autoyemini";
   const EXTENSION_TYPE = bridgeConfig.EXTENSION_TYPE || "ai-studio-workflow";
+  const CLIENT_ID = bridgeConfig.CLIENT_ID || chrome?.runtime?.id || EXTENSION_ID;
+  const RUNTIME_INSTANCE_ID = bridgeConfig.RUNTIME_INSTANCE_ID
+    || globalThis.crypto?.randomUUID?.()
+    || globalThis.SharedUtils?.generateUUID?.()
+    || `runtime_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   const PERIODIC_ALARM = "chatgpt-remote-bridge-alarm";
   const RETRY_ALARM = "chatgpt-remote-bridge-retry";
   const REQUEST_TIMEOUT_MS = 10000;
@@ -15,6 +20,7 @@
   let connectTimeoutId = null;
   let lastConnectReason = "idle";
   let lastConnectionAttemptAt = 0;
+  let lifecycleRegistered = false;
   const pendingRequests = new Map();
 
   function logBridge(level, message, details) {
@@ -87,6 +93,15 @@
 
   function isSocketOpen() {
     return socket && socket.readyState === WebSocket.OPEN;
+  }
+
+  function shouldSuppressReconnect(event) {
+    const closeCode = Number(event?.code || 0);
+    const closeReason = String(event?.reason || "").trim();
+    return (
+      (closeCode === 1001 && closeReason === "Replaced by newer connection")
+      || (closeCode === 1008 && closeReason === "Duplicate active runtime")
+    );
   }
 
   function rejectPendingRequests(errorMessage) {
@@ -237,7 +252,9 @@
           version: CONFIG.APP_VERSION,
           extensionId: EXTENSION_ID,
           extensionType: EXTENSION_TYPE,
-          instanceId: "default"
+          clientId: CLIENT_ID,
+          runtimeInstanceId: RUNTIME_INSTANCE_ID,
+          instanceId: RUNTIME_INSTANCE_ID
         });
         if (!sent) {
           logBridge("error", "Failed to respond to PING.", summarizePayload(message));
@@ -280,19 +297,19 @@
       readyState: describeReadyState()
     });
 
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null;
-      void ensureConnected(reason);
-    }, RECONNECT_DELAY_MS);
-
     if (chrome.alarms) {
       try {
-        // Alarms survive MV3 service worker suspension better than in-memory timers.
         chrome.alarms.create(RETRY_ALARM, { when: Date.now() + RECONNECT_DELAY_MS });
+        return;
       } catch (error) {
         logBridge("warn", "Failed to schedule retry alarm.", { reason, error: error.message });
       }
     }
+
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      void ensureConnected(reason);
+    }, RECONNECT_DELAY_MS);
   }
 
   function beginConnectTimeout(targetSocket, reason) {
@@ -367,7 +384,9 @@
           version: CONFIG.APP_VERSION,
           extensionId: EXTENSION_ID,
           extensionType: EXTENSION_TYPE,
-          instanceId: "default",
+          clientId: CLIENT_ID,
+          runtimeInstanceId: RUNTIME_INSTANCE_ID,
+          instanceId: RUNTIME_INSTANCE_ID,
           reason
         }, targetSocket);
 
@@ -403,6 +422,7 @@
 
       targetSocket.addEventListener("close", (event) => {
         const lostActiveSocket = finalizeSocketLoss(targetSocket, `Socket cerrado (${event.code}).`);
+        const suppressReconnect = shouldSuppressReconnect(event);
         logBridge("warn", "WebSocket close.", {
           code: event.code,
           reason: event.reason || "",
@@ -410,6 +430,16 @@
           readyState: describeReadyState(targetSocket),
           activeSocket: lostActiveSocket
         });
+
+        if (lostActiveSocket && suppressReconnect) {
+          logBridge("info", "Reconnect suppressed after server-side replacement.", {
+            code: event.code,
+            reason: event.reason || "",
+            clientId: CLIENT_ID,
+            runtimeInstanceId: RUNTIME_INSTANCE_ID
+          });
+          return;
+        }
 
         if (lostActiveSocket) {
           scheduleReconnect("close");
@@ -468,6 +498,11 @@
   }
 
   function registerBridgeLifecycle() {
+    if (lifecycleRegistered) {
+      return;
+    }
+
+    lifecycleRegistered = true;
     logBridge("info", "Registering bridge lifecycle.");
 
     if (chrome.alarms) {
@@ -498,6 +533,8 @@
   function getDebugState() {
     return {
       bridgeUrl: BRIDGE_URL,
+      clientId: CLIENT_ID,
+      runtimeInstanceId: RUNTIME_INSTANCE_ID,
       connectInProgress,
       readyState: describeReadyState(),
       lastConnectReason,
