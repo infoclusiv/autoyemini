@@ -1,4 +1,6 @@
-const normalizeSiteProfile = globalThis.CONFIG?.normalizeSiteProfile || ((value) => value || {});
+const normalizeStoredSiteProfile =
+  globalThis.CONFIG?.normalizeStoredSiteProfile ||
+  ((value) => value || {});
 
 function joinLines(values) {
   if (!Array.isArray(values)) {
@@ -68,8 +70,8 @@ export class SiteProfileSettingsPanel {
     this.supportsWebSearchCheckbox = siteProfileSupportsWebSearchCheckbox;
     this.sourceExclusionsInput = siteProfileSourceExclusionsInput;
 
-    this.currentProfile = normalizeSiteProfile(
-      globalThis.CONFIG?.getSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {}
+    this.currentProfile = normalizeStoredSiteProfile(
+      globalThis.CONFIG?.getStoredSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {}
     );
 
     this.fields = [
@@ -93,7 +95,7 @@ export class SiteProfileSettingsPanel {
   }
 
   setValues(siteProfile) {
-    const normalized = normalizeSiteProfile(siteProfile);
+    const normalized = normalizeStoredSiteProfile(siteProfile);
     this.currentProfile = normalized;
 
     if (this.siteKeyValue) {
@@ -183,7 +185,7 @@ export class SiteProfileSettingsPanel {
         : this.currentProfile.sourceExclusions
     };
 
-    this.currentProfile = normalizeSiteProfile(nextProfile);
+    this.currentProfile = normalizeStoredSiteProfile(nextProfile);
     return this.currentProfile;
   }
 

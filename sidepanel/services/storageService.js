@@ -12,8 +12,12 @@ const storageKeys = globalThis.CONFIG?.STORAGE_KEYS || {
   PENDING_MESSAGE: "pendingMessage"
 };
 
-const normalizeSiteProfile = globalThis.CONFIG?.normalizeSiteProfile || ((value) => value || {});
-const setSiteProfileCache = globalThis.CONFIG?.setSiteProfile || ((value) => value || {});
+const normalizeStoredSiteProfile = globalThis.CONFIG?.normalizeStoredSiteProfile || ((value) => value || {});
+const validateSiteProfile =
+  globalThis.CONFIG?.validateSiteProfile ||
+  ((value) => ({ siteProfile: normalizeStoredSiteProfile(value), errors: [], warnings: [] }));
+const setStoredSiteProfileCache = globalThis.CONFIG?.setStoredSiteProfile || ((value) => value || {});
+const getResolvedSiteProfile = globalThis.CONFIG?.getSiteProfile || (() => ({}));
 
 export const StorageKeys = storageKeys;
 
@@ -30,7 +34,8 @@ export async function loadAll() {
   ]);
 
   const templates = normalizeTemplates(stored[StorageKeys.TEMPLATES]);
-  const siteProfile = setSiteProfileCache(normalizeSiteProfile(stored[StorageKeys.SITE_PROFILE]));
+  setStoredSiteProfileCache(normalizeStoredSiteProfile(stored[StorageKeys.SITE_PROFILE]));
+  const siteProfile = getResolvedSiteProfile();
 
   return {
     questions: stored[StorageKeys.QUESTIONS] || [],
@@ -53,8 +58,21 @@ export function saveSetting(key, value) {
 }
 
 export function saveSiteProfile(siteProfile) {
-  const normalizedSiteProfile = setSiteProfileCache(normalizeSiteProfile(siteProfile));
-  return chrome.storage.local.set({ [StorageKeys.SITE_PROFILE]: normalizedSiteProfile });
+  const validation = validateSiteProfile(siteProfile);
+  if (validation.errors.length > 0) {
+    throw new Error(validation.errors.join(" "));
+  }
+
+  const storedSiteProfile = setStoredSiteProfileCache(validation.siteProfile);
+  const resolvedSiteProfile = getResolvedSiteProfile();
+
+  return chrome.storage.local
+    .set({ [StorageKeys.SITE_PROFILE]: storedSiteProfile })
+    .then(() => ({
+      storedSiteProfile,
+      siteProfile: resolvedSiteProfile,
+      warnings: validation.warnings
+    }));
 }
 
 export function removePendingMessage() {

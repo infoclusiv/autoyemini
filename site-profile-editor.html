@@ -12,7 +12,7 @@
       <div class="spe-brand-block">
         <div class="spe-kicker">Extension settings</div>
         <h1 class="spe-title">Site Profile Editor</h1>
-        <p class="spe-subtitle">Configure the saved selectors and capture variables used for the target website. Changes are stored in extension storage and restored after reload.</p>
+        <p class="spe-subtitle">Configure the saved selectors and capture variables used for the target website. Blank values are preserved for optional fields, while routing fields still require a working URL and tab pattern.</p>
       </div>
 
       <div class="spe-toolbar">
@@ -61,18 +61,20 @@
               <div class="spe-section-kicker">Routing</div>
               <h2 class="spe-section-title">Navigation</h2>
             </div>
-            <p class="spe-section-copy">These values decide where the extension opens the target site and how it identifies the tab.</p>
+            <p class="spe-section-copy">These values decide where the extension opens the target site and how it identifies the tab. They are required for the extension to keep running correctly.</p>
           </div>
 
           <div class="spe-grid">
             <label class="spe-field spe-field-full">
               <span class="spe-label">Base URL</span>
               <input id="siteProfileBaseUrlInput" class="spe-input spe-input-mono" type="url" spellcheck="false">
+              <span class="spe-hint">Required. The extension uses this URL to open or reuse the target site tab.</span>
             </label>
 
             <label class="spe-field spe-field-full">
               <span class="spe-label">Tab Match Pattern</span>
               <input id="siteProfileUrlPatternInput" class="spe-input spe-input-mono" type="text" spellcheck="false">
+              <span class="spe-hint">Required. Leave this valid so the extension can find the existing target tab.</span>
             </label>
 
             <label class="spe-field spe-field-full">
@@ -89,7 +91,7 @@
               <div class="spe-section-kicker">DOM hooks</div>
               <h2 class="spe-section-title">Selectors</h2>
             </div>
-            <p class="spe-section-copy">Use one selector expression per field. These values are used by the content scripts during input and extraction.</p>
+            <p class="spe-section-copy">Use one selector expression per field. Blank selector fields are preserved and the runtime will fall back only where the content scripts already support it.</p>
           </div>
 
           <div class="spe-grid">
@@ -101,6 +103,7 @@
             <label class="spe-field spe-field-full">
               <span class="spe-label">Send Button Selector</span>
               <textarea id="siteProfileSendButtonSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="4" spellcheck="false"></textarea>
+              <span class="spe-hint">Leave blank only when the target site can submit with keyboard fallback instead of a clickable send button.</span>
             </label>
 
             <label class="spe-field">
@@ -126,7 +129,7 @@
               <div class="spe-section-kicker">Answer capture</div>
               <h2 class="spe-section-title">Streaming and DOM parsing</h2>
             </div>
-            <p class="spe-section-copy">Configure how the extension waits for answers, parses streaming chunks, and falls back to DOM scraping.</p>
+            <p class="spe-section-copy">Configure how the extension waits for answers, parses streaming chunks, and falls back to DOM scraping. Blank timing fields fall back to runtime defaults.</p>
           </div>
 
           <div class="spe-grid">
@@ -149,13 +152,13 @@
             <label class="spe-field spe-field-full">
               <span class="spe-label">Stream URL Patterns</span>
               <textarea id="siteProfileRequestUrlPatternsInput" class="spe-input spe-input-mono spe-textarea" rows="5" spellcheck="false"></textarea>
-              <span class="spe-hint">One pattern per line. These values are matched against network requests when streaming mode is active.</span>
+              <span class="spe-hint">One pattern per line. Leave blank to skip stream interception and rely on DOM capture.</span>
             </label>
 
             <label class="spe-field spe-field-full">
               <span class="spe-label">Streaming JSON Paths</span>
               <textarea id="siteProfileJsonPathsInput" class="spe-input spe-input-mono spe-textarea" rows="6" spellcheck="false"></textarea>
-              <span class="spe-hint">One JSON path per line. The SSE parser tries these paths before its built-in fallbacks.</span>
+              <span class="spe-hint">One JSON path per line. Leave blank to use only the built-in extraction paths.</span>
             </label>
 
             <label class="spe-field">
@@ -181,7 +184,7 @@
               <div class="spe-section-kicker">Output cleanup</div>
               <h2 class="spe-section-title">Source filtering</h2>
             </div>
-            <p class="spe-section-copy">Exclude noisy hosts from extracted citations so only useful external sources are preserved.</p>
+            <p class="spe-section-copy">Exclude noisy hosts from extracted citations so only useful external sources are preserved. Leave the list blank to keep all extracted hosts.</p>
           </div>
 
           <div class="spe-grid">

@@ -6,8 +6,8 @@ const storageKeys = globalThis.CONFIG?.STORAGE_KEYS || {
 };
 
 const loadSiteProfile =
-  globalThis.CONFIG?.loadSiteProfile ||
-  (async () => globalThis.CONFIG?.getSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {});
+  globalThis.CONFIG?.loadStoredSiteProfile ||
+  (async () => globalThis.CONFIG?.getStoredSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {});
 
 let panel;
 let saveButton;
@@ -62,11 +62,11 @@ function setDirty(nextDirty) {
   updateActionState();
 }
 
-async function loadIntoForm(successMessage) {
+async function loadIntoForm(successMessage, tone = "success") {
   const siteProfile = await loadSiteProfile();
   panel.setValues(siteProfile);
   setDirty(false);
-  setStatus(successMessage, "success");
+  setStatus(successMessage, tone);
 }
 
 async function handleSave() {
@@ -80,8 +80,12 @@ async function handleSave() {
     setStatus("Saving site profile to extension storage...", "neutral");
 
     const nextProfile = panel.getValues();
-    await saveSiteProfile(nextProfile);
-    await loadIntoForm("Site profile saved. These values will remain after closing or reloading the extension.");
+    const result = await saveSiteProfile(nextProfile);
+    const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+    const message = warnings.length > 0
+      ? `Site profile saved. ${warnings[0]}`
+      : "Site profile saved. These values will remain after closing or reloading the extension.";
+    await loadIntoForm(message, warnings.length > 0 ? "warning" : "success");
   } catch (error) {
     setStatus(`Save failed: ${error.message}`, "error");
   } finally {
