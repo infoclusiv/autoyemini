@@ -1,5 +1,5 @@
 import { AppState } from "./state/appState.js";
-import { loadAll, removePendingMessage, saveQuestions, saveSetting, saveWorkflows, saveWorkflowBackup, loadWorkflowBackups, StorageKeys } from "./services/storageService.js";
+import { loadAll, removePendingMessage, saveQuestions, saveSetting, saveSiteProfile, saveWorkflows, saveWorkflowBackup, loadWorkflowBackups, StorageKeys } from "./services/storageService.js";
 import { exportQuestionsToJSON, exportSingleWorkflow } from "./services/exportService.js";
 import { onRuntimeMessage, onStorageChange, sendToBackground } from "./services/messagingService.js";
 import { applyTranslations, t } from "./i18n/i18n.js";
@@ -36,6 +36,15 @@ function getElements() {
     useTempChatCheckbox: document.getElementById("useTempChatCheckbox"),
     useWebSearchCheckbox: document.getElementById("useWebSearchCheckbox"),
     keepSameChatCheckbox: document.getElementById("keepSameChatCheckbox"),
+    siteProfileBaseUrlInput: document.getElementById("siteProfileBaseUrlInput"),
+    siteProfileUrlPatternInput: document.getElementById("siteProfileUrlPatternInput"),
+    siteProfileInputSelectorInput: document.getElementById("siteProfileInputSelectorInput"),
+    siteProfileSendButtonSelectorInput: document.getElementById("siteProfileSendButtonSelectorInput"),
+    siteProfileAssistantMessageSelectorInput: document.getElementById("siteProfileAssistantMessageSelectorInput"),
+    siteProfileAnswerRootSelectorInput: document.getElementById("siteProfileAnswerRootSelectorInput"),
+    siteProfileSourceLinksSelectorInput: document.getElementById("siteProfileSourceLinksSelectorInput"),
+    siteProfileCaptureModeSelect: document.getElementById("siteProfileCaptureModeSelect"),
+    siteProfileRequestUrlPatternsInput: document.getElementById("siteProfileRequestUrlPatternsInput"),
     clearAllBtn: document.getElementById("clearAllBtn"),
     progressText: document.getElementById("progressText"),
     progressPercent: document.getElementById("progressPercent"),
@@ -70,6 +79,10 @@ function patchGeneralSettings(settings) {
   });
 }
 
+function patchSiteProfile(siteProfile) {
+  AppState.patch({ siteProfile: globalThis.CONFIG?.setSiteProfile?.(siteProfile) || siteProfile });
+}
+
 async function persistGeneralSettings(settings) {
   patchGeneralSettings(settings);
   await Promise.all([
@@ -77,6 +90,11 @@ async function persistGeneralSettings(settings) {
     saveSetting(StorageKeys.USE_WEB_SEARCH, settings.useWebSearch),
     saveSetting(StorageKeys.KEEP_SAME_CHAT, settings.keepSameChat)
   ]);
+}
+
+async function handleSiteProfileChange(siteProfile) {
+  patchSiteProfile(siteProfile);
+  await saveSiteProfile(siteProfile);
 }
 
 async function handleStart() {
@@ -108,7 +126,7 @@ async function handleStart() {
 
   AppState.setQuestions(sanitizedQuestions);
   await persistQuestions();
-  addLog(t("messages.openingChatGPT"), "info");
+  addLog(t("messages.openingTargetSite"), "info");
 
   try {
     const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
@@ -120,7 +138,7 @@ async function handleStart() {
     });
 
     if (!response?.success) {
-      addLog(`${t("messages.cannotOpenChatGPT")}: ${response?.error || "Unknown error"}`, "error");
+      addLog(`${t("messages.cannotOpenTargetSite")}: ${response?.error || "Unknown error"}`, "error");
       return;
     }
   } catch (error) {
@@ -288,7 +306,7 @@ async function executeWorkflowStep(stepIndex) {
   const addedCount = loadWorkflowStepQuestions(stepForLoad, effectiveChainedText);
   addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
 
-  addLog(t("messages.openingChatGPT"), "info");
+  addLog(t("messages.openingTargetSite"), "info");
 
   try {
     const { useTempChat, useWebSearch, keepSameChat } = settingsPanel.getValues();
@@ -300,7 +318,7 @@ async function executeWorkflowStep(stepIndex) {
     });
 
     if (!response?.success) {
-      addLog(`${t("messages.cannotOpenChatGPT")}: ${response?.error || "Unknown error"}`, "error");
+      addLog(`${t("messages.cannotOpenTargetSite")}: ${response?.error || "Unknown error"}`, "error");
       abortWorkflow();
       return;
     }
@@ -685,6 +703,10 @@ function setupEventListeners(elements) {
     void handleKeepSameChatChange(event);
   });
 
+  settingsPanel.bindSiteProfileEvents((siteProfile) => {
+    void handleSiteProfileChange(siteProfile);
+  });
+
   document.getElementById("workflowBackupHistoryBtn").addEventListener("click", () => {
     void toggleWorkflowBackupList();
   });
@@ -746,6 +768,7 @@ async function initialize() {
     AppState.patch({
       templates: stored.templates,
       workflows: stored.workflows,
+      siteProfile: stored.siteProfile,
       useTempChat: stored.useTempChat,
       useWebSearch: stored.useWebSearch,
       keepSameChat: stored.keepSameChat

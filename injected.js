@@ -1,6 +1,16 @@
 (function interceptFetchForSSE() {
 	const originalFetch = window.fetch;
 
+	function getSiteProfileCapture() {
+		try {
+			const rawProfile = document.documentElement?.dataset?.autoyeminiSiteProfile;
+			const parsed = rawProfile ? JSON.parse(rawProfile) : {};
+			return parsed?.capture || {};
+		} catch {
+			return {};
+		}
+	}
+
 	function resolveRequestUrl(resource) {
 		if (typeof resource === "string") {
 			return resource;
@@ -18,12 +28,8 @@
 	}
 
 	function isConversationRequest(url) {
-		return [
-			"/backend-api/conversation",
-			"/backend-api/f/conversation",
-			"/backend-anon/conversation",
-			"/backend-anon/f/conversation"
-		].some((segment) => url.includes(segment));
+		const patterns = getSiteProfileCapture().requestUrlPatterns;
+		return Array.isArray(patterns) && patterns.some((segment) => typeof segment === "string" && segment && url.includes(segment));
 	}
 
 	function dispatchLine(line) {
@@ -31,17 +37,18 @@
 			return;
 		}
 
-		if (line === "data: [DONE]") {
+		if (line === "data: [DONE]" || line === "[DONE]") {
 			window.postMessage({ type: "SSE_DONE" }, "*");
 			return;
 		}
 
-		if (!line.startsWith("data: ")) {
+		const normalizedLine = line.startsWith("data: ") ? line.substring(6) : line;
+		if (!normalizedLine) {
 			return;
 		}
 
 		try {
-			const payload = JSON.parse(line.substring(6));
+			const payload = JSON.parse(normalizedLine);
 			window.postMessage({ type: "SSE_DATA", data: payload }, "*");
 		} catch {
 		}

@@ -2,6 +2,7 @@ const state = {
   questions: [],
   templates: [],
   workflows: [],
+  siteProfile: globalThis.CONFIG?.getSiteProfile?.() || null,
   activeWorkflow: null,
   activeWorkflowStepIndex: -1,
   workflowContext: null,

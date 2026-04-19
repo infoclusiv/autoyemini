@@ -422,6 +422,12 @@ h2::before {
   gap: 4px;
 }
 
+.setting-label-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
 .setting-hint-inline {
   font-size: 11px;
   color: #6b7280;
@@ -446,7 +452,11 @@ h2::before {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
 }
 
-.setting-item input[type="text"] {
+.setting-item input[type="text"],
+.setting-item input[type="url"],
+.setting-item select,
+.setting-item textarea,
+.setting-input {
   width: 100%;
   padding: 9px 10px;
   border: 1px solid #cbd5e1;
@@ -457,10 +467,54 @@ h2::before {
   font-weight: 500;
 }
 
-.setting-item input[type="text"]:focus {
+.setting-item input[type="text"]:focus,
+.setting-item input[type="url"]:focus,
+.setting-item select:focus,
+.setting-item textarea:focus,
+.setting-input:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+}
+
+.setting-item textarea {
+  resize: vertical;
+  min-height: 78px;
+  line-height: 1.45;
+}
+
+.setting-input-mono {
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.site-profile-group {
+  margin-top: 14px;
+}
+
+.site-profile-subgroup {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+}
+
+.site-profile-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.site-profile-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* Control Divider */

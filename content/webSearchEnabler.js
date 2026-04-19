@@ -1,6 +1,10 @@
 (function registerWebSearchModule() {
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
 
+  function getSiteProfile() {
+    return globalThis.CONFIG?.getSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {};
+  }
+
   function findSearchMenuItem(menu) {
     const menuItems = Array.from(menu.querySelectorAll(".__menu-item"));
     const iconMatch = menuItems.find((item) => {
@@ -105,7 +109,8 @@
 
   async function enableWebSearchViaSlash(antiBotConfig = {}) {
     try {
-      const input = document.querySelector('div[contenteditable="true"]#prompt-textarea, textarea#prompt-textarea');
+      const inputSelector = getSiteProfile().selectors?.input || 'textarea, div[contenteditable="true"]';
+      const input = document.querySelector(inputSelector);
       if (!input) {
         return false;
       }
@@ -195,6 +200,10 @@
 
   async function enableWebSearch(antiBotConfig = {}) {
     try {
+      if (getSiteProfile().features?.supportsWebSearch !== true) {
+        return true;
+      }
+
       const selectedButtons = document.querySelectorAll('button[data-is-selected="true"]');
       for (const button of selectedButtons) {
         const label = button.textContent || "";

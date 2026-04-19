@@ -18,7 +18,7 @@ export function exportQuestionsToJSON(questions) {
   const url = URL.createObjectURL(blob);
   const downloadLink = document.createElement("a");
   downloadLink.href = url;
-  downloadLink.download = `chatgpt-answers-${Date.now()}.json`;
+  downloadLink.download = `ai-studio-answers-${Date.now()}.json`;
   document.body.appendChild(downloadLink);
   downloadLink.click();
   document.body.removeChild(downloadLink);

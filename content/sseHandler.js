@@ -10,8 +10,32 @@
     isParsing = false;
   }
 
+  function getSiteProfile() {
+    return globalThis.CONFIG?.getSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {};
+  }
+
+  function getValueByPath(source, path) {
+    if (!source || typeof path !== "string" || !path.trim()) {
+      return undefined;
+    }
+
+    return path.split(".").reduce((current, segment) => {
+      if (current === undefined || current === null) {
+        return undefined;
+      }
+
+      return /^\d+$/.test(segment) ? current[Number(segment)] : current[segment];
+    }, source);
+  }
+
   function extractAnswerFromChunk(chunk) {
+    const configuredPaths = getSiteProfile().capture?.jsonPaths || [];
     const candidates = [
+      ...configuredPaths.map((path) => getValueByPath(chunk, path)),
+      chunk?.candidates?.[0]?.content?.parts,
+      chunk?.candidates?.[0]?.content,
+      chunk?.candidates?.[0]?.output?.[0]?.content?.parts,
+      chunk?.output?.[0]?.content?.parts,
       chunk?.message?.content?.parts,
       chunk?.message?.content?.text,
       chunk?.message?.content?.content,
@@ -41,10 +65,34 @@
     if (Array.isArray(candidate)) {
       return normalizeWhitespace(
         candidate
-          .map((entry) => (typeof entry === "string" ? entry : ""))
+          .map((entry) => {
+            if (typeof entry === "string") {
+              return entry;
+            }
+
+            if (entry && typeof entry.text === "string") {
+              return entry.text;
+            }
+
+            return "";
+          })
           .filter(Boolean)
           .join("\n")
       );
+    }
+
+    if (typeof candidate === "object") {
+      if (typeof candidate.text === "string") {
+        return normalizeWhitespace(candidate.text);
+      }
+
+      if (Array.isArray(candidate.parts)) {
+        return normalizeCandidateText(candidate.parts);
+      }
+
+      if (candidate.content) {
+        return normalizeCandidateText(candidate.content);
+      }
     }
 
     return "";

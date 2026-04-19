@@ -1,23 +1,48 @@
-function getChatGPTUrl(useTempChat) {
-  return useTempChat
-    ? `${CONFIG.CHATGPT.BASE_URL}${CONFIG.CHATGPT.TEMP_CHAT_PARAM}`
-    : CONFIG.CHATGPT.BASE_URL;
+function appendQueryString(url, queryString) {
+  if (!queryString) {
+    return url;
+  }
+
+  if (!queryString.startsWith("?")) {
+    return `${url}${queryString}`;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    const params = new URLSearchParams(queryString.slice(1));
+    params.forEach((value, key) => {
+      parsedUrl.searchParams.set(key, value);
+    });
+    return parsedUrl.toString();
+  } catch {
+    return `${url}${queryString}`;
+  }
 }
 
-function canReuseExistingChat(currentUrl) {
+async function getActiveSiteProfile() {
+  return CONFIG.loadSiteProfile();
+}
+
+function getTargetSiteUrl(siteProfile, useTempChat) {
+  const baseUrl = siteProfile?.baseUrl || CONFIG.DEFAULT_SITE_PROFILE?.baseUrl || "https://aistudio.google.com/prompts/new_chat";
+  const tempChatParam = useTempChat ? siteProfile?.tempChatParam || "" : "";
+  return appendQueryString(baseUrl, tempChatParam);
+}
+
+function canReuseExistingChat(currentUrl, siteProfile) {
   if (!currentUrl) {
     return false;
   }
 
   try {
     const parsedUrl = new URL(currentUrl);
-    const baseUrl = new URL(CONFIG.CHATGPT.BASE_URL);
+    const baseUrl = new URL(siteProfile?.baseUrl || CONFIG.DEFAULT_SITE_PROFILE?.baseUrl);
 
     if (parsedUrl.origin !== baseUrl.origin) {
       return false;
     }
 
-    return parsedUrl.pathname === "/" || parsedUrl.pathname.startsWith("/c/");
+    return parsedUrl.pathname !== "/logout";
   } catch {
     return false;
   }
@@ -35,8 +60,9 @@ function waitForTabLoad(tabId) {
 }
 
 async function findOrCreateChatGPTTab(useTempChat, keepSameChat = false) {
-  const url = getChatGPTUrl(useTempChat);
-  const existingTabs = await chrome.tabs.query({ url: CONFIG.CHATGPT.URL_PATTERN });
+  const siteProfile = await getActiveSiteProfile();
+  const url = getTargetSiteUrl(siteProfile, useTempChat);
+  const existingTabs = await chrome.tabs.query({ url: siteProfile.urlPattern });
 
   if (existingTabs.length > 0) {
     const currentTab = existingTabs[0];
@@ -45,7 +71,7 @@ async function findOrCreateChatGPTTab(useTempChat, keepSameChat = false) {
     let needsReload = false;
 
     if (keepSameChat) {
-      needsReload = !canReuseExistingChat(currentTab.url);
+      needsReload = !canReuseExistingChat(currentTab.url, siteProfile);
     } else if (currentTab.url !== url) {
       needsReload = true;
     }

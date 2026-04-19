@@ -8,8 +8,12 @@ const storageKeys = globalThis.CONFIG?.STORAGE_KEYS || {
   USE_WEB_SEARCH: "useWebSearch",
   KEEP_SAME_CHAT: "keepSameChat",
   SINGLE_PROMPT_MODE: "singlePromptMode",
+  SITE_PROFILE: "siteProfile",
   PENDING_MESSAGE: "pendingMessage"
 };
+
+const normalizeSiteProfile = globalThis.CONFIG?.normalizeSiteProfile || ((value) => value || {});
+const setSiteProfileCache = globalThis.CONFIG?.setSiteProfile || ((value) => value || {});
 
 export const StorageKeys = storageKeys;
 
@@ -21,15 +25,18 @@ export async function loadAll() {
     StorageKeys.USE_WEB_SEARCH,
     StorageKeys.KEEP_SAME_CHAT,
     StorageKeys.SINGLE_PROMPT_MODE,
+    StorageKeys.SITE_PROFILE,
     StorageKeys.WORKFLOWS
   ]);
 
   const templates = normalizeTemplates(stored[StorageKeys.TEMPLATES]);
+  const siteProfile = setSiteProfileCache(normalizeSiteProfile(stored[StorageKeys.SITE_PROFILE]));
 
   return {
     questions: stored[StorageKeys.QUESTIONS] || [],
     templates,
     workflows: normalizeWorkflows(stored[StorageKeys.WORKFLOWS], templates),
+    siteProfile,
     useTempChat: stored[StorageKeys.USE_TEMP_CHAT] !== false,
     useWebSearch: stored[StorageKeys.USE_WEB_SEARCH] !== false,
     keepSameChat: stored[StorageKeys.KEEP_SAME_CHAT] === true,
@@ -43,6 +50,11 @@ export function saveQuestions(questions) {
 
 export function saveSetting(key, value) {
   return chrome.storage.local.set({ [key]: value });
+}
+
+export function saveSiteProfile(siteProfile) {
+  const normalizedSiteProfile = setSiteProfileCache(normalizeSiteProfile(siteProfile));
+  return chrome.storage.local.set({ [StorageKeys.SITE_PROFILE]: normalizedSiteProfile });
 }
 
 export function removePendingMessage() {

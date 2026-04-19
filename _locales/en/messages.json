@@ -47,6 +47,66 @@
       "description": "Keep same chat hint",
       "message": "Sends all questions in the same session without reloading"
    },
+   "siteProfileTitle": {
+      "description": "Site profile settings title",
+      "message": "Site Profile"
+   },
+   "siteProfileFixedSite": {
+      "description": "Target site label",
+      "message": "Target Site"
+   },
+   "siteProfileFixedSiteHint": {
+      "description": "Target site hint",
+      "message": "The extension is fixed to Google AI Studio. Update selectors and capture rules here when the UI changes."
+   },
+   "siteProfileBaseUrl": {
+      "description": "Base URL label",
+      "message": "Base URL"
+   },
+   "siteProfileUrlPattern": {
+      "description": "URL pattern label",
+      "message": "Tab Match Pattern"
+   },
+   "siteProfileInputSelector": {
+      "description": "Prompt input selector label",
+      "message": "Prompt Input Selector"
+   },
+   "siteProfileSendButtonSelector": {
+      "description": "Send button selector label",
+      "message": "Send Button Selector"
+   },
+   "siteProfileAssistantMessageSelector": {
+      "description": "Assistant message selector label",
+      "message": "Assistant Message Selector"
+   },
+   "siteProfileAnswerRootSelector": {
+      "description": "Answer root selector label",
+      "message": "Answer Root Selector"
+   },
+   "siteProfileSourceLinksSelector": {
+      "description": "Source links selector label",
+      "message": "Source Links Selector"
+   },
+   "siteProfileCaptureMode": {
+      "description": "Capture mode label",
+      "message": "Answer Capture Mode"
+   },
+   "siteProfileCaptureModeDomOnly": {
+      "description": "DOM only capture mode",
+      "message": "DOM only"
+   },
+   "siteProfileCaptureModeStreamPlusDom": {
+      "description": "Stream plus DOM capture mode",
+      "message": "Stream + DOM fallback"
+   },
+   "siteProfileRequestUrlPatterns": {
+      "description": "Request URL patterns label",
+      "message": "Stream URL Patterns"
+   },
+   "siteProfileRequestUrlPatternsHint": {
+      "description": "Request URL patterns help text",
+      "message": "One pattern per line. Used only if streaming is enabled."
+   },
    "controlExtractionTitle": {
       "description": "Prompt chaining settings title",
       "message": "Prompt Chaining"
@@ -390,6 +450,14 @@
    "msgOpeningChatGPT": {
       "description": "Opening ChatGPT message",
       "message": "Opening ChatGPT..."
+   },
+   "msgOpeningTargetSite": {
+      "description": "Opening target site message",
+      "message": "Opening Google AI Studio..."
+   },
+   "msgCannotOpenTargetSite": {
+      "description": "Cannot open target site error",
+      "message": "Cannot open Google AI Studio"
    },
    "msgConfirmTemplateDelete": {
       "description": "Confirm template delete dialog",

@@ -16,12 +16,12 @@
          "content/sseHandler.js",
          "content/content.js"
       ],
-      "matches": [ "https://chatgpt.com/*" ],
+         "matches": [ "https://aistudio.google.com/*" ],
       "run_at": "document_start"
    } ],
    "default_locale": "en",
    "description": "__MSG_extDescription__",
-   "host_permissions": [ "https://chatgpt.com/*", "http://127.0.0.1/*", "http://localhost/*" ],
+      "host_permissions": [ "https://aistudio.google.com/*", "http://127.0.0.1/*", "http://localhost/*" ],
    "icons": {
       "128": "icons/icon128.png",
       "16": "icons/icon16.png",
@@ -37,7 +37,7 @@
    "update_url": "https://clients2.google.com/service/update2/crx",
    "version": "1.0.0",
    "web_accessible_resources": [ {
-      "matches": [ "https://chatgpt.com/*" ],
+      "matches": [ "https://aistudio.google.com/*" ],
       "resources": [ "injected.js" ]
    } ]
 }

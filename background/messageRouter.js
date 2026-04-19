@@ -15,7 +15,7 @@ async function handleProcessQuestion(payload, sendResponse) {
 
     if (!ready) {
       throw new Error(
-        "Content script not ready even after page refresh. Please try manually refreshing the ChatGPT page (F5)."
+        "Content script not ready even after page refresh. Please try manually refreshing the Google AI Studio page (F5)."
       );
     }
 

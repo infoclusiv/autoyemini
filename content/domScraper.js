@@ -2,28 +2,52 @@
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
   const { normalizeWhitespace, sleep } = SharedUtils;
 
+  function getSiteProfile() {
+    return globalThis.CONFIG?.getSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {};
+  }
+
+  function getSelectors() {
+    return getSiteProfile().selectors || {};
+  }
+
+  function hasVisibleText(node) {
+    return normalizeWhitespace(node?.innerText || node?.textContent || "").length > 0;
+  }
+
   function getAssistantMessageElements() {
-    const explicitAssistantNodes = Array.from(
-      document.querySelectorAll('div[data-message-author-role="assistant"]')
-    );
+    const selectors = getSelectors();
+    const explicitAssistantNodes = selectors.assistantMessage
+      ? Array.from(document.querySelectorAll(selectors.assistantMessage)).filter(hasVisibleText)
+      : [];
     if (explicitAssistantNodes.length > 0) {
       return explicitAssistantNodes;
     }
 
-    return Array.from(
-      document.querySelectorAll('article[data-testid^="conversation-turn-"]')
-    ).filter(
+    const answerRoots = selectors.answerRoot
+      ? Array.from(document.querySelectorAll(selectors.answerRoot)).filter(hasVisibleText)
+      : [];
+    if (answerRoots.length > 0) {
+      return answerRoots;
+    }
+
+    return Array.from(document.querySelectorAll('[role="article"]')).filter(
       (article) =>
-        article.querySelector('.markdown, [class*="markdown"], .prose') ||
+        article.querySelector(selectors.answerRoot || '.markdown, [class*="markdown"], .prose') ||
         article.querySelector('a[href^="http"]') ||
         article.innerText.trim().length > 0
     );
   }
 
   function getBestAnswerRoot(container) {
+    const selectors = getSelectors();
+
+    if (selectors.answerRoot && container.matches?.(selectors.answerRoot)) {
+      return container;
+    }
+
     return (
-      container.querySelector('.markdown, [class*="markdown"], .prose') ||
-      container.querySelector('[data-message-author-role="assistant"]') ||
+      container.querySelector(selectors.answerRoot || '.markdown, [class*="markdown"], .prose') ||
+      container.querySelector(selectors.assistantMessage || '[role="article"]') ||
       container
     );
   }
@@ -37,10 +61,15 @@
   }
 
   function extractSources(container) {
+    const siteProfile = getSiteProfile();
+    const sourceSelector = siteProfile.selectors?.sourceLinks || 'a[href^="http"]';
+    const excludedHosts = Array.isArray(siteProfile.sourceExclusions)
+      ? siteProfile.sourceExclusions
+      : [];
     const seen = new Set();
     const sources = [];
 
-    container.querySelectorAll('a[href^="http"]').forEach((link) => {
+    container.querySelectorAll(sourceSelector).forEach((link) => {
       const url = link.href;
       if (!url || seen.has(url)) {
         return;
@@ -48,7 +77,7 @@
 
       try {
         const parsed = new URL(url);
-        if (parsed.hostname.includes("chatgpt.com") || parsed.hostname.includes("openai.com")) {
+        if (excludedHosts.some((hostname) => parsed.hostname.includes(hostname))) {
           return;
         }
       } catch {
@@ -82,8 +111,8 @@
   }
 
   async function waitForAssistantAnswer(
-    maxAttempts = CONFIG.TIMING.ANSWER_POLL_ATTEMPTS,
-    delayMs = CONFIG.TIMING.ANSWER_POLL_INTERVAL_MS
+    maxAttempts = getSiteProfile().capture?.domMaxAttempts || CONFIG.TIMING.ANSWER_POLL_ATTEMPTS,
+    delayMs = getSiteProfile().capture?.domPollIntervalMs || CONFIG.TIMING.ANSWER_POLL_INTERVAL_MS
   ) {
     let bestResult = { answer: "", sources: [] };
     let previousAnswer = "";

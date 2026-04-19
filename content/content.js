@@ -1,6 +1,22 @@
 (function contentEntryPoint() {
   const modules = globalThis.ContentModules || {};
 
+  function getCurrentSiteProfile() {
+    return globalThis.CONFIG?.getSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {};
+  }
+
+  function syncSiteProfileToPage(siteProfile = getCurrentSiteProfile()) {
+    if (document.documentElement) {
+      document.documentElement.dataset.autoyeminiSiteProfile = JSON.stringify(siteProfile || {});
+    }
+  }
+
+  async function refreshSiteProfile() {
+    const siteProfile = await globalThis.CONFIG?.loadSiteProfile?.();
+    syncSiteProfileToPage(siteProfile || getCurrentSiteProfile());
+    return siteProfile || getCurrentSiteProfile();
+  }
+
   const ContentState = {
     currentQuestion: null,
     currentAnswer: "",
@@ -10,8 +26,9 @@
     handleAnswerComplete
   };
 
-  function injectSSEInterceptor() {
+  async function injectSSEInterceptor() {
     try {
+      await refreshSiteProfile();
       const script = document.createElement("script");
       script.src = chrome.runtime.getURL("injected.js");
       script.onload = function onLoad() {
@@ -58,6 +75,33 @@
     sendQuestionResult(true);
   }
 
+  async function monitorAnswerViaDom(questionId, siteProfile) {
+    const captureConfig = siteProfile?.capture || {};
+    const initialDelay = captureConfig.mode === "stream_plus_dom"
+      ? captureConfig.sseReadyDelayMs || CONFIG.TIMING.SSE_READY_WAIT_MS
+      : 0;
+
+    if (initialDelay > 0) {
+      await SharedUtils.sleep(initialDelay);
+    }
+
+    const scraped = await modules
+      .waitForAssistantAnswer(captureConfig.domMaxAttempts, captureConfig.domPollIntervalMs)
+      .catch(() => ({ answer: "", sources: [] }));
+
+    if (!ContentState.isProcessing || ContentState.currentQuestion?.questionId !== questionId) {
+      return;
+    }
+
+    if (!scraped.answer) {
+      return;
+    }
+
+    ContentState.currentAnswer = scraped.answer;
+    ContentState.currentSources = scraped.sources;
+    handleAnswerComplete();
+  }
+
   async function askQuestion(
     question,
     questionId,
@@ -65,6 +109,8 @@
     useWebSearch = true,
     antiBotConfig = null
   ) {
+    const siteProfile = await refreshSiteProfile();
+
     ContentState.currentQuestion = { question, questionId };
     ContentState.currentAnswer = "";
     ContentState.currentSources = [];
@@ -83,6 +129,8 @@
       if (!(await modules.submitQuestion(antiBotConfig || {}))) {
         throw new Error("Failed to submit question");
       }
+
+      void monitorAnswerViaDom(questionId, siteProfile);
 
       setTimeout(async () => {
         if (!ContentState.isProcessing || ContentState.currentQuestion?.questionId !== questionId) {
@@ -116,10 +164,14 @@
   }
 
   function initializeContentScript() {
+    void refreshSiteProfile();
+
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", injectSSEInterceptor);
+      document.addEventListener("DOMContentLoaded", () => {
+        void injectSSEInterceptor();
+      });
     } else {
-      injectSSEInterceptor();
+      void injectSSEInterceptor();
     }
   }
 
@@ -163,6 +215,16 @@
 
     return false;
   });
+
+  if (chrome.storage?.onChanged && !globalThis.__AUTOYEMINI_CONTENT_SITE_PROFILE_SYNC__) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === "local" && Object.prototype.hasOwnProperty.call(changes, CONFIG.STORAGE_KEYS.SITE_PROFILE)) {
+        syncSiteProfileToPage(getCurrentSiteProfile());
+      }
+    });
+
+    globalThis.__AUTOYEMINI_CONTENT_SITE_PROFILE_SYNC__ = true;
+  }
 
   initializeContentScript();
 })();

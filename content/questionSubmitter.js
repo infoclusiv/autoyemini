@@ -2,11 +2,22 @@
   const modules = (globalThis.ContentModules = globalThis.ContentModules || {});
   const { randomInt } = SharedUtils;
 
+  function getSiteProfile() {
+    return globalThis.CONFIG?.getSiteProfile?.() || globalThis.CONFIG?.DEFAULT_SITE_PROFILE || {};
+  }
+
+  function getSelectors() {
+    return getSiteProfile().selectors || {};
+  }
+
   function getInputElement() {
-    return (
-      document.querySelector('div[contenteditable="true"]#prompt-textarea') ||
-      document.querySelector('textarea#prompt-textarea, textarea[placeholder]')
-    );
+    const selectors = getSelectors();
+    return document.querySelector(selectors.input || 'textarea, div[contenteditable="true"]');
+  }
+
+  function getSendButton() {
+    const selectors = getSelectors();
+    return selectors.sendButton ? document.querySelector(selectors.sendButton) : null;
   }
 
   function isContentEditableInput(input) {
@@ -190,40 +201,33 @@
     try {
       await modules.waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
 
-      const contentEditable = document.querySelector('div[contenteditable="true"]#prompt-textarea');
-      if (contentEditable) {
-        contentEditable.focus();
-        await modules.waitForDelay([120, 260], antiBotConfig);
-        contentEditable.dispatchEvent(createKeyboardEvent("keydown", "Enter", "Enter", 13));
-        contentEditable.dispatchEvent(createKeyboardEvent("keypress", "Enter", "Enter", 13));
-        contentEditable.dispatchEvent(createKeyboardEvent("keyup", "Enter", "Enter", 13));
+      const input = getInputElement();
+      let sendButton = getSendButton();
+
+      if (sendButton?.disabled) {
+        for (let attempt = 0; attempt < 10 && sendButton.disabled; attempt += 1) {
+          await modules.waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
+          sendButton = getSendButton() || sendButton;
+        }
+      }
+
+      if (sendButton && !sendButton.disabled) {
+        await modules.clickElement(sendButton, antiBotConfig);
         await modules.waitForDelay([700, 1200], antiBotConfig);
         return true;
       }
 
-      let sendButton = document.querySelector("button#composer-submit-button");
-      if (!sendButton) {
-        sendButton = document.querySelector('button[data-testid="send-button"]');
-      }
-      if (!sendButton) {
-        sendButton = document.querySelector('button[aria-label*="发送"], button[aria-label*="Send"]');
-      }
-      if (!sendButton) {
+      if (isContentEditableInput(input)) {
+        input.focus();
+        await modules.waitForDelay([120, 260], antiBotConfig);
+        input.dispatchEvent(createKeyboardEvent("keydown", "Enter", "Enter", 13));
+        input.dispatchEvent(createKeyboardEvent("keypress", "Enter", "Enter", 13));
+        input.dispatchEvent(createKeyboardEvent("keyup", "Enter", "Enter", 13));
+        await modules.waitForDelay([700, 1200], antiBotConfig);
         return true;
       }
 
-      if (sendButton.disabled) {
-        for (let attempt = 0; attempt < 10 && sendButton.disabled; attempt += 1) {
-          await modules.waitForDelay(CONFIG.TIMING.SUBMIT_WAIT_MS, antiBotConfig);
-        }
-      }
-
-      if (!sendButton.disabled) {
-        await modules.clickElement(sendButton, antiBotConfig);
-      }
-
-      await modules.waitForDelay([700, 1200], antiBotConfig);
-      return true;
+      return false;
     } catch {
       return false;
     }

@@ -202,7 +202,7 @@
 
     if (!ready) {
       throw new Error(
-        "Content script no listo incluso después de refrescar ChatGPT. Refresca la página manualmente (F5)."
+        "Content script no listo incluso después de refrescar Google AI Studio. Refresca la página manualmente (F5)."
       );
     }
 
