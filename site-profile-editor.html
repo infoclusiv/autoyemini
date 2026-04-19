@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Profile Editor</title>
+  <link rel="stylesheet" href="site-profile-editor.css">
+</head>
+<body>
+  <div id="siteProfileEditorApp" class="spe-app">
+    <header class="spe-header">
+      <div class="spe-brand-block">
+        <div class="spe-kicker">Extension settings</div>
+        <h1 class="spe-title">Site Profile Editor</h1>
+        <p class="spe-subtitle">Configure the saved selectors and capture variables used for the target website. Changes are stored in extension storage and restored after reload.</p>
+      </div>
+
+      <div class="spe-toolbar">
+        <button id="siteProfileReloadBtn" class="spe-btn spe-btn-secondary" type="button">Reload Saved</button>
+        <button id="siteProfileSaveBtn" class="spe-btn spe-btn-primary" type="button">Save Changes</button>
+      </div>
+    </header>
+
+    <main class="spe-main">
+      <aside class="spe-sidebar">
+        <section class="spe-sidebar-card spe-sidebar-card-highlight">
+          <div class="spe-sidebar-label">Current target</div>
+          <div class="spe-pill-grid">
+            <div class="spe-pill-card">
+              <span class="spe-pill-label">Site key</span>
+              <strong id="siteProfileSiteKeyValue" class="spe-pill-value">-</strong>
+            </div>
+            <div class="spe-pill-card">
+              <span class="spe-pill-label">Display name</span>
+              <strong id="siteProfileDisplayNameValue" class="spe-pill-value">-</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="spe-sidebar-card">
+          <div class="spe-sidebar-label">Save status</div>
+          <div id="siteProfileDirtyBadge" class="spe-dirty-badge" data-state="clean">All changes saved</div>
+          <div id="siteProfileStatus" class="spe-status" data-tone="neutral">Loading saved site profile...</div>
+        </section>
+
+        <section class="spe-sidebar-card">
+          <div class="spe-sidebar-label">What gets persisted</div>
+          <ul class="spe-sidebar-list">
+            <li>Base URL and tab matching pattern</li>
+            <li>DOM selectors for input, answers, and sources</li>
+            <li>Streaming capture patterns and JSON paths</li>
+            <li>Web search support flag and source exclusions</li>
+          </ul>
+        </section>
+      </aside>
+
+      <form id="siteProfileForm" class="spe-form" novalidate>
+        <section class="spe-section">
+          <div class="spe-section-header">
+            <div>
+              <div class="spe-section-kicker">Routing</div>
+              <h2 class="spe-section-title">Navigation</h2>
+            </div>
+            <p class="spe-section-copy">These values decide where the extension opens the target site and how it identifies the tab.</p>
+          </div>
+
+          <div class="spe-grid">
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Base URL</span>
+              <input id="siteProfileBaseUrlInput" class="spe-input spe-input-mono" type="url" spellcheck="false">
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Tab Match Pattern</span>
+              <input id="siteProfileUrlPatternInput" class="spe-input spe-input-mono" type="text" spellcheck="false">
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Temporary Chat Parameter</span>
+              <input id="siteProfileTempChatParamInput" class="spe-input spe-input-mono" type="text" spellcheck="false">
+              <span class="spe-hint">Leave blank when the target site does not require a temp chat query parameter.</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="spe-section">
+          <div class="spe-section-header">
+            <div>
+              <div class="spe-section-kicker">DOM hooks</div>
+              <h2 class="spe-section-title">Selectors</h2>
+            </div>
+            <p class="spe-section-copy">Use one selector expression per field. These values are used by the content scripts during input and extraction.</p>
+          </div>
+
+          <div class="spe-grid">
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Prompt Input Selector</span>
+              <textarea id="siteProfileInputSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="4" spellcheck="false"></textarea>
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Send Button Selector</span>
+              <textarea id="siteProfileSendButtonSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="4" spellcheck="false"></textarea>
+            </label>
+
+            <label class="spe-field">
+              <span class="spe-label">Assistant Message Selector</span>
+              <textarea id="siteProfileAssistantMessageSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="5" spellcheck="false"></textarea>
+            </label>
+
+            <label class="spe-field">
+              <span class="spe-label">Answer Root Selector</span>
+              <textarea id="siteProfileAnswerRootSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="5" spellcheck="false"></textarea>
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Source Links Selector</span>
+              <input id="siteProfileSourceLinksSelectorInput" class="spe-input spe-input-mono" type="text" spellcheck="false">
+            </label>
+          </div>
+        </section>
+
+        <section class="spe-section">
+          <div class="spe-section-header">
+            <div>
+              <div class="spe-section-kicker">Answer capture</div>
+              <h2 class="spe-section-title">Streaming and DOM parsing</h2>
+            </div>
+            <p class="spe-section-copy">Configure how the extension waits for answers, parses streaming chunks, and falls back to DOM scraping.</p>
+          </div>
+
+          <div class="spe-grid">
+            <label class="spe-field">
+              <span class="spe-label">Answer Capture Mode</span>
+              <select id="siteProfileCaptureModeSelect" class="spe-input">
+                <option value="dom_only">DOM only</option>
+                <option value="stream_plus_dom">Stream plus DOM fallback</option>
+              </select>
+            </label>
+
+            <label class="spe-field spe-field-checkbox">
+              <span class="spe-label">Supports Web Search</span>
+              <span class="spe-checkbox-row">
+                <input id="siteProfileSupportsWebSearchCheckbox" class="spe-checkbox" type="checkbox">
+                <span class="spe-checkbox-copy">Enable the search toggle workflow for this site profile.</span>
+              </span>
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Stream URL Patterns</span>
+              <textarea id="siteProfileRequestUrlPatternsInput" class="spe-input spe-input-mono spe-textarea" rows="5" spellcheck="false"></textarea>
+              <span class="spe-hint">One pattern per line. These values are matched against network requests when streaming mode is active.</span>
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Streaming JSON Paths</span>
+              <textarea id="siteProfileJsonPathsInput" class="spe-input spe-input-mono spe-textarea" rows="6" spellcheck="false"></textarea>
+              <span class="spe-hint">One JSON path per line. The SSE parser tries these paths before its built-in fallbacks.</span>
+            </label>
+
+            <label class="spe-field">
+              <span class="spe-label">DOM Max Attempts</span>
+              <input id="siteProfileDomMaxAttemptsInput" class="spe-input spe-input-mono" type="number" min="1" step="1">
+            </label>
+
+            <label class="spe-field">
+              <span class="spe-label">DOM Poll Interval (ms)</span>
+              <input id="siteProfileDomPollIntervalMsInput" class="spe-input spe-input-mono" type="number" min="1" step="1">
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">SSE Ready Delay (ms)</span>
+              <input id="siteProfileSseReadyDelayMsInput" class="spe-input spe-input-mono" type="number" min="1" step="1">
+            </label>
+          </div>
+        </section>
+
+        <section class="spe-section">
+          <div class="spe-section-header">
+            <div>
+              <div class="spe-section-kicker">Output cleanup</div>
+              <h2 class="spe-section-title">Source filtering</h2>
+            </div>
+            <p class="spe-section-copy">Exclude noisy hosts from extracted citations so only useful external sources are preserved.</p>
+          </div>
+
+          <div class="spe-grid">
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Source Exclusions</span>
+              <textarea id="siteProfileSourceExclusionsInput" class="spe-input spe-input-mono spe-textarea" rows="5" spellcheck="false"></textarea>
+              <span class="spe-hint">One hostname fragment per line. Links whose host contains one of these values are ignored during source extraction.</span>
+            </label>
+          </div>
+        </section>
+      </form>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="shared/utils.js"></script>
+  <script type="module" src="sidepanel/siteProfileEditor/siteProfileEditorApp.js"></script>
+</body>
+</html>

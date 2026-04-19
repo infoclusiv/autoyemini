@@ -63,65 +63,17 @@
       </div>
 
       <div class="settings-group site-profile-group">
-        <div class="settings-group-title" data-i18n="siteProfile.title">Site Profile</div>
+        <div class="settings-group-title">Site Configuration</div>
 
-        <div class="setting-item setting-item-stack">
-          <div class="site-profile-heading">
-            <span class="setting-text" data-i18n="siteProfile.fixedSite">Target Site</span>
+        <div class="setting-item setting-item-stack site-editor-launch-card">
+          <div class="site-editor-launch-row">
+            <div>
+              <div class="site-editor-launch-title">Dedicated site profile editor</div>
+              <div class="site-editor-launch-copy">Open a separate tab to edit selectors, capture rules, source filters, and other saved variables for the target website.</div>
+            </div>
             <span class="site-profile-badge">Google AI Studio</span>
           </div>
-          <span class="setting-hint-inline" data-i18n="siteProfile.fixedSiteHint">The domain is fixed to Google AI Studio. Update selectors and capture rules here when the UI changes.</span>
-        </div>
-
-        <div class="settings-subgroup site-profile-subgroup">
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.baseUrl">Base URL</span>
-            <input type="url" id="siteProfileBaseUrlInput" class="setting-input setting-input-mono">
-          </label>
-
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.urlPattern">Tab Match Pattern</span>
-            <input type="text" id="siteProfileUrlPatternInput" class="setting-input setting-input-mono">
-          </label>
-
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.inputSelector">Prompt Input Selector</span>
-            <textarea id="siteProfileInputSelectorInput" class="setting-input setting-textarea setting-input-mono" rows="3"></textarea>
-          </label>
-
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.sendButtonSelector">Send Button Selector</span>
-            <textarea id="siteProfileSendButtonSelectorInput" class="setting-input setting-textarea setting-input-mono" rows="3"></textarea>
-          </label>
-
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.assistantMessageSelector">Assistant Message Selector</span>
-            <textarea id="siteProfileAssistantMessageSelectorInput" class="setting-input setting-textarea setting-input-mono" rows="3"></textarea>
-          </label>
-
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.answerRootSelector">Answer Root Selector</span>
-            <textarea id="siteProfileAnswerRootSelectorInput" class="setting-input setting-textarea setting-input-mono" rows="3"></textarea>
-          </label>
-
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.sourceLinksSelector">Source Links Selector</span>
-            <input type="text" id="siteProfileSourceLinksSelectorInput" class="setting-input setting-input-mono">
-          </label>
-
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.captureMode">Answer Capture Mode</span>
-            <select id="siteProfileCaptureModeSelect" class="setting-input">
-              <option value="dom_only" data-i18n="siteProfile.captureModeDomOnly">DOM only</option>
-              <option value="stream_plus_dom" data-i18n="siteProfile.captureModeStreamPlusDom">Stream + DOM fallback</option>
-            </select>
-          </label>
-
-          <label class="text-setting-label">
-            <span class="setting-label-text" data-i18n="siteProfile.requestUrlPatterns">Stream URL Patterns</span>
-            <textarea id="siteProfileRequestUrlPatternsInput" class="setting-input setting-textarea setting-input-mono" rows="4"></textarea>
-            <span class="setting-hint-inline" data-i18n="siteProfile.requestUrlPatternsHint">One pattern per line. Used only if streaming is enabled.</span>
-          </label>
+          <button id="openSiteProfileEditorBtn" class="btn btn-secondary btn-sm site-editor-launch-btn" title="Open the site profile editor in a new tab">Edit Site Profile</button>
         </div>
       </div>
       

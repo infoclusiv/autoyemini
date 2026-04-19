@@ -1,5 +1,5 @@
 import { AppState } from "./state/appState.js";
-import { loadAll, removePendingMessage, saveQuestions, saveSetting, saveSiteProfile, saveWorkflows, saveWorkflowBackup, loadWorkflowBackups, StorageKeys } from "./services/storageService.js";
+import { loadAll, removePendingMessage, saveQuestions, saveSetting, saveWorkflows, saveWorkflowBackup, loadWorkflowBackups, StorageKeys } from "./services/storageService.js";
 import { exportQuestionsToJSON, exportSingleWorkflow } from "./services/exportService.js";
 import { onRuntimeMessage, onStorageChange, sendToBackground } from "./services/messagingService.js";
 import { applyTranslations, t } from "./i18n/i18n.js";
@@ -33,18 +33,10 @@ function getElements() {
     stopBtn2: document.getElementById("stopBtn2"),
     retryFailedBtn: document.getElementById("retryFailedBtn"),
     exportBtn: document.getElementById("exportBtn"),
+    openSiteProfileEditorBtn: document.getElementById("openSiteProfileEditorBtn"),
     useTempChatCheckbox: document.getElementById("useTempChatCheckbox"),
     useWebSearchCheckbox: document.getElementById("useWebSearchCheckbox"),
     keepSameChatCheckbox: document.getElementById("keepSameChatCheckbox"),
-    siteProfileBaseUrlInput: document.getElementById("siteProfileBaseUrlInput"),
-    siteProfileUrlPatternInput: document.getElementById("siteProfileUrlPatternInput"),
-    siteProfileInputSelectorInput: document.getElementById("siteProfileInputSelectorInput"),
-    siteProfileSendButtonSelectorInput: document.getElementById("siteProfileSendButtonSelectorInput"),
-    siteProfileAssistantMessageSelectorInput: document.getElementById("siteProfileAssistantMessageSelectorInput"),
-    siteProfileAnswerRootSelectorInput: document.getElementById("siteProfileAnswerRootSelectorInput"),
-    siteProfileSourceLinksSelectorInput: document.getElementById("siteProfileSourceLinksSelectorInput"),
-    siteProfileCaptureModeSelect: document.getElementById("siteProfileCaptureModeSelect"),
-    siteProfileRequestUrlPatternsInput: document.getElementById("siteProfileRequestUrlPatternsInput"),
     clearAllBtn: document.getElementById("clearAllBtn"),
     progressText: document.getElementById("progressText"),
     progressPercent: document.getElementById("progressPercent"),
@@ -90,11 +82,6 @@ async function persistGeneralSettings(settings) {
     saveSetting(StorageKeys.USE_WEB_SEARCH, settings.useWebSearch),
     saveSetting(StorageKeys.KEEP_SAME_CHAT, settings.keepSameChat)
   ]);
-}
-
-async function handleSiteProfileChange(siteProfile) {
-  patchSiteProfile(siteProfile);
-  await saveSiteProfile(siteProfile);
 }
 
 async function handleStart() {
@@ -548,6 +535,9 @@ function wireMessageListeners() {
       const normalized = normalizeWorkflows(rawWorkflows);
       AppState.patch({ workflows: normalized });
     }
+    if (changes[StorageKeys.SITE_PROFILE]) {
+      patchSiteProfile(changes[StorageKeys.SITE_PROFILE].newValue);
+    }
     if (!changes.pendingMessage) {
       return;
     }
@@ -690,6 +680,9 @@ function setupEventListeners(elements) {
     void handleRetryFailed();
   });
   elements.exportBtn.addEventListener("click", handleExport);
+  elements.openSiteProfileEditorBtn.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("site-profile-editor.html") });
+  });
   elements.clearAllBtn.addEventListener("click", () => {
     void handleClearAll();
   });
@@ -701,10 +694,6 @@ function setupEventListeners(elements) {
   });
   elements.keepSameChatCheckbox.addEventListener("change", (event) => {
     void handleKeepSameChatChange(event);
-  });
-
-  settingsPanel.bindSiteProfileEvents((siteProfile) => {
-    void handleSiteProfileChange(siteProfile);
   });
 
   document.getElementById("workflowBackupHistoryBtn").addEventListener("click", () => {

@@ -517,6 +517,37 @@ h2::before {
   letter-spacing: 0.02em;
 }
 
+.site-editor-launch-card {
+  background: linear-gradient(135deg, #eef4ff 0%, #f8fbff 100%);
+  border-color: #c7d2fe;
+}
+
+.site-editor-launch-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.site-editor-launch-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.site-editor-launch-copy {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.site-editor-launch-btn {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
 /* Control Divider */
 .control-divider {
   height: 1px;
