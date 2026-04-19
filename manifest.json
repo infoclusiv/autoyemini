@@ -20,16 +20,15 @@
       "run_at": "document_start"
    } ],
    "default_locale": "en",
-   "description": "__MSG_extDescription__",
+   "description": "Auto Yemini",
       "host_permissions": [ "https://aistudio.google.com/*", "http://127.0.0.1/*", "http://localhost/*" ],
    "icons": {
       "128": "icons/icon128.png",
       "16": "icons/icon16.png",
       "48": "icons/icon48.png"
    },
-   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAty/zRxEXE31pZHV+JspPJlQDKW+ZevlqO1qOMamowcDABekVaiDeTbpWPZEJgSWcOA50MyGb+1Pi2qzKrJXeZJnWlqb2l0/bz3XIN/ky4NIeRPNjaQzJ4BHVo8BAcEMIpZgSxOnYaVlwNhzOIb2KlJFavFY3UuVs5LiY35K3B9DwK3J2Rt8279GyT4FLsjfjDGiMuSudQ3KAyP+V48vhA/MQi7O2ihRlxwgwwWb6xwsLbJLQY9e8o39YLMI5cSZSCfrDSlE6KJh7p93BVFqzJ9bkfIWjZOj53461rQCTgpGBhsEEbHdoAPizCLgEKVcLzHJvKZeOxbd06Bc3Z7QrcQIDAQAB",
    "manifest_version": 3,
-   "name": "__MSG_extName__",
+   "name": "Auto Yemini",
    "permissions": [ "storage", "sidePanel", "tabs", "activeTab", "alarms" ],
    "side_panel": {
       "default_path": "sidepanel.html"
