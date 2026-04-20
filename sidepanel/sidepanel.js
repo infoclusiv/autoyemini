@@ -188,6 +188,9 @@ function loadWorkflowStepQuestions(step, chainedText) {
     extractionRegex,
     injectionPlaceholder
   };
+  const attachments = step?.attachmentConfig?.enabled === true
+    ? [...(step.attachmentConfig.selectedAttachments || [])]
+    : [];
 
   // Resolve the step content: replace the placeholder with chainedText
   let resolvedContent = step.content || "";
@@ -210,7 +213,8 @@ function loadWorkflowStepQuestions(step, chainedText) {
       sources: [],
       timestamp: Date.now(),
       error: null,
-      extractionConfig
+      extractionConfig,
+      attachments
     });
   });
 

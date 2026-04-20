@@ -23,6 +23,7 @@ async function handleProcessQuestion(payload, sendResponse) {
       type: "ASK_QUESTION",
       question: payload.question,
       questionId: payload.questionId,
+      attachments: Array.isArray(payload.attachments) ? payload.attachments : [],
       useTempChat,
       useWebSearch,
       antiBotConfig: payload.antiBotConfig || null

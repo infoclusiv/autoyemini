@@ -11,7 +11,11 @@ const DEFAULT_SITE_PROFILE = {
 		sendButton: 'button[aria-label*="Run" i], button[mattooltip*="Run" i], button[aria-label*="Send" i], button[aria-label*="Submit" i]',
 		assistantMessage: '[data-turn-role="model"], [data-response-id], article[role="article"], [role="article"]',
 		answerRoot: '.markdown, [class*="markdown"], .prose, [data-turn-role="model"], [data-response-id]',
-		sourceLinks: 'a[href^="http"]'
+		sourceLinks: 'a[href^="http"]',
+		attachmentTrigger: 'button[aria-label*="Upload" i], button[aria-label*="Attach" i], button[aria-label*="Add" i], button[title*="Upload" i], button[title*="Attach" i], button[title*="Add" i]',
+		attachmentUploadMenuItem: '.__menu-item, [role="menuitem"], button',
+		fileInput: 'input[type="file"]',
+		attachmentReadyIndicator: '[data-mime-type], [class*="file-chip"], [class*="attachment-chip"], [class*="uploaded-file"]'
 	},
 	capture: {
 		mode: "dom_only",
@@ -34,7 +38,8 @@ const DEFAULT_SITE_PROFILE = {
 		sseReadyDelayMs: 1500
 	},
 	features: {
-		supportsWebSearch: false
+		supportsWebSearch: false,
+		supportsAttachments: true
 	},
 	sourceExclusions: [
 		"aistudio.google.com",
@@ -128,7 +133,20 @@ function normalizeStoredSiteProfile(value) {
 				defaults.selectors.assistantMessage
 			),
 			answerRoot: normalizeOptionalString(raw.selectors?.answerRoot, defaults.selectors.answerRoot),
-			sourceLinks: normalizeOptionalString(raw.selectors?.sourceLinks, defaults.selectors.sourceLinks)
+			sourceLinks: normalizeOptionalString(raw.selectors?.sourceLinks, defaults.selectors.sourceLinks),
+			attachmentTrigger: normalizeOptionalString(
+				raw.selectors?.attachmentTrigger,
+				defaults.selectors.attachmentTrigger
+			),
+			attachmentUploadMenuItem: normalizeOptionalString(
+				raw.selectors?.attachmentUploadMenuItem,
+				defaults.selectors.attachmentUploadMenuItem
+			),
+			fileInput: normalizeOptionalString(raw.selectors?.fileInput, defaults.selectors.fileInput),
+			attachmentReadyIndicator: normalizeOptionalString(
+				raw.selectors?.attachmentReadyIndicator,
+				defaults.selectors.attachmentReadyIndicator
+			)
 		},
 		capture: {
 			mode: ["dom_only", "stream_plus_dom"].includes(raw.capture?.mode)
@@ -156,6 +174,10 @@ function normalizeStoredSiteProfile(value) {
 			supportsWebSearch: normalizeBoolean(
 				raw.features?.supportsWebSearch,
 				defaults.features.supportsWebSearch
+			),
+			supportsAttachments: normalizeBoolean(
+				raw.features?.supportsAttachments,
+				defaults.features.supportsAttachments
 			)
 		},
 		sourceExclusions: normalizeOptionalStringList(raw.sourceExclusions, defaults.sourceExclusions)
@@ -190,7 +212,23 @@ function normalizeSiteProfile(value) {
 			sourceLinks:
 				typeof raw.selectors?.sourceLinks === "string"
 					? raw.selectors.sourceLinks
-					: defaults.selectors.sourceLinks
+					: defaults.selectors.sourceLinks,
+			attachmentTrigger:
+				typeof raw.selectors?.attachmentTrigger === "string"
+					? raw.selectors.attachmentTrigger
+					: defaults.selectors.attachmentTrigger,
+			attachmentUploadMenuItem:
+				typeof raw.selectors?.attachmentUploadMenuItem === "string"
+					? raw.selectors.attachmentUploadMenuItem
+					: defaults.selectors.attachmentUploadMenuItem,
+			fileInput:
+				typeof raw.selectors?.fileInput === "string"
+					? raw.selectors.fileInput
+					: defaults.selectors.fileInput,
+			attachmentReadyIndicator:
+				typeof raw.selectors?.attachmentReadyIndicator === "string"
+					? raw.selectors.attachmentReadyIndicator
+					: defaults.selectors.attachmentReadyIndicator
 		},
 		capture: {
 			mode: ["dom_only", "stream_plus_dom"].includes(raw.capture?.mode)
@@ -219,6 +257,10 @@ function normalizeSiteProfile(value) {
 			supportsWebSearch: normalizeBoolean(
 				raw.features?.supportsWebSearch,
 				defaults.features.supportsWebSearch
+			),
+			supportsAttachments: normalizeBoolean(
+				raw.features?.supportsAttachments,
+				defaults.features.supportsAttachments
 			)
 		},
 		sourceExclusions: Array.isArray(raw.sourceExclusions) ? [...raw.sourceExclusions] : []
@@ -250,6 +292,14 @@ function validateSiteProfile(value) {
 
 	if (!siteProfile.selectors.sendButton) {
 		warnings.push("Blank Send Button Selector will rely on keyboard submission fallback and may fail on sites that require a clickable send button.");
+	}
+
+	if (siteProfile.features.supportsAttachments && !siteProfile.selectors.fileInput) {
+		warnings.push("Blank File Input Selector will use the generic input[type=file] fallback for attachments.");
+	}
+
+	if (siteProfile.features.supportsAttachments && !siteProfile.selectors.attachmentReadyIndicator) {
+		warnings.push("Blank Attachment Ready Indicator Selector will make uploads rely on the default fixed delay after assigning files.");
 	}
 
 	if (siteProfile.capture.mode === "stream_plus_dom" && siteProfile.capture.requestUrlPatterns.length === 0) {
@@ -339,6 +389,14 @@ function resolveLegacyBestTitleUrl(value) {
 	return candidate === `${REMOTE_API_LEGACY_BASE_URL}/best-title` ? fallback : candidate;
 }
 
+function resolveAttachmentDownloadUrl(attachmentId) {
+	const normalizedId = typeof attachmentId === "string" ? attachmentId.trim() : "";
+	if (!normalizedId) {
+		return `${REMOTE_API_BASE_URL}/attachments/`;
+	}
+	return `${REMOTE_API_BASE_URL}/attachments/${encodeURIComponent(normalizedId)}`;
+}
+
 const CONFIG = {
 	APP_VERSION: "1.0.0",
 	APP_NAME: "AI Studio Workflow Assistant",
@@ -351,9 +409,11 @@ const CONFIG = {
 		LEGACY_BASE_URL: REMOTE_API_LEGACY_BASE_URL,
 		BASE_URL: REMOTE_API_BASE_URL,
 		BEST_TITLE_URL: `${REMOTE_API_BASE_URL}/best-title`,
+		ATTACHMENTS_URL: `${REMOTE_API_BASE_URL}/attachments`,
 		SAVE_STEP_RESPONSE_URL: `${REMOTE_API_BASE_URL}/save-step-response`,
 		WORKFLOW_COMPLETE_URL: `${REMOTE_API_BASE_URL}/workflow-complete`,
-		resolveBestTitleUrl: resolveLegacyBestTitleUrl
+		resolveBestTitleUrl: resolveLegacyBestTitleUrl,
+		resolveAttachmentDownloadUrl
 	},
 	DEFAULT_SITE_PROFILE: cloneValue(DEFAULT_SITE_PROFILE),
 	normalizeStoredSiteProfile,
@@ -390,6 +450,14 @@ const CONFIG = {
 	EXTRACTION: {
 		DEFAULT_REGEX: "<extract>(.*?)</extract>",
 		DEFAULT_PLACEHOLDER: "{{extract}}"
+	},
+
+	ATTACHMENTS: {
+		DOWNLOAD_TIMEOUT_MS: 30000,
+		MENU_APPEAR_WAIT_MS: [900, 1600],
+		READY_TIMEOUT_MS: 20000,
+		POST_ASSIGN_WAIT_MS: [2200, 3200],
+		MAX_FILES_PER_STEP: 10
 	},
 
 	STORAGE_KEYS: {

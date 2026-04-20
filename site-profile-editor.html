@@ -47,9 +47,10 @@
           <div class="spe-sidebar-label">What gets persisted</div>
           <ul class="spe-sidebar-list">
             <li>Base URL and tab matching pattern</li>
-            <li>DOM selectors for input, answers, and sources</li>
+            <li>DOM selectors for input, attachments, answers, and sources</li>
             <li>Streaming capture patterns and JSON paths</li>
-            <li>Web search support flag and source exclusions</li>
+            <li>Web search and attachments support flags</li>
+            <li>Source exclusions and upload-ready detection</li>
           </ul>
         </section>
       </aside>
@@ -119,6 +120,49 @@
             <label class="spe-field spe-field-full">
               <span class="spe-label">Source Links Selector</span>
               <input id="siteProfileSourceLinksSelectorInput" class="spe-input spe-input-mono" type="text" spellcheck="false">
+            </label>
+          </div>
+        </section>
+
+        <section class="spe-section">
+          <div class="spe-section-header">
+            <div>
+              <div class="spe-section-kicker">Composer assets</div>
+              <h2 class="spe-section-title">Attachments</h2>
+            </div>
+            <p class="spe-section-copy">These values let the runtime open the upload flow, locate the file input, and wait until a file appears ready in the composer before it sends the prompt.</p>
+          </div>
+
+          <div class="spe-grid">
+            <label class="spe-field spe-field-checkbox spe-field-full">
+              <span class="spe-label">Supports Attachments</span>
+              <span class="spe-checkbox-row">
+                <input id="siteProfileSupportsAttachmentsCheckbox" class="spe-checkbox" type="checkbox">
+                <span class="spe-checkbox-copy">Enable automatic file attachments for this site profile.</span>
+              </span>
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Attachment Trigger Selector</span>
+              <textarea id="siteProfileAttachmentTriggerSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="3" spellcheck="false"></textarea>
+              <span class="spe-hint">Optional. Used for the first click that opens the site upload flow, such as the Google AI Studio + button.</span>
+            </label>
+
+            <label class="spe-field spe-field-full">
+              <span class="spe-label">Upload Menu Item Selector</span>
+              <textarea id="siteProfileAttachmentUploadMenuItemSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="3" spellcheck="false"></textarea>
+              <span class="spe-hint">Optional. Used when the site requires a second click like Upload files after opening the attachment menu.</span>
+            </label>
+
+            <label class="spe-field">
+              <span class="spe-label">File Input Selector</span>
+              <textarea id="siteProfileFileInputSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="3" spellcheck="false"></textarea>
+            </label>
+
+            <label class="spe-field">
+              <span class="spe-label">Attachment Ready Indicator Selector</span>
+              <textarea id="siteProfileAttachmentReadyIndicatorSelectorInput" class="spe-input spe-input-mono spe-textarea" rows="3" spellcheck="false"></textarea>
+              <span class="spe-hint">Optional but recommended. Used to wait until the uploaded file chip or ready marker appears.</span>
             </label>
           </div>
         </section>

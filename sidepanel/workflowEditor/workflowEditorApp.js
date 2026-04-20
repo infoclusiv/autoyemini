@@ -11,6 +11,12 @@ let selectedWorkflowId = "";
 // ─── Modal state ──────────────────────────────────────────
 let modalWorkflowId = null;
 let modalStepIndex = -1;   // -1 = new step being created
+let attachmentCatalog = {
+  status: "idle",
+  items: [],
+  error: "",
+  projectFolder: ""
+};
 
 // ─── Storage helpers ──────────────────────────────────────
 async function load() {
@@ -32,6 +38,156 @@ async function persist() {
 // ─── Getters ──────────────────────────────────────────────
 function getSelectedWorkflow() {
   return workflows.find((wf) => wf.id === selectedWorkflowId) || null;
+}
+
+function normalizeAttachmentDescriptor(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const attachmentId = typeof value.attachmentId === "string" ? value.attachmentId.trim() : "";
+  if (!attachmentId) {
+    return null;
+  }
+
+  return {
+    attachmentId,
+    name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : attachmentId,
+    relativePath: typeof value.relativePath === "string" ? value.relativePath.trim() : "",
+    mimeType: typeof value.mimeType === "string" && value.mimeType.trim()
+      ? value.mimeType.trim()
+      : "application/octet-stream",
+    sizeBytes: Number.isFinite(Number(value.sizeBytes)) ? Math.max(0, Number(value.sizeBytes)) : 0,
+    downloadUrl: typeof value.downloadUrl === "string" ? value.downloadUrl.trim() : ""
+  };
+}
+
+function formatBytes(sizeBytes) {
+  const numeric = Number(sizeBytes);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return "0 B";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+  let value = numeric;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+
+async function refreshAttachmentCatalog() {
+  attachmentCatalog = {
+    ...attachmentCatalog,
+    status: "loading",
+    error: ""
+  };
+  renderCanvas();
+
+  try {
+    const response = await fetch(
+      globalThis.CONFIG?.REMOTE_API?.ATTACHMENTS_URL || "http://localhost:7788/api/extensions/autoyemini/attachments"
+    );
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || payload?.success !== true) {
+      throw new Error(payload?.error || `HTTP ${response.status}`);
+    }
+
+    attachmentCatalog = {
+      status: "ready",
+      items: Array.isArray(payload.attachments)
+        ? payload.attachments.map(normalizeAttachmentDescriptor).filter(Boolean)
+        : [],
+      error: "",
+      projectFolder: typeof payload.projectFolder === "string" ? payload.projectFolder.trim() : ""
+    };
+  } catch (error) {
+    attachmentCatalog = {
+      status: "error",
+      items: [],
+      error: error.message || "No se pudo cargar el catálogo de adjuntos.",
+      projectFolder: ""
+    };
+  }
+
+  renderCanvas();
+}
+
+async function updateStepAttachmentConfig(workflowId, stepIndex, patch) {
+  workflows = workflows.map((workflow) => {
+    if (workflow.id !== workflowId) {
+      return workflow;
+    }
+
+    const steps = workflow.steps.map((step, index) => {
+      if (index !== stepIndex) {
+        return step;
+      }
+
+      return {
+        ...step,
+        attachmentConfig: {
+          enabled: false,
+          selectedAttachments: [],
+          ...(step.attachmentConfig || {}),
+          ...patch
+        }
+      };
+    });
+
+    return { ...workflow, steps };
+  });
+
+  await persist();
+  renderCanvas();
+}
+
+async function toggleStepAttachmentSelection(workflowId, stepIndex, attachment, checked) {
+  workflows = workflows.map((workflow) => {
+    if (workflow.id !== workflowId) {
+      return workflow;
+    }
+
+    const steps = workflow.steps.map((step, index) => {
+      if (index !== stepIndex) {
+        return step;
+      }
+
+      const currentConfig = step.attachmentConfig || { enabled: false, selectedAttachments: [] };
+      const selectionMap = new Map(
+        (currentConfig.selectedAttachments || []).map((entry) => [entry.attachmentId, entry])
+      );
+
+      if (checked) {
+        selectionMap.set(attachment.attachmentId, {
+          attachmentId: attachment.attachmentId,
+          name: attachment.name,
+          relativePath: attachment.relativePath,
+          mimeType: attachment.mimeType,
+          sizeBytes: attachment.sizeBytes
+        });
+      } else {
+        selectionMap.delete(attachment.attachmentId);
+      }
+
+      return {
+        ...step,
+        attachmentConfig: {
+          ...currentConfig,
+          selectedAttachments: [...selectionMap.values()]
+        }
+      };
+    });
+
+    return { ...workflow, steps };
+  });
+
+  await persist();
+  renderCanvas();
 }
 
 // ─── Render: workflow select ──────────────────────────────
@@ -360,6 +516,133 @@ function renderCanvas() {
       injectionRow.appendChild(injectionInput);
     }
 
+    const attachmentConfig = step.attachmentConfig || { enabled: false, selectedAttachments: [] };
+    const selectedAttachments = Array.isArray(attachmentConfig.selectedAttachments)
+      ? attachmentConfig.selectedAttachments
+      : [];
+    const selectedAttachmentIds = new Set(selectedAttachments.map((attachment) => attachment.attachmentId));
+    const catalogAttachmentIds = new Set(attachmentCatalog.items.map((attachment) => attachment.attachmentId));
+
+    const attachmentSection = document.createElement("div");
+    attachmentSection.className = "editor-node-attachments";
+
+    const attachmentToggleRow = document.createElement("div");
+    attachmentToggleRow.className = "editor-node-attachments-toggle";
+
+    const attachmentToggleLabel = document.createElement("label");
+    attachmentToggleLabel.className = "editor-node-attachments-label";
+    const attachmentToggleCb = document.createElement("input");
+    attachmentToggleCb.type = "checkbox";
+    attachmentToggleCb.checked = attachmentConfig.enabled === true;
+    attachmentToggleLabel.appendChild(attachmentToggleCb);
+    attachmentToggleLabel.append(" 📎 Project Attachments (clusiv-v5)");
+
+    const attachmentSummary = document.createElement("span");
+    attachmentSummary.className = "editor-node-attachments-summary";
+    attachmentSummary.textContent = attachmentConfig.enabled
+      ? `${selectedAttachments.length} selected`
+      : "off";
+
+    const attachmentRefreshBtn = document.createElement("button");
+    attachmentRefreshBtn.type = "button";
+    attachmentRefreshBtn.className = "editor-node-attachments-refresh";
+    attachmentRefreshBtn.title = "Reload project files from clusiv-v5";
+    attachmentRefreshBtn.textContent = attachmentCatalog.status === "loading" ? "…" : "↻";
+    attachmentRefreshBtn.disabled = attachmentCatalog.status === "loading";
+    attachmentRefreshBtn.addEventListener("click", () => {
+      void refreshAttachmentCatalog();
+    });
+
+    attachmentToggleRow.appendChild(attachmentToggleLabel);
+    attachmentToggleRow.appendChild(attachmentSummary);
+    attachmentToggleRow.appendChild(attachmentRefreshBtn);
+
+    const attachmentConfigPanel = document.createElement("div");
+    attachmentConfigPanel.className = "editor-node-attachments-config" + (attachmentConfig.enabled ? "" : " is-hidden");
+
+    const attachmentCatalogStatus = document.createElement("div");
+    attachmentCatalogStatus.className = "editor-node-attachments-status";
+    if (attachmentCatalog.status === "loading") {
+      attachmentCatalogStatus.textContent = "Loading project files from clusiv-v5...";
+    } else if (attachmentCatalog.status === "error") {
+      attachmentCatalogStatus.textContent = attachmentCatalog.error || "Unable to load project files.";
+      attachmentCatalogStatus.classList.add("is-error");
+    } else if (attachmentCatalog.projectFolder) {
+      attachmentCatalogStatus.textContent = `Project: ${attachmentCatalog.projectFolder}`;
+    } else {
+      attachmentCatalogStatus.textContent = "The project file catalog is not loaded yet.";
+    }
+    attachmentConfigPanel.appendChild(attachmentCatalogStatus);
+
+    if (attachmentCatalog.status === "ready" && attachmentCatalog.items.length > 0) {
+      const attachmentList = document.createElement("div");
+      attachmentList.className = "editor-node-attachments-list";
+
+      attachmentCatalog.items.forEach((attachment) => {
+        const option = document.createElement("label");
+        option.className = "editor-node-attachment-option";
+
+        const optionCheckbox = document.createElement("input");
+        optionCheckbox.type = "checkbox";
+        optionCheckbox.checked = selectedAttachmentIds.has(attachment.attachmentId);
+        optionCheckbox.addEventListener("change", () => {
+          void toggleStepAttachmentSelection(workflow.id, index, attachment, optionCheckbox.checked);
+        });
+
+        const optionText = document.createElement("div");
+        optionText.className = "editor-node-attachment-option-text";
+
+        const optionName = document.createElement("div");
+        optionName.className = "editor-node-attachment-option-name";
+        optionName.textContent = attachment.name;
+
+        const optionMeta = document.createElement("div");
+        optionMeta.className = "editor-node-attachment-option-meta";
+        optionMeta.textContent = `${attachment.relativePath || attachment.name} • ${formatBytes(attachment.sizeBytes)}`;
+
+        optionText.appendChild(optionName);
+        optionText.appendChild(optionMeta);
+        option.appendChild(optionCheckbox);
+        option.appendChild(optionText);
+        attachmentList.appendChild(option);
+      });
+
+      attachmentConfigPanel.appendChild(attachmentList);
+    } else if (attachmentCatalog.status === "ready") {
+      const emptyState = document.createElement("div");
+      emptyState.className = "editor-node-attachments-empty";
+      emptyState.textContent = "No eligible files were found in the active clusiv-v5 project.";
+      attachmentConfigPanel.appendChild(emptyState);
+    }
+
+    if (selectedAttachments.length > 0) {
+      const selectedList = document.createElement("div");
+      selectedList.className = "editor-node-selected-attachments";
+
+      selectedAttachments.forEach((attachment) => {
+        const chip = document.createElement("span");
+        chip.className = "editor-node-selected-attachment-chip";
+        chip.textContent = attachment.name || attachment.relativePath || attachment.attachmentId;
+        if (!catalogAttachmentIds.has(attachment.attachmentId)) {
+          chip.classList.add("is-missing");
+        }
+        selectedList.appendChild(chip);
+      });
+
+      attachmentConfigPanel.appendChild(selectedList);
+    }
+
+    attachmentToggleCb.addEventListener("change", () => {
+      attachmentConfigPanel.classList.toggle("is-hidden", !attachmentToggleCb.checked);
+      if (attachmentToggleCb.checked && attachmentCatalog.status === "idle") {
+        void refreshAttachmentCatalog();
+      }
+      void updateStepAttachmentConfig(workflow.id, index, { enabled: attachmentToggleCb.checked });
+    });
+
+    attachmentSection.appendChild(attachmentToggleRow);
+    attachmentSection.appendChild(attachmentConfigPanel);
+
     // ── Anti-Bot Options (collapsible) ────────────────────
     const ab = step.antiBotConfig || {};
     const abHumanTyping = ab.humanTyping !== false;
@@ -571,6 +854,7 @@ function renderCanvas() {
     node.appendChild(badge);
     node.appendChild(regexRow);
     node.appendChild(injectionRow);
+    node.appendChild(attachmentSection);
     node.appendChild(antiBotToggle);
     node.appendChild(antiBotSection);
     if (lastStepWarning) node.appendChild(lastStepWarning);
@@ -726,6 +1010,10 @@ async function saveStepModal() {
         extractionRegex: defaultRegex,
         injectionPlaceholder: defaultPlaceholder
       },
+      attachmentConfig: {
+        enabled: false,
+        selectedAttachments: []
+      },
       antiBotConfig: {
         humanTyping: true,
         randomDelays: true,
@@ -879,6 +1167,7 @@ async function init() {
   renderWorkflowSelect();
   renderCanvas();
   setupEventListeners();
+  void refreshAttachmentCatalog();
 
   // Reflect changes made from the sidepanel while this tab is open
   chrome.storage.onChanged.addListener((changes, area) => {

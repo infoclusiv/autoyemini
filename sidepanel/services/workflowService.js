@@ -15,6 +15,47 @@ export function countStoredSteps(workflow) {
   return getStoredStepIndexes(workflow).length;
 }
 
+function normalizeSelectedAttachments(value) {
+  const maxFilesPerStep = globalThis.CONFIG?.ATTACHMENTS?.MAX_FILES_PER_STEP || 10;
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (typeof entry === "string" && entry.trim()) {
+        return {
+          attachmentId: entry.trim(),
+          name: entry.trim(),
+          relativePath: "",
+          mimeType: "application/octet-stream",
+          sizeBytes: 0
+        };
+      }
+
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const attachmentId = typeof entry.attachmentId === "string" ? entry.attachmentId.trim() : "";
+      if (!attachmentId) {
+        return null;
+      }
+
+      return {
+        attachmentId,
+        name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : attachmentId,
+        relativePath: typeof entry.relativePath === "string" ? entry.relativePath.trim() : "",
+        mimeType: typeof entry.mimeType === "string" && entry.mimeType.trim()
+          ? entry.mimeType.trim()
+          : "application/octet-stream",
+        sizeBytes: Number.isFinite(Number(entry.sizeBytes)) ? Math.max(0, Number(entry.sizeBytes)) : 0
+      };
+    })
+    .filter(Boolean)
+    .slice(0, maxFilesPerStep);
+}
+
 export function normalizeWorkflows(value, existingTemplates) {
   if (!Array.isArray(value)) {
     return [];
@@ -63,6 +104,14 @@ export function normalizeWorkflows(value, existingTemplates) {
                     ? rawExtSrc.placeholder.trim()
                     : "{{clusiv_title}}"
               };
+
+                const rawAttachmentConfig = step.attachmentConfig && typeof step.attachmentConfig === "object"
+                  ? step.attachmentConfig
+                  : {};
+                const attachmentConfig = {
+                  enabled: rawAttachmentConfig.enabled === true,
+                  selectedAttachments: normalizeSelectedAttachments(rawAttachmentConfig.selectedAttachments)
+                };
 
               // ── antiBotConfig per step ──────────────────────────────
               const abDefaults = globalThis.CONFIG?.ANTI_BOT || {};
@@ -127,6 +176,7 @@ export function normalizeWorkflows(value, existingTemplates) {
                 content: stepContent,
                 order: typeof step.order === "number" ? step.order : stepIndex,
                 chainConfig: { responseAction, extractionRegex, injectionPlaceholder, externalSource },
+                attachmentConfig,
                 antiBotConfig
               };
             })

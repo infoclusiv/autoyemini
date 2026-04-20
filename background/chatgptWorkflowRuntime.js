@@ -93,6 +93,47 @@
     return String(match[1] ?? match[0] ?? "").trim();
   }
 
+  function normalizeSelectedAttachments(value) {
+    const maxFilesPerStep = CONFIG?.ATTACHMENTS?.MAX_FILES_PER_STEP || 10;
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((entry) => {
+        if (typeof entry === "string" && entry.trim()) {
+          return {
+            attachmentId: entry.trim(),
+            name: entry.trim(),
+            relativePath: "",
+            mimeType: "application/octet-stream",
+            sizeBytes: 0
+          };
+        }
+
+        if (!entry || typeof entry !== "object") {
+          return null;
+        }
+
+        const attachmentId = typeof entry.attachmentId === "string" ? entry.attachmentId.trim() : "";
+        if (!attachmentId) {
+          return null;
+        }
+
+        return {
+          attachmentId,
+          name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : attachmentId,
+          relativePath: typeof entry.relativePath === "string" ? entry.relativePath.trim() : "",
+          mimeType: typeof entry.mimeType === "string" && entry.mimeType.trim()
+            ? entry.mimeType.trim()
+            : "application/octet-stream",
+          sizeBytes: Number.isFinite(Number(entry.sizeBytes)) ? Math.max(0, Number(entry.sizeBytes)) : 0
+        };
+      })
+      .filter(Boolean)
+      .slice(0, maxFilesPerStep);
+  }
+
   function normalizeWorkflows(value) {
     if (!Array.isArray(value)) {
       return [];
@@ -127,6 +168,10 @@
                       ? step.chainConfig.externalSource.placeholder.trim()
                       : "{{clusiv_title}}"
                 };
+                const attachmentConfig = {
+                  enabled: step.attachmentConfig?.enabled === true,
+                  selectedAttachments: normalizeSelectedAttachments(step.attachmentConfig?.selectedAttachments)
+                };
 
                 const rawAntiBot = step.antiBotConfig && typeof step.antiBotConfig === "object"
                   ? step.antiBotConfig
@@ -149,6 +194,7 @@
                         : defaultPlaceholder,
                     externalSource
                   },
+                  attachmentConfig,
                   antiBotConfig: {
                     humanTyping: rawAntiBot.humanTyping !== false,
                     randomDelays: rawAntiBot.randomDelays !== false,
@@ -223,6 +269,9 @@
     return {
       id: SharedUtils.generateUUID(),
       question: content,
+      attachments: step.attachmentConfig?.enabled === true
+        ? [...(step.attachmentConfig.selectedAttachments || [])]
+        : [],
       extractionConfig: {
         extractionRegex: step.chainConfig?.extractionRegex || CONFIG.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>",
         injectionPlaceholder: step.chainConfig?.injectionPlaceholder || CONFIG.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}"
@@ -288,6 +337,7 @@
       type: "ASK_QUESTION",
       question: questionPayload.question,
       questionId: questionPayload.id,
+      attachments: questionPayload.attachments,
       useTempChat: runtimeState.settings.useTempChat !== false,
       useWebSearch: runtimeState.settings.useWebSearch !== false,
       antiBotConfig: step.antiBotConfig || null

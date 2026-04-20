@@ -42,6 +42,11 @@ export class SiteProfileSettingsPanel {
     siteProfileAssistantMessageSelectorInput,
     siteProfileAnswerRootSelectorInput,
     siteProfileSourceLinksSelectorInput,
+    siteProfileSupportsAttachmentsCheckbox,
+    siteProfileAttachmentTriggerSelectorInput,
+    siteProfileAttachmentUploadMenuItemSelectorInput,
+    siteProfileFileInputSelectorInput,
+    siteProfileAttachmentReadyIndicatorSelectorInput,
     siteProfileCaptureModeSelect,
     siteProfileRequestUrlPatternsInput,
     siteProfileJsonPathsInput,
@@ -61,6 +66,11 @@ export class SiteProfileSettingsPanel {
     this.assistantMessageSelectorInput = siteProfileAssistantMessageSelectorInput;
     this.answerRootSelectorInput = siteProfileAnswerRootSelectorInput;
     this.sourceLinksSelectorInput = siteProfileSourceLinksSelectorInput;
+    this.supportsAttachmentsCheckbox = siteProfileSupportsAttachmentsCheckbox;
+    this.attachmentTriggerSelectorInput = siteProfileAttachmentTriggerSelectorInput;
+    this.attachmentUploadMenuItemSelectorInput = siteProfileAttachmentUploadMenuItemSelectorInput;
+    this.fileInputSelectorInput = siteProfileFileInputSelectorInput;
+    this.attachmentReadyIndicatorSelectorInput = siteProfileAttachmentReadyIndicatorSelectorInput;
     this.captureModeSelect = siteProfileCaptureModeSelect;
     this.requestUrlPatternsInput = siteProfileRequestUrlPatternsInput;
     this.jsonPathsInput = siteProfileJsonPathsInput;
@@ -83,6 +93,11 @@ export class SiteProfileSettingsPanel {
       this.assistantMessageSelectorInput,
       this.answerRootSelectorInput,
       this.sourceLinksSelectorInput,
+      this.supportsAttachmentsCheckbox,
+      this.attachmentTriggerSelectorInput,
+      this.attachmentUploadMenuItemSelectorInput,
+      this.fileInputSelectorInput,
+      this.attachmentReadyIndicatorSelectorInput,
       this.captureModeSelect,
       this.requestUrlPatternsInput,
       this.jsonPathsInput,
@@ -113,6 +128,11 @@ export class SiteProfileSettingsPanel {
     setInputValue(this.assistantMessageSelectorInput, normalized.selectors?.assistantMessage);
     setInputValue(this.answerRootSelectorInput, normalized.selectors?.answerRoot);
     setInputValue(this.sourceLinksSelectorInput, normalized.selectors?.sourceLinks);
+    setInputValue(this.supportsAttachmentsCheckbox, normalized.features?.supportsAttachments);
+    setInputValue(this.attachmentTriggerSelectorInput, normalized.selectors?.attachmentTrigger);
+    setInputValue(this.attachmentUploadMenuItemSelectorInput, normalized.selectors?.attachmentUploadMenuItem);
+    setInputValue(this.fileInputSelectorInput, normalized.selectors?.fileInput);
+    setInputValue(this.attachmentReadyIndicatorSelectorInput, normalized.selectors?.attachmentReadyIndicator);
     setInputValue(this.captureModeSelect, normalized.capture?.mode || "dom_only");
     setInputValue(this.requestUrlPatternsInput, joinLines(normalized.capture?.requestUrlPatterns));
     setInputValue(this.jsonPathsInput, joinLines(normalized.capture?.jsonPaths));
@@ -151,7 +171,19 @@ export class SiteProfileSettingsPanel {
           : this.currentProfile.selectors?.answerRoot,
         sourceLinks: this.sourceLinksSelectorInput
           ? this.sourceLinksSelectorInput.value
-          : this.currentProfile.selectors?.sourceLinks
+          : this.currentProfile.selectors?.sourceLinks,
+        attachmentTrigger: this.attachmentTriggerSelectorInput
+          ? this.attachmentTriggerSelectorInput.value
+          : this.currentProfile.selectors?.attachmentTrigger,
+        attachmentUploadMenuItem: this.attachmentUploadMenuItemSelectorInput
+          ? this.attachmentUploadMenuItemSelectorInput.value
+          : this.currentProfile.selectors?.attachmentUploadMenuItem,
+        fileInput: this.fileInputSelectorInput
+          ? this.fileInputSelectorInput.value
+          : this.currentProfile.selectors?.fileInput,
+        attachmentReadyIndicator: this.attachmentReadyIndicatorSelectorInput
+          ? this.attachmentReadyIndicatorSelectorInput.value
+          : this.currentProfile.selectors?.attachmentReadyIndicator
       },
       capture: {
         ...(this.currentProfile.capture || {}),
@@ -176,6 +208,9 @@ export class SiteProfileSettingsPanel {
       },
       features: {
         ...(this.currentProfile.features || {}),
+        supportsAttachments: this.supportsAttachmentsCheckbox
+          ? this.supportsAttachmentsCheckbox.checked
+          : this.currentProfile.features?.supportsAttachments,
         supportsWebSearch: this.supportsWebSearchCheckbox
           ? this.supportsWebSearchCheckbox.checked
           : this.currentProfile.features?.supportsWebSearch

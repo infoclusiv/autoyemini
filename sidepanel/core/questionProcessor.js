@@ -108,6 +108,7 @@ export class QuestionProcessor {
         type: "PROCESS_QUESTION",
         question: submittedQuestion,
         questionId: nextQuestion.id,
+        attachments: Array.isArray(nextQuestion.attachments) ? nextQuestion.attachments : [],
         useTempChat,
         useWebSearch,
         keepSameChat,

@@ -105,6 +105,7 @@
   async function askQuestion(
     question,
     questionId,
+    attachments = [],
     useTempChat = true,
     useWebSearch = true,
     antiBotConfig = null
@@ -120,6 +121,14 @@
     try {
       if (useWebSearch) {
         await modules.enableWebSearch(antiBotConfig || {});
+      }
+
+      if (Array.isArray(attachments) && attachments.length > 0) {
+        if (typeof modules.attachProjectFiles !== "function") {
+          throw new Error("Attachment automation is not available in the content script.");
+        }
+
+        await modules.attachProjectFiles(attachments, antiBotConfig || {});
       }
 
       if (!(await modules.inputQuestion(question, antiBotConfig || {}))) {
@@ -203,11 +212,12 @@
     }
 
     if (message.type === "ASK_QUESTION") {
+      const attachments = Array.isArray(message.attachments) ? message.attachments : [];
       const useTempChat = message.useTempChat !== false;
       const useWebSearch = message.useWebSearch !== false;
       const antiBotConfig = message.antiBotConfig || {};
 
-      askQuestion(message.question, message.questionId, useTempChat, useWebSearch, antiBotConfig)
+      askQuestion(message.question, message.questionId, attachments, useTempChat, useWebSearch, antiBotConfig)
         .then((response) => sendResponse(response))
         .catch((error) => sendResponse({ success: false, error: error.message }));
       return true;
