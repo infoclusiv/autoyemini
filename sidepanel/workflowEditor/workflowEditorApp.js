@@ -1,4 +1,4 @@
-import { normalizeWorkflows } from "../services/workflowService.js";
+import { GENERATED_ATTACHMENT_OPTIONS, normalizeWorkflows } from "../services/workflowService.js";
 
 const WORKFLOWS_KEY = "savedWorkflows";
 
@@ -17,6 +17,12 @@ let attachmentCatalog = {
   error: "",
   projectFolder: ""
 };
+
+const DEFAULT_GENERATED_ATTACHMENT_KINDS = GENERATED_ATTACHMENT_OPTIONS.map((option) => option.value);
+
+function getDefaultGeneratedSourceStepIndex(stepIndex) {
+  return stepIndex > 0 ? stepIndex - 1 : -1;
+}
 
 // ─── Storage helpers ──────────────────────────────────────
 async function load() {
@@ -132,7 +138,11 @@ async function updateStepAttachmentConfig(workflowId, stepIndex, patch) {
         ...step,
         attachmentConfig: {
           enabled: false,
+          mode: "static",
           selectedAttachments: [],
+          sourceStepIndex: getDefaultGeneratedSourceStepIndex(stepIndex),
+          artifactKinds: [...DEFAULT_GENERATED_ATTACHMENT_KINDS],
+          required: true,
           ...(step.attachmentConfig || {}),
           ...patch
         }
@@ -179,6 +189,47 @@ async function toggleStepAttachmentSelection(workflowId, stepIndex, attachment, 
         attachmentConfig: {
           ...currentConfig,
           selectedAttachments: [...selectionMap.values()]
+        }
+      };
+    });
+
+    return { ...workflow, steps };
+  });
+
+  await persist();
+  renderCanvas();
+}
+
+async function toggleGeneratedArtifactKind(workflowId, stepIndex, artifactKind, checked) {
+  workflows = workflows.map((workflow) => {
+    if (workflow.id !== workflowId) {
+      return workflow;
+    }
+
+    const steps = workflow.steps.map((step, index) => {
+      if (index !== stepIndex) {
+        return step;
+      }
+
+      const currentConfig = step.attachmentConfig || {};
+      const selectedKinds = Array.isArray(currentConfig.artifactKinds)
+        ? currentConfig.artifactKinds.filter((value) => typeof value === "string" && value.trim())
+        : [...DEFAULT_GENERATED_ATTACHMENT_KINDS];
+
+      let nextKinds;
+      if (checked) {
+        nextKinds = selectedKinds.includes(artifactKind)
+          ? selectedKinds
+          : [...selectedKinds, artifactKind];
+      } else {
+        nextKinds = selectedKinds.filter((value) => value !== artifactKind);
+      }
+
+      return {
+        ...step,
+        attachmentConfig: {
+          ...currentConfig,
+          artifactKinds: nextKinds.length > 0 ? nextKinds : [...DEFAULT_GENERATED_ATTACHMENT_KINDS]
         }
       };
     });
@@ -516,12 +567,30 @@ function renderCanvas() {
       injectionRow.appendChild(injectionInput);
     }
 
-    const attachmentConfig = step.attachmentConfig || { enabled: false, selectedAttachments: [] };
+    const attachmentConfig = step.attachmentConfig || {
+      enabled: false,
+      mode: "static",
+      selectedAttachments: [],
+      sourceStepIndex: getDefaultGeneratedSourceStepIndex(index),
+      artifactKinds: [...DEFAULT_GENERATED_ATTACHMENT_KINDS],
+      required: true
+    };
+    const attachmentMode = index > 0 && attachmentConfig.mode === "generated" ? "generated" : "static";
     const selectedAttachments = Array.isArray(attachmentConfig.selectedAttachments)
       ? attachmentConfig.selectedAttachments
       : [];
     const selectedAttachmentIds = new Set(selectedAttachments.map((attachment) => attachment.attachmentId));
     const catalogAttachmentIds = new Set(attachmentCatalog.items.map((attachment) => attachment.attachmentId));
+    const generatedSourceStepIndex = Number.isInteger(attachmentConfig.sourceStepIndex)
+      ? attachmentConfig.sourceStepIndex
+      : getDefaultGeneratedSourceStepIndex(index);
+    const generatedArtifactKinds = Array.isArray(attachmentConfig.artifactKinds) && attachmentConfig.artifactKinds.length > 0
+      ? attachmentConfig.artifactKinds
+      : [...DEFAULT_GENERATED_ATTACHMENT_KINDS];
+    const generatedSourceStep = generatedSourceStepIndex >= 0 ? workflow.steps[generatedSourceStepIndex] : null;
+    const generatedSourceLabel = generatedSourceStep
+      ? `Step ${generatedSourceStepIndex + 1}: ${generatedSourceStep.title || `Step ${generatedSourceStepIndex + 1}`}`
+      : "Choose source step";
 
     const attachmentSection = document.createElement("div");
     attachmentSection.className = "editor-node-attachments";
@@ -540,7 +609,9 @@ function renderCanvas() {
     const attachmentSummary = document.createElement("span");
     attachmentSummary.className = "editor-node-attachments-summary";
     attachmentSummary.textContent = attachmentConfig.enabled
-      ? `${selectedAttachments.length} selected`
+      ? attachmentMode === "generated"
+        ? `${generatedArtifactKinds.length} runtime artifact${generatedArtifactKinds.length === 1 ? "" : "s"}`
+        : `${selectedAttachments.length} selected`
       : "off";
 
     const attachmentRefreshBtn = document.createElement("button");
@@ -549,6 +620,7 @@ function renderCanvas() {
     attachmentRefreshBtn.title = "Reload project files from clusiv-v5";
     attachmentRefreshBtn.textContent = attachmentCatalog.status === "loading" ? "…" : "↻";
     attachmentRefreshBtn.disabled = attachmentCatalog.status === "loading";
+    attachmentRefreshBtn.classList.toggle("is-hidden", attachmentConfig.enabled && attachmentMode === "generated");
     attachmentRefreshBtn.addEventListener("click", () => {
       void refreshAttachmentCatalog();
     });
@@ -559,6 +631,55 @@ function renderCanvas() {
 
     const attachmentConfigPanel = document.createElement("div");
     attachmentConfigPanel.className = "editor-node-attachments-config" + (attachmentConfig.enabled ? "" : " is-hidden");
+
+    if (index > 0) {
+      const attachmentModeRow = document.createElement("div");
+      attachmentModeRow.className = "editor-node-attachments-mode-row";
+
+      const staticModeLabel = document.createElement("label");
+      staticModeLabel.className = "editor-node-attachments-label";
+      const staticModeInput = document.createElement("input");
+      staticModeInput.type = "radio";
+      staticModeInput.name = `attachment-mode-${workflow.id}-${index}`;
+      staticModeInput.checked = attachmentMode === "static";
+      staticModeLabel.appendChild(staticModeInput);
+      staticModeLabel.append(" Project files");
+
+      const generatedModeLabel = document.createElement("label");
+      generatedModeLabel.className = "editor-node-attachments-label";
+      const generatedModeInput = document.createElement("input");
+      generatedModeInput.type = "radio";
+      generatedModeInput.name = `attachment-mode-${workflow.id}-${index}`;
+      generatedModeInput.checked = attachmentMode === "generated";
+      generatedModeLabel.appendChild(generatedModeInput);
+      generatedModeLabel.append(" Generated by previous step");
+
+      staticModeInput.addEventListener("change", () => {
+        if (!staticModeInput.checked) {
+          return;
+        }
+        void updateStepAttachmentConfig(workflow.id, index, { mode: "static" });
+      });
+
+      generatedModeInput.addEventListener("change", () => {
+        if (!generatedModeInput.checked) {
+          return;
+        }
+        void updateStepAttachmentConfig(workflow.id, index, {
+          mode: "generated",
+          sourceStepIndex: generatedSourceStepIndex >= 0 ? generatedSourceStepIndex : getDefaultGeneratedSourceStepIndex(index),
+          artifactKinds: [...generatedArtifactKinds],
+          required: attachmentConfig.required !== false
+        });
+      });
+
+      attachmentModeRow.appendChild(staticModeLabel);
+      attachmentModeRow.appendChild(generatedModeLabel);
+      attachmentConfigPanel.appendChild(attachmentModeRow);
+    }
+
+    const staticAttachmentPanel = document.createElement("div");
+    staticAttachmentPanel.className = "editor-node-attachments-static" + (attachmentMode === "static" ? "" : " is-hidden");
 
     const attachmentCatalogStatus = document.createElement("div");
     attachmentCatalogStatus.className = "editor-node-attachments-status";
@@ -572,7 +693,7 @@ function renderCanvas() {
     } else {
       attachmentCatalogStatus.textContent = "The project file catalog is not loaded yet.";
     }
-    attachmentConfigPanel.appendChild(attachmentCatalogStatus);
+    staticAttachmentPanel.appendChild(attachmentCatalogStatus);
 
     if (attachmentCatalog.status === "ready" && attachmentCatalog.items.length > 0) {
       const attachmentList = document.createElement("div");
@@ -607,12 +728,12 @@ function renderCanvas() {
         attachmentList.appendChild(option);
       });
 
-      attachmentConfigPanel.appendChild(attachmentList);
+      staticAttachmentPanel.appendChild(attachmentList);
     } else if (attachmentCatalog.status === "ready") {
       const emptyState = document.createElement("div");
       emptyState.className = "editor-node-attachments-empty";
       emptyState.textContent = "No eligible files were found in the active clusiv-v5 project.";
-      attachmentConfigPanel.appendChild(emptyState);
+      staticAttachmentPanel.appendChild(emptyState);
     }
 
     if (selectedAttachments.length > 0) {
@@ -629,12 +750,121 @@ function renderCanvas() {
         selectedList.appendChild(chip);
       });
 
-      attachmentConfigPanel.appendChild(selectedList);
+      staticAttachmentPanel.appendChild(selectedList);
     }
+
+    const generatedAttachmentPanel = document.createElement("div");
+    generatedAttachmentPanel.className = "editor-node-attachments-generated" + (attachmentMode === "generated" ? "" : " is-hidden");
+
+    const generatedInfo = document.createElement("div");
+    generatedInfo.className = "editor-node-attachments-status";
+    generatedInfo.textContent = "These files are resolved at runtime from an earlier workflow step.";
+    generatedAttachmentPanel.appendChild(generatedInfo);
+
+    if (index > 0) {
+      const sourceRow = document.createElement("div");
+      sourceRow.className = "editor-node-injection-row";
+
+      const sourceLabel = document.createElement("label");
+      sourceLabel.className = "editor-node-field-label";
+      sourceLabel.textContent = "Source step:";
+
+      const sourceSelect = document.createElement("select");
+      sourceSelect.className = "editor-node-action-select";
+      workflow.steps.slice(0, index).forEach((previousStep, previousIndex) => {
+        const option = document.createElement("option");
+        option.value = String(previousIndex);
+        option.textContent = `Step ${previousIndex + 1}: ${previousStep.title || `Step ${previousIndex + 1}`}`;
+        sourceSelect.appendChild(option);
+      });
+      sourceSelect.value = String(generatedSourceStepIndex >= 0 ? generatedSourceStepIndex : getDefaultGeneratedSourceStepIndex(index));
+      sourceSelect.addEventListener("change", () => {
+        void updateStepAttachmentConfig(workflow.id, index, { sourceStepIndex: Number(sourceSelect.value) });
+      });
+
+      sourceRow.appendChild(sourceLabel);
+      sourceRow.appendChild(sourceSelect);
+      generatedAttachmentPanel.appendChild(sourceRow);
+
+      const sourceStatus = document.createElement("div");
+      sourceStatus.className = "editor-node-attachments-status";
+      if (generatedSourceStep?.chainConfig?.responseAction === "store_full") {
+        sourceStatus.textContent = `${generatedSourceLabel} can emit runtime artifacts for the next step.`;
+      } else {
+        sourceStatus.textContent = `${generatedSourceLabel} should use “Store full response” so the runtime can fetch generated files.`;
+        sourceStatus.classList.add("is-error");
+      }
+      generatedAttachmentPanel.appendChild(sourceStatus);
+    }
+
+    const generatedKindsList = document.createElement("div");
+    generatedKindsList.className = "editor-node-attachments-list";
+    GENERATED_ATTACHMENT_OPTIONS.forEach((option) => {
+      const artifactOption = document.createElement("label");
+      artifactOption.className = "editor-node-attachment-option";
+
+      const artifactCheckbox = document.createElement("input");
+      artifactCheckbox.type = "checkbox";
+      artifactCheckbox.checked = generatedArtifactKinds.includes(option.value);
+      artifactCheckbox.addEventListener("change", () => {
+        void toggleGeneratedArtifactKind(workflow.id, index, option.value, artifactCheckbox.checked);
+      });
+
+      const artifactText = document.createElement("div");
+      artifactText.className = "editor-node-attachment-option-text";
+
+      const artifactName = document.createElement("div");
+      artifactName.className = "editor-node-attachment-option-name";
+      artifactName.textContent = option.label;
+
+      const artifactMeta = document.createElement("div");
+      artifactMeta.className = "editor-node-attachment-option-meta";
+      artifactMeta.textContent = option.value === "prompts_file"
+        ? "TXT extracted from Prompt blocks"
+        : "TXT extracted from Script blocks";
+
+      artifactText.appendChild(artifactName);
+      artifactText.appendChild(artifactMeta);
+      artifactOption.appendChild(artifactCheckbox);
+      artifactOption.appendChild(artifactText);
+      generatedKindsList.appendChild(artifactOption);
+    });
+    generatedAttachmentPanel.appendChild(generatedKindsList);
+
+    const requiredRow = document.createElement("div");
+    requiredRow.className = "editor-node-attachments-toggle";
+    const requiredLabel = document.createElement("label");
+    requiredLabel.className = "editor-node-attachments-label";
+    const requiredCheckbox = document.createElement("input");
+    requiredCheckbox.type = "checkbox";
+    requiredCheckbox.checked = attachmentConfig.required !== false;
+    requiredCheckbox.addEventListener("change", () => {
+      void updateStepAttachmentConfig(workflow.id, index, { required: requiredCheckbox.checked });
+    });
+    requiredLabel.appendChild(requiredCheckbox);
+    requiredLabel.append(" Abort if any required artifact is missing");
+    requiredRow.appendChild(requiredLabel);
+    generatedAttachmentPanel.appendChild(requiredRow);
+
+    if (generatedArtifactKinds.length > 0) {
+      const generatedSelectedList = document.createElement("div");
+      generatedSelectedList.className = "editor-node-selected-attachments";
+      generatedArtifactKinds.forEach((artifactKind) => {
+        const chip = document.createElement("span");
+        chip.className = "editor-node-selected-attachment-chip";
+        const option = GENERATED_ATTACHMENT_OPTIONS.find((entry) => entry.value === artifactKind);
+        chip.textContent = option?.label || artifactKind;
+        generatedSelectedList.appendChild(chip);
+      });
+      generatedAttachmentPanel.appendChild(generatedSelectedList);
+    }
+
+    attachmentConfigPanel.appendChild(staticAttachmentPanel);
+    attachmentConfigPanel.appendChild(generatedAttachmentPanel);
 
     attachmentToggleCb.addEventListener("change", () => {
       attachmentConfigPanel.classList.toggle("is-hidden", !attachmentToggleCb.checked);
-      if (attachmentToggleCb.checked && attachmentCatalog.status === "idle") {
+      if (attachmentToggleCb.checked && attachmentMode === "static" && attachmentCatalog.status === "idle") {
         void refreshAttachmentCatalog();
       }
       void updateStepAttachmentConfig(workflow.id, index, { enabled: attachmentToggleCb.checked });
@@ -1012,7 +1242,11 @@ async function saveStepModal() {
       },
       attachmentConfig: {
         enabled: false,
-        selectedAttachments: []
+        mode: "static",
+        selectedAttachments: [],
+        sourceStepIndex: -1,
+        artifactKinds: [...DEFAULT_GENERATED_ATTACHMENT_KINDS],
+        required: true
       },
       antiBotConfig: {
         humanTyping: true,

@@ -15,6 +15,15 @@ export function countStoredSteps(workflow) {
   return getStoredStepIndexes(workflow).length;
 }
 
+export const GENERATED_ATTACHMENT_OPTIONS = Object.freeze([
+  { value: "prompts_file", label: "Prompts TXT" },
+  { value: "scripts_file", label: "Scripts TXT" }
+]);
+
+const GENERATED_ATTACHMENT_KIND_SET = new Set(
+  GENERATED_ATTACHMENT_OPTIONS.map((option) => option.value)
+);
+
 function normalizeSelectedAttachments(value) {
   const maxFilesPerStep = globalThis.CONFIG?.ATTACHMENTS?.MAX_FILES_PER_STEP || 10;
   if (!Array.isArray(value)) {
@@ -54,6 +63,53 @@ function normalizeSelectedAttachments(value) {
     })
     .filter(Boolean)
     .slice(0, maxFilesPerStep);
+}
+
+function normalizeGeneratedArtifactKinds(value) {
+  const fallback = GENERATED_ATTACHMENT_OPTIONS.map((option) => option.value);
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const uniqueKinds = [];
+  value.forEach((entry) => {
+    const normalized = typeof entry === "string" ? entry.trim() : "";
+    if (!GENERATED_ATTACHMENT_KIND_SET.has(normalized) || uniqueKinds.includes(normalized)) {
+      return;
+    }
+    uniqueKinds.push(normalized);
+  });
+
+  return uniqueKinds.length > 0 ? uniqueKinds : fallback;
+}
+
+function normalizeGeneratedSourceStepIndex(value, stepIndex) {
+  if (stepIndex <= 0) {
+    return -1;
+  }
+
+  const fallback = stepIndex - 1;
+  const numeric = Number(value);
+  if (!Number.isInteger(numeric)) {
+    return fallback;
+  }
+
+  return Math.min(stepIndex - 1, Math.max(0, numeric));
+}
+
+function normalizeAttachmentConfig(value, stepIndex) {
+  const rawAttachmentConfig = value && typeof value === "object" ? value : {};
+  const requestedMode = rawAttachmentConfig.mode === "generated" ? "generated" : "static";
+  const mode = stepIndex > 0 ? requestedMode : "static";
+
+  return {
+    enabled: rawAttachmentConfig.enabled === true,
+    mode,
+    selectedAttachments: normalizeSelectedAttachments(rawAttachmentConfig.selectedAttachments),
+    sourceStepIndex: normalizeGeneratedSourceStepIndex(rawAttachmentConfig.sourceStepIndex, stepIndex),
+    artifactKinds: normalizeGeneratedArtifactKinds(rawAttachmentConfig.artifactKinds),
+    required: rawAttachmentConfig.required !== false
+  };
 }
 
 export function normalizeWorkflows(value, existingTemplates) {
@@ -105,13 +161,7 @@ export function normalizeWorkflows(value, existingTemplates) {
                     : "{{clusiv_title}}"
               };
 
-                const rawAttachmentConfig = step.attachmentConfig && typeof step.attachmentConfig === "object"
-                  ? step.attachmentConfig
-                  : {};
-                const attachmentConfig = {
-                  enabled: rawAttachmentConfig.enabled === true,
-                  selectedAttachments: normalizeSelectedAttachments(rawAttachmentConfig.selectedAttachments)
-                };
+              const attachmentConfig = normalizeAttachmentConfig(step.attachmentConfig, stepIndex);
 
               // ── antiBotConfig per step ──────────────────────────────
               const abDefaults = globalThis.CONFIG?.ANTI_BOT || {};

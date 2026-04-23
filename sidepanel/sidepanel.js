@@ -16,6 +16,11 @@ import { waitForConfiguredDelay } from "./core/antiBotController.js";
 const { generateUUID, sleep, randomSleep } = globalThis.SharedUtils;
 const AppConfig = globalThis.CONFIG;
 
+const GENERATED_ATTACHMENT_LABELS = {
+  prompts_file: "Prompts TXT",
+  scripts_file: "Scripts TXT"
+};
+
 let logPanel;
 let questionList;
 let controlPanel;
@@ -170,7 +175,107 @@ async function handleStart() {
   void questionProcessor.processNextQuestion();
 }
 
-function loadWorkflowStepQuestions(step, chainedText) {
+function normalizeRuntimeGeneratedArtifact(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const attachmentId = typeof value.attachmentId === "string" ? value.attachmentId.trim() : "";
+  if (!attachmentId) {
+    return null;
+  }
+
+  return {
+    attachmentId,
+    name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : attachmentId,
+    relativePath: typeof value.relativePath === "string" ? value.relativePath.trim() : "",
+    mimeType: typeof value.mimeType === "string" && value.mimeType.trim()
+      ? value.mimeType.trim()
+      : "application/octet-stream",
+    sizeBytes: Number.isFinite(Number(value.sizeBytes)) ? Math.max(0, Number(value.sizeBytes)) : 0,
+    downloadUrl: typeof value.downloadUrl === "string" ? value.downloadUrl.trim() : "",
+    artifactKind: typeof value.artifactKind === "string" ? value.artifactKind.trim() : "",
+    workflowRunId: typeof value.workflowRunId === "string" ? value.workflowRunId.trim() : "",
+    sourceStepIndex: Number.isInteger(Number(value.sourceStepIndex)) ? Number(value.sourceStepIndex) : -1,
+  };
+}
+
+function formatGeneratedArtifactKind(artifactKind) {
+  return GENERATED_ATTACHMENT_LABELS[artifactKind] || artifactKind;
+}
+
+function resolveStepAttachments(step, stepIndex, workflowContext) {
+  const attachmentConfig = step?.attachmentConfig || {};
+  if (attachmentConfig.enabled !== true) {
+    return { attachments: [], mode: "none", sourceStepIndex: -1, missingKinds: [] };
+  }
+
+  if (attachmentConfig.mode !== "generated") {
+    return {
+      attachments: [...(attachmentConfig.selectedAttachments || [])],
+      mode: "static",
+      sourceStepIndex: -1,
+      missingKinds: []
+    };
+  }
+
+  const sourceStepIndex = Number.isInteger(attachmentConfig.sourceStepIndex)
+    ? attachmentConfig.sourceStepIndex
+    : stepIndex - 1;
+  if (sourceStepIndex < 0 || sourceStepIndex >= stepIndex) {
+    return {
+      attachments: [],
+      mode: "generated",
+      sourceStepIndex,
+      missingKinds: [],
+      error: "Generated attachments must point to a previous step."
+    };
+  }
+
+  const expectedKinds = Array.isArray(attachmentConfig.artifactKinds) && attachmentConfig.artifactKinds.length > 0
+    ? attachmentConfig.artifactKinds
+    : ["prompts_file", "scripts_file"];
+  const workflowRunId = typeof workflowContext?.runId === "string" ? workflowContext.runId.trim() : "";
+  const sourceArtifacts = Array.isArray(workflowContext?.generatedArtifacts?.[sourceStepIndex])
+    ? workflowContext.generatedArtifacts[sourceStepIndex]
+    : [];
+  const availableArtifacts = sourceArtifacts
+    .map(normalizeRuntimeGeneratedArtifact)
+    .filter(Boolean)
+    .filter((artifact) => !workflowRunId || !artifact.workflowRunId || artifact.workflowRunId === workflowRunId);
+
+  const attachments = [];
+  const missingKinds = [];
+  expectedKinds.forEach((artifactKind) => {
+    const artifact = availableArtifacts.find((entry) => entry.artifactKind === artifactKind);
+    if (artifact) {
+      attachments.push(artifact);
+      return;
+    }
+    missingKinds.push(artifactKind);
+  });
+
+  if (attachmentConfig.required !== false && missingKinds.length > 0) {
+    return {
+      attachments: [],
+      mode: "generated",
+      sourceStepIndex,
+      missingKinds,
+      error: `Missing generated artifacts from step ${sourceStepIndex + 1}: ${missingKinds
+        .map(formatGeneratedArtifactKind)
+        .join(", ")}`
+    };
+  }
+
+  return {
+    attachments,
+    mode: "generated",
+    sourceStepIndex,
+    missingKinds
+  };
+}
+
+function loadWorkflowStepQuestions(step, chainedText, resolvedAttachments = null) {
   const state = AppState.getState();
 
   const defaultRegex =
@@ -188,9 +293,11 @@ function loadWorkflowStepQuestions(step, chainedText) {
     extractionRegex,
     injectionPlaceholder
   };
-  const attachments = step?.attachmentConfig?.enabled === true
-    ? [...(step.attachmentConfig.selectedAttachments || [])]
-    : [];
+  const attachments = Array.isArray(resolvedAttachments)
+    ? [...resolvedAttachments]
+    : step?.attachmentConfig?.enabled === true
+      ? [...(step.attachmentConfig.selectedAttachments || [])]
+      : [];
 
   // Resolve the step content: replace the placeholder with chainedText
   let resolvedContent = step.content || "";
@@ -254,8 +361,10 @@ async function handleStartWorkflow() {
     activeWorkflow: { ...workflow },
     activeWorkflowStepIndex: 0,
     workflowContext: {
+      runId: generateUUID(),
       chainedText: "",
-      stepResults: []
+      stepResults: [],
+      generatedArtifacts: {}
     }
   });
 
@@ -313,11 +422,32 @@ async function executeWorkflowStep(stepIndex) {
   AppState.setQuestions([]);
   await persistQuestions();
 
+  const attachmentResolution = resolveStepAttachments(step, stepIndex, state.workflowContext);
+  if (attachmentResolution.error) {
+    addLog(`📎 ${attachmentResolution.error}`, "error");
+    abortWorkflow();
+    return;
+  }
+  if (attachmentResolution.mode === "generated") {
+    addLog(
+      `📎 Resolved ${attachmentResolution.attachments.length} generated attachment(s) from step ${attachmentResolution.sourceStepIndex + 1}.`,
+      "info"
+    );
+    if (attachmentResolution.missingKinds.length > 0) {
+      addLog(
+        `📎 Optional generated artifacts not found: ${attachmentResolution.missingKinds
+          .map(formatGeneratedArtifactKind)
+          .join(", ")}`,
+        "warning"
+      );
+    }
+  }
+
   // When external source is active for step 0, use its placeholder as the injectionPlaceholder
   const stepForLoad = (stepIndex === 0 && extSrc?.enabled && extSrc?.placeholder)
     ? { ...step, chainConfig: { ...step.chainConfig, injectionPlaceholder: extSrc.placeholder } }
     : step;
-  const addedCount = loadWorkflowStepQuestions(stepForLoad, effectiveChainedText);
+  const addedCount = loadWorkflowStepQuestions(stepForLoad, effectiveChainedText, attachmentResolution.attachments);
   addLog(`${addedCount} ${t("messages.questionsAdded")}`, "success");
 
   addLog(t("messages.openingTargetSite"), "info");
@@ -406,7 +536,8 @@ async function advanceWorkflowStep() {
           body: JSON.stringify({
             workflowName: state.activeWorkflow.name,
             totalStoredSteps,
-            totalSteps: totalStoredSteps
+            totalSteps: totalStoredSteps,
+            workflowRunId: state.workflowContext?.runId || ""
           })
         }
       );

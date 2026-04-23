@@ -1,4 +1,10 @@
 (function registerChatGPTRemoteRuntime() {
+  const GENERATED_ATTACHMENT_KIND_SET = new Set(["prompts_file", "scripts_file"]);
+  const GENERATED_ATTACHMENT_LABELS = {
+    prompts_file: "Prompts TXT",
+    scripts_file: "Scripts TXT"
+  };
+
   const runtimeState = {
     isRunning: false,
     workflow: null,
@@ -134,6 +140,146 @@
       .slice(0, maxFilesPerStep);
   }
 
+  function normalizeGeneratedArtifactKinds(value) {
+    const fallback = ["prompts_file", "scripts_file"];
+    if (!Array.isArray(value)) {
+      return fallback;
+    }
+
+    const uniqueKinds = [];
+    value.forEach((entry) => {
+      const normalized = typeof entry === "string" ? entry.trim() : "";
+      if (!GENERATED_ATTACHMENT_KIND_SET.has(normalized) || uniqueKinds.includes(normalized)) {
+        return;
+      }
+      uniqueKinds.push(normalized);
+    });
+
+    return uniqueKinds.length > 0 ? uniqueKinds : fallback;
+  }
+
+  function normalizeGeneratedSourceStepIndex(value, stepIndex) {
+    if (stepIndex <= 0) {
+      return -1;
+    }
+
+    const fallback = stepIndex - 1;
+    const numeric = Number(value);
+    if (!Number.isInteger(numeric)) {
+      return fallback;
+    }
+
+    return Math.min(stepIndex - 1, Math.max(0, numeric));
+  }
+
+  function normalizeGeneratedArtifactDescriptor(value) {
+    if (!value || typeof value !== "object") {
+      return null;
+    }
+
+    const attachmentId = typeof value.attachmentId === "string" ? value.attachmentId.trim() : "";
+    if (!attachmentId) {
+      return null;
+    }
+
+    return {
+      attachmentId,
+      name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : attachmentId,
+      relativePath: typeof value.relativePath === "string" ? value.relativePath.trim() : "",
+      mimeType: typeof value.mimeType === "string" && value.mimeType.trim()
+        ? value.mimeType.trim()
+        : "application/octet-stream",
+      sizeBytes: Number.isFinite(Number(value.sizeBytes)) ? Math.max(0, Number(value.sizeBytes)) : 0,
+      downloadUrl: typeof value.downloadUrl === "string" ? value.downloadUrl.trim() : "",
+      artifactKind: typeof value.artifactKind === "string" ? value.artifactKind.trim() : "",
+      workflowRunId: typeof value.workflowRunId === "string" ? value.workflowRunId.trim() : "",
+      sourceStepIndex: Number.isInteger(Number(value.sourceStepIndex)) ? Number(value.sourceStepIndex) : -1,
+    };
+  }
+
+  function normalizeGeneratedArtifacts(value) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.map(normalizeGeneratedArtifactDescriptor).filter(Boolean);
+  }
+
+  function formatGeneratedArtifactKind(artifactKind) {
+    return GENERATED_ATTACHMENT_LABELS[artifactKind] || artifactKind;
+  }
+
+  function resolveStepAttachments(step, stepIndex) {
+    const attachmentConfig = step?.attachmentConfig || {};
+    if (attachmentConfig.enabled !== true) {
+      return { attachments: [], mode: "none", sourceStepIndex: -1, missingKinds: [] };
+    }
+
+    if (attachmentConfig.mode !== "generated") {
+      return {
+        attachments: [...(step.attachmentConfig?.selectedAttachments || [])],
+        mode: "static",
+        sourceStepIndex: -1,
+        missingKinds: []
+      };
+    }
+
+    const sourceStepIndex = Number.isInteger(attachmentConfig.sourceStepIndex)
+      ? attachmentConfig.sourceStepIndex
+      : stepIndex - 1;
+    if (sourceStepIndex < 0 || sourceStepIndex >= stepIndex) {
+      return {
+        attachments: [],
+        mode: "generated",
+        sourceStepIndex,
+        missingKinds: [],
+        error: "Los adjuntos generados deben apuntar a un step previo."
+      };
+    }
+
+    const expectedKinds = normalizeGeneratedArtifactKinds(attachmentConfig.artifactKinds);
+    const workflowRunId = typeof runtimeState.workflowContext?.runId === "string"
+      ? runtimeState.workflowContext.runId.trim()
+      : "";
+    const sourceArtifacts = Array.isArray(runtimeState.workflowContext?.generatedArtifacts?.[sourceStepIndex])
+      ? runtimeState.workflowContext.generatedArtifacts[sourceStepIndex]
+      : [];
+    const availableArtifacts = sourceArtifacts
+      .map(normalizeGeneratedArtifactDescriptor)
+      .filter(Boolean)
+      .filter((artifact) => !workflowRunId || !artifact.workflowRunId || artifact.workflowRunId === workflowRunId);
+
+    const attachments = [];
+    const missingKinds = [];
+    expectedKinds.forEach((artifactKind) => {
+      const artifact = availableArtifacts.find((entry) => entry.artifactKind === artifactKind);
+      if (artifact) {
+        attachments.push(artifact);
+        return;
+      }
+      missingKinds.push(artifactKind);
+    });
+
+    if (attachmentConfig.required !== false && missingKinds.length > 0) {
+      return {
+        attachments: [],
+        mode: "generated",
+        sourceStepIndex,
+        missingKinds,
+        error: `Faltan artefactos generados del step ${sourceStepIndex + 1}: ${missingKinds
+          .map(formatGeneratedArtifactKind)
+          .join(", ")}`
+      };
+    }
+
+    return {
+      attachments,
+      mode: "generated",
+      sourceStepIndex,
+      missingKinds
+    };
+  }
+
   function normalizeWorkflows(value) {
     if (!Array.isArray(value)) {
       return [];
@@ -170,7 +316,11 @@
                 };
                 const attachmentConfig = {
                   enabled: step.attachmentConfig?.enabled === true,
-                  selectedAttachments: normalizeSelectedAttachments(step.attachmentConfig?.selectedAttachments)
+                  mode: stepIndex > 0 && step.attachmentConfig?.mode === "generated" ? "generated" : "static",
+                  selectedAttachments: normalizeSelectedAttachments(step.attachmentConfig?.selectedAttachments),
+                  sourceStepIndex: normalizeGeneratedSourceStepIndex(step.attachmentConfig?.sourceStepIndex, stepIndex),
+                  artifactKinds: normalizeGeneratedArtifactKinds(step.attachmentConfig?.artifactKinds),
+                  required: step.attachmentConfig?.required !== false
                 };
 
                 const rawAntiBot = step.antiBotConfig && typeof step.antiBotConfig === "object"
@@ -255,7 +405,7 @@
     return tab;
   }
 
-  function buildQuestionPayload(step, chainedText) {
+  function buildQuestionPayload(step, chainedText, attachments) {
     const extSource = step.chainConfig?.externalSource || {};
     const placeholder = extSource.enabled === true && extSource.placeholder && runtimeState.stepIndex === 0
       ? extSource.placeholder
@@ -269,9 +419,7 @@
     return {
       id: SharedUtils.generateUUID(),
       question: content,
-      attachments: step.attachmentConfig?.enabled === true
-        ? [...(step.attachmentConfig.selectedAttachments || [])]
-        : [],
+      attachments: Array.isArray(attachments) ? [...attachments] : [],
       extractionConfig: {
         extractionRegex: step.chainConfig?.extractionRegex || CONFIG.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>",
         injectionPlaceholder: step.chainConfig?.injectionPlaceholder || CONFIG.EXTRACTION?.DEFAULT_PLACEHOLDER || "{{extract}}"
@@ -331,7 +479,26 @@
       addRemoteLog(`Título externo recibido: "${chainedText}"`, "info");
     }
 
-    const questionPayload = buildQuestionPayload(step, chainedText);
+    const attachmentResolution = resolveStepAttachments(step, stepIndex);
+    if (attachmentResolution.error) {
+      throw new Error(attachmentResolution.error);
+    }
+    if (attachmentResolution.mode === "generated") {
+      addRemoteLog(
+        `Adjuntos dinámicos resueltos desde step ${attachmentResolution.sourceStepIndex + 1}: ${attachmentResolution.attachments.length}.`,
+        "info"
+      );
+      if (attachmentResolution.missingKinds.length > 0) {
+        addRemoteLog(
+          `Artefactos opcionales no encontrados: ${attachmentResolution.missingKinds
+            .map(formatGeneratedArtifactKind)
+            .join(", ")}.`,
+          "warning"
+        );
+      }
+    }
+
+    const questionPayload = buildQuestionPayload(step, chainedText, attachmentResolution.attachments);
     const tab = await ensureChatGPTReady(runtimeState.settings);
     const result = await chrome.tabs.sendMessage(tab.id, {
       type: "ASK_QUESTION",
@@ -382,6 +549,7 @@
           totalSteps: totalStoredSteps,
           isLastStoredStep,
           isLastStep: isLastStoredStep,
+          workflowRunId: runtimeState.workflowContext?.runId || "",
           answer,
           timestamp: Date.now()
         })
@@ -398,6 +566,7 @@
     }
 
     addRemoteLog(`Respuesta guardada en: ${payload.path}`, "success");
+    return payload;
   }
 
   async function applyStepResult(step, stepIndex, result) {
@@ -430,8 +599,25 @@
         text: fullResponse.substring(0, 200),
         success: true
       });
+      ctx.generatedArtifacts = { ...(ctx.generatedArtifacts || {}) };
       runtimeState.workflowContext = ctx;
-      await persistStoredResponse(step, stepIndex, fullResponse);
+      const savePayload = await persistStoredResponse(step, stepIndex, fullResponse);
+      ctx.generatedArtifacts[stepIndex] = normalizeGeneratedArtifacts(savePayload.generatedArtifacts);
+      if (!ctx.runId && typeof savePayload.workflowRunId === "string") {
+        ctx.runId = savePayload.workflowRunId.trim();
+      }
+      runtimeState.workflowContext = ctx;
+      if (typeof savePayload.generatedArtifactsError === "string" && savePayload.generatedArtifactsError.trim()) {
+        addRemoteLog(`Advertencia de artefactos: ${savePayload.generatedArtifactsError.trim()}`, "warning");
+      }
+      if (ctx.generatedArtifacts[stepIndex].length > 0) {
+        addRemoteLog(
+          `Artefactos listos para próximos steps: ${ctx.generatedArtifacts[stepIndex]
+            .map((artifact) => artifact.name || artifact.artifactKind)
+            .join(", ")}.`,
+          "success"
+        );
+      }
       return;
     }
 
@@ -456,7 +642,8 @@
             body: JSON.stringify({
               workflowName,
               totalStoredSteps,
-              totalSteps: totalStoredSteps
+              totalSteps: totalStoredSteps,
+              workflowRunId: runtimeState.workflowContext?.runId || ""
             })
           }
         );
@@ -528,8 +715,10 @@
     runtimeState.stepIndex = -1;
     runtimeState.pendingQuestion = null;
     runtimeState.workflowContext = {
+      runId: SharedUtils.generateUUID(),
       chainedText: "",
-      stepResults: []
+      stepResults: [],
+      generatedArtifacts: {}
     };
 
     notifyWorkflowStatus({

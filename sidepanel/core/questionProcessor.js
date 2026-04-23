@@ -23,6 +23,39 @@ export function parseQuestionsInput(rawValue, isSinglePrompt) {
   return segments.map((segment) => segment.trim()).filter(Boolean);
 }
 
+function normalizeGeneratedArtifactDescriptor(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const attachmentId = typeof value.attachmentId === "string" ? value.attachmentId.trim() : "";
+  if (!attachmentId) {
+    return null;
+  }
+
+  return {
+    attachmentId,
+    name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : attachmentId,
+    relativePath: typeof value.relativePath === "string" ? value.relativePath.trim() : "",
+    mimeType: typeof value.mimeType === "string" && value.mimeType.trim()
+      ? value.mimeType.trim()
+      : "application/octet-stream",
+    sizeBytes: Number.isFinite(Number(value.sizeBytes)) ? Math.max(0, Number(value.sizeBytes)) : 0,
+    downloadUrl: typeof value.downloadUrl === "string" ? value.downloadUrl.trim() : "",
+    artifactKind: typeof value.artifactKind === "string" ? value.artifactKind.trim() : "",
+    workflowRunId: typeof value.workflowRunId === "string" ? value.workflowRunId.trim() : "",
+    sourceStepIndex: Number.isInteger(Number(value.sourceStepIndex)) ? Number(value.sourceStepIndex) : -1,
+  };
+}
+
+function normalizeGeneratedArtifacts(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map(normalizeGeneratedArtifactDescriptor).filter(Boolean);
+}
+
 export class QuestionProcessor {
   constructor({ getSettings, addLog, onAllCompleted, onWorkflowAbort }) {
     this.getSettings = getSettings;
@@ -188,10 +221,15 @@ export class QuestionProcessor {
       }
     } else if (responseAction === "store_full") {
       const fullResponse = result.answer || "";
-      const ctx = { ...state.workflowContext };
+      const ctx = {
+        ...(state.workflowContext || {}),
+        generatedArtifacts: {
+          ...((state.workflowContext && state.workflowContext.generatedArtifacts) || {})
+        }
+      };
       ctx.chainedText = fullResponse;
       ctx.stepResults = [
-        ...ctx.stepResults,
+        ...(ctx.stepResults || []),
         { stepIndex: state.activeWorkflowStepIndex, action: "store_full", text: fullResponse.substring(0, 200), success: true }
       ];
       AppState.patch({ workflowContext: ctx, lastExtractedText: fullResponse });
@@ -219,6 +257,7 @@ export class QuestionProcessor {
               totalSteps: totalStoredSteps,
               isLastStoredStep,
               isLastStep: isLastStoredStep,
+              workflowRunId: ctx.runId || "",
               answer: fullResponse,
               timestamp: Date.now()
             })
@@ -229,7 +268,23 @@ export class QuestionProcessor {
           this.addLog(`Error al guardar en Ruta de Proyectos: ${saveData.error}. Workflow aborted.`, "error");
           return false;
         }
+        ctx.generatedArtifacts[state.activeWorkflowStepIndex] = normalizeGeneratedArtifacts(saveData.generatedArtifacts);
+        if (!ctx.runId && typeof saveData.workflowRunId === "string") {
+          ctx.runId = saveData.workflowRunId.trim();
+        }
+        AppState.patch({ workflowContext: ctx, lastExtractedText: fullResponse });
         this.addLog(`Respuesta guardada en: ${saveData.path}`, "success");
+        if (typeof saveData.generatedArtifactsError === "string" && saveData.generatedArtifactsError.trim()) {
+          this.addLog(`Runtime artifact warning: ${saveData.generatedArtifactsError.trim()}`, "warning");
+        }
+        if (ctx.generatedArtifacts[state.activeWorkflowStepIndex].length > 0) {
+          this.addLog(
+            `Runtime artifacts ready for next steps: ${ctx.generatedArtifacts[state.activeWorkflowStepIndex]
+              .map((artifact) => artifact.name || artifact.artifactKind)
+              .join(", ")}`,
+            "success"
+          );
+        }
       } catch (saveError) {
         this.addLog(`Error al guardar en Ruta de Proyectos: ${saveError.message}. Workflow aborted.`, "error");
         return false;
