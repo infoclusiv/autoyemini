@@ -56,6 +56,60 @@ function normalizeGeneratedArtifacts(value) {
   return value.map(normalizeGeneratedArtifactDescriptor).filter(Boolean);
 }
 
+function normalizeExpectedGeneratedArtifactKinds(value) {
+  const fallback = ["prompts_file", "scripts_file"];
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const uniqueKinds = [];
+  value.forEach((entry) => {
+    const normalized = typeof entry === "string" ? entry.trim() : "";
+    if (!normalized || uniqueKinds.includes(normalized)) {
+      return;
+    }
+    if (normalized !== "prompts_file" && normalized !== "scripts_file") {
+      return;
+    }
+    uniqueKinds.push(normalized);
+  });
+
+  return uniqueKinds.length > 0 ? uniqueKinds : fallback;
+}
+
+function getExpectedGeneratedArtifactKindsForStep(workflow, sourceStepIndex) {
+  if (!workflow || !Array.isArray(workflow.steps)) {
+    return [];
+  }
+
+  const expectedKinds = [];
+  workflow.steps.forEach((step, stepIndex) => {
+    if (!step || stepIndex <= sourceStepIndex) {
+      return;
+    }
+
+    const attachmentConfig = step.attachmentConfig || {};
+    if (attachmentConfig.enabled !== true || attachmentConfig.mode !== "generated") {
+      return;
+    }
+
+    const normalizedSourceStepIndex = Number.isInteger(attachmentConfig.sourceStepIndex)
+      ? attachmentConfig.sourceStepIndex
+      : stepIndex - 1;
+    if (normalizedSourceStepIndex !== sourceStepIndex) {
+      return;
+    }
+
+    normalizeExpectedGeneratedArtifactKinds(attachmentConfig.artifactKinds).forEach((artifactKind) => {
+      if (!expectedKinds.includes(artifactKind)) {
+        expectedKinds.push(artifactKind);
+      }
+    });
+  });
+
+  return expectedKinds;
+}
+
 export class QuestionProcessor {
   constructor({ getSettings, addLog, onAllCompleted, onWorkflowAbort }) {
     this.getSettings = getSettings;
@@ -243,6 +297,10 @@ export class QuestionProcessor {
       const storedStepIndexes = getStoredStepIndexes(workflow);
       const totalStoredSteps = storedStepIndexes.length;
       const isLastStoredStep = storedStepIndexes[storedStepIndexes.length - 1] === state.activeWorkflowStepIndex;
+      const expectedGeneratedArtifactKinds = getExpectedGeneratedArtifactKindsForStep(
+        workflow,
+        state.activeWorkflowStepIndex
+      );
       try {
         const saveResp = await fetch(
           AppConfig?.REMOTE_API?.SAVE_STEP_RESPONSE_URL || "http://localhost:7788/api/extensions/autoyemini/save-step-response",
@@ -258,6 +316,7 @@ export class QuestionProcessor {
               isLastStoredStep,
               isLastStep: isLastStoredStep,
               workflowRunId: ctx.runId || "",
+              expectedGeneratedArtifactKinds,
               answer: fullResponse,
               timestamp: Date.now()
             })
@@ -274,6 +333,10 @@ export class QuestionProcessor {
         }
         AppState.patch({ workflowContext: ctx, lastExtractedText: fullResponse });
         this.addLog(`Respuesta guardada en: ${saveData.path}`, "success");
+        this.addLog(
+          `Diagnóstico artefactos: escenas=${saveData.sceneBlocksCount || 0}, prompts=${saveData.parsedPromptsCount || 0}, scripts=${saveData.parsedScriptsCount || 0}, generados=${saveData.generatedArtifactsCount || 0}.`,
+          "info"
+        );
         if (typeof saveData.generatedArtifactsError === "string" && saveData.generatedArtifactsError.trim()) {
           this.addLog(`Runtime artifact warning: ${saveData.generatedArtifactsError.trim()}`, "warning");
         }

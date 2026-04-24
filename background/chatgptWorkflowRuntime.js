@@ -76,6 +76,40 @@
     }, []);
   }
 
+  function getExpectedGeneratedArtifactKindsForStep(workflow, sourceStepIndex) {
+    if (!workflow || !Array.isArray(workflow.steps)) {
+      return [];
+    }
+
+    const expectedKinds = [];
+    workflow.steps.forEach((step, stepIndex) => {
+      if (!step || stepIndex <= sourceStepIndex) {
+        return;
+      }
+
+      const attachmentConfig = step.attachmentConfig || {};
+      if (attachmentConfig.enabled !== true || attachmentConfig.mode !== "generated") {
+        return;
+      }
+
+      const normalizedSourceStepIndex = normalizeGeneratedSourceStepIndex(
+        attachmentConfig.sourceStepIndex,
+        stepIndex
+      );
+      if (normalizedSourceStepIndex !== sourceStepIndex) {
+        return;
+      }
+
+      normalizeGeneratedArtifactKinds(attachmentConfig.artifactKinds).forEach((artifactKind) => {
+        if (!expectedKinds.includes(artifactKind)) {
+          expectedKinds.push(artifactKind);
+        }
+      });
+    });
+
+    return expectedKinds;
+  }
+
   function getExtractionExpression(pattern) {
     const normalizedPattern =
       pattern?.trim() || CONFIG.EXTRACTION?.DEFAULT_REGEX || "<extract>(.*?)</extract>";
@@ -535,6 +569,10 @@
     const storedStepIndexes = getStoredStepIndexes(runtimeState.workflow);
     const totalStoredSteps = storedStepIndexes.length;
     const isLastStoredStep = storedStepIndexes[storedStepIndexes.length - 1] === stepIndex;
+    const expectedGeneratedArtifactKinds = getExpectedGeneratedArtifactKindsForStep(
+      runtimeState.workflow,
+      stepIndex
+    );
 
     const response = await fetch(
       CONFIG?.REMOTE_API?.SAVE_STEP_RESPONSE_URL || "http://localhost:7788/api/extensions/autoyemini/save-step-response",
@@ -550,6 +588,7 @@
           isLastStoredStep,
           isLastStep: isLastStoredStep,
           workflowRunId: runtimeState.workflowContext?.runId || "",
+          expectedGeneratedArtifactKinds,
           answer,
           timestamp: Date.now()
         })
@@ -607,6 +646,10 @@
         ctx.runId = savePayload.workflowRunId.trim();
       }
       runtimeState.workflowContext = ctx;
+      addRemoteLog(
+        `Diagnóstico artefactos: escenas=${savePayload.sceneBlocksCount || 0}, prompts=${savePayload.parsedPromptsCount || 0}, scripts=${savePayload.parsedScriptsCount || 0}, generados=${savePayload.generatedArtifactsCount || 0}.`,
+        "info"
+      );
       if (typeof savePayload.generatedArtifactsError === "string" && savePayload.generatedArtifactsError.trim()) {
         addRemoteLog(`Advertencia de artefactos: ${savePayload.generatedArtifactsError.trim()}`, "warning");
       }
